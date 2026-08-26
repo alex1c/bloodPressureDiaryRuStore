@@ -1,22 +1,47 @@
 {
-  "name": "bloodpressurediaryrustore",
+  "name": "bp-diary",
   "version": "1.0.0",
+  "private": true,
   "main": "index.ts",
-  "dependencies": {
-    "expo": "~57.0.16",
-    "expo-status-bar": "~57.0.1",
-    "react": "19.2.3",
-    "react-native": "0.86.2"
-  },
-  "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
-  },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "prebuild:android": "expo prebuild --platform android",
+    "prebuild:android:production": "node scripts/prebuild-android-production.cjs",
+    "restore:dev-autolinking": "node scripts/restore-dev-autolinking.cjs",
+    "apply:release-signing": "node scripts/apply-release-signing.cjs",
+    "verify:release-signing": "node scripts/verify-release-signing.cjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "validate": "npm run lint && npm run typecheck && npm test"
   },
-  "private": true
+  "dependencies": {
+    "expo": "~57.0.16",
+    "expo-constants": "~57.0.14",
+    "expo-dev-client": "~57.0.15",
+    "expo-file-system": "~57.0.5",
+    "expo-linking": "~57.0.7",
+    "expo-router": "~57.0.16",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.14",
+    "@types/node": "^26.2.0",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.1",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.4",
+    "typescript": "~6.0.3"
+  }
 }

@@ -1,0 +1,529 @@
+import { isMeasurementTag, isPeriodOfDay } from '../catalog'
+import type {
+	AppSettings,
+	HealthMetric,
+	HealthMetricKind,
+	Measurement,
+	Medication,
+	MedicationIntake,
+	Profile,
+	Reminder,
+} from '../types'
+
+/** Current backup document format version. */
+export const BACKUP_FORMAT_VERSION = 1
+
+export interface DiaryBackup {
+	backupVersion: number
+	appVersion: string
+	createdAt: string
+	profiles: Profile[]
+	measurements: Measurement[]
+	healthMetrics: HealthMetric[]
+	medications: Medication[]
+	medicationIntakes: MedicationIntake[]
+	reminders: Reminder[]
+	settings: AppSettings
+}
+
+export type BackupValidationErrorCode =
+	| 'NOT_OBJECT'
+	| 'UNSUPPORTED_VERSION'
+	| 'MISSING_FIELD'
+	| 'INVALID_FIELD'
+	| 'PROFILE_ISOLATION'
+	| 'ORPHAN_REFERENCE'
+
+export type BackupValidationResult =
+	| { ok: true; backup: DiaryBackup }
+	| { ok: false; code: BackupValidationErrorCode; message: string }
+
+function isObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isString(value: unknown): value is string {
+	return typeof value === 'string'
+}
+
+function isNumber(value: unknown): value is number {
+	return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isBoolean(value: unknown): value is boolean {
+	return typeof value === 'boolean'
+}
+
+const HEALTH_KINDS: HealthMetricKind[] = [
+	'weight',
+	'glucose',
+	'spo2',
+	'temperature',
+]
+
+/**
+ * Validates a parsed backup document without mutating storage.
+ * Callers must refuse restore when ok === false.
+ */
+export function validateDiaryBackup(raw: unknown): BackupValidationResult {
+	if (!isObject(raw)) {
+		return { ok: false, code: 'NOT_OBJECT', message: 'Backup root must be an object' }
+	}
+
+	if (!isNumber(raw.backupVersion)) {
+		return {
+			ok: false,
+			code: 'MISSING_FIELD',
+			message: 'backupVersion is required',
+		}
+	}
+
+	if (raw.backupVersion !== BACKUP_FORMAT_VERSION) {
+		return {
+			ok: false,
+			code: 'UNSUPPORTED_VERSION',
+			message: `Unsupported backupVersion ${String(raw.backupVersion)}`,
+		}
+	}
+
+	if (!isString(raw.appVersion) || !isString(raw.createdAt)) {
+		return {
+			ok: false,
+			code: 'MISSING_FIELD',
+			message: 'appVersion and createdAt are required strings',
+		}
+	}
+
+	if (
+		!Array.isArray(raw.profiles) ||
+		!Array.isArray(raw.measurements) ||
+		!Array.isArray(raw.healthMetrics) ||
+		!Array.isArray(raw.medications) ||
+		!Array.isArray(raw.medicationIntakes) ||
+		!Array.isArray(raw.reminders) ||
+		!isObject(raw.settings)
+	) {
+		return {
+			ok: false,
+			code: 'MISSING_FIELD',
+			message: 'Backup collections or settings missing',
+		}
+	}
+
+	const profiles: Profile[] = []
+	for (const item of raw.profiles) {
+		const profile = parseProfile(item)
+		if (!profile) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid profile entry',
+			}
+		}
+		profiles.push(profile)
+	}
+
+	const profileIds = new Set(profiles.map((p) => p.id))
+
+	const measurements: Measurement[] = []
+	for (const item of raw.measurements) {
+		const m = parseMeasurement(item)
+		if (!m) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid measurement entry',
+			}
+		}
+		if (!profileIds.has(m.profileId)) {
+			return {
+				ok: false,
+				code: 'PROFILE_ISOLATION',
+				message: `Measurement ${m.id} references unknown profile`,
+			}
+		}
+		measurements.push(m)
+	}
+
+	const healthMetrics: HealthMetric[] = []
+	for (const item of raw.healthMetrics) {
+		const h = parseHealthMetric(item)
+		if (!h) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid healthMetric entry',
+			}
+		}
+		if (!profileIds.has(h.profileId)) {
+			return {
+				ok: false,
+				code: 'PROFILE_ISOLATION',
+				message: `HealthMetric ${h.id} references unknown profile`,
+			}
+		}
+		healthMetrics.push(h)
+	}
+
+	const medications: Medication[] = []
+	for (const item of raw.medications) {
+		const med = parseMedication(item)
+		if (!med) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid medication entry',
+			}
+		}
+		if (!profileIds.has(med.profileId)) {
+			return {
+				ok: false,
+				code: 'PROFILE_ISOLATION',
+				message: `Medication ${med.id} references unknown profile`,
+			}
+		}
+		medications.push(med)
+	}
+
+	const medicationIds = new Set(medications.map((m) => m.id))
+
+	const medicationIntakes: MedicationIntake[] = []
+	for (const item of raw.medicationIntakes) {
+		const intake = parseIntake(item)
+		if (!intake) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid medicationIntake entry',
+			}
+		}
+		if (!profileIds.has(intake.profileId)) {
+			return {
+				ok: false,
+				code: 'PROFILE_ISOLATION',
+				message: `Intake ${intake.id} references unknown profile`,
+			}
+		}
+		if (!medicationIds.has(intake.medicationId)) {
+			return {
+				ok: false,
+				code: 'ORPHAN_REFERENCE',
+				message: `Intake ${intake.id} references unknown medication`,
+			}
+		}
+		medicationIntakes.push(intake)
+	}
+
+	const reminders: Reminder[] = []
+	for (const item of raw.reminders) {
+		const reminder = parseReminder(item)
+		if (!reminder) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'Invalid reminder entry',
+			}
+		}
+		if (!profileIds.has(reminder.profileId)) {
+			return {
+				ok: false,
+				code: 'PROFILE_ISOLATION',
+				message: `Reminder ${reminder.id} references unknown profile`,
+			}
+		}
+		if (
+			reminder.medicationId !== null &&
+			!medicationIds.has(reminder.medicationId)
+		) {
+			return {
+				ok: false,
+				code: 'ORPHAN_REFERENCE',
+				message: `Reminder ${reminder.id} references unknown medication`,
+			}
+		}
+		reminders.push(reminder)
+	}
+
+	const settings = parseSettings(raw.settings, profileIds)
+	if (!settings) {
+		return {
+			ok: false,
+			code: 'INVALID_FIELD',
+			message: 'Invalid settings',
+		}
+	}
+
+	return {
+		ok: true,
+		backup: {
+			backupVersion: BACKUP_FORMAT_VERSION,
+			appVersion: raw.appVersion,
+			createdAt: raw.createdAt,
+			profiles,
+			measurements,
+			healthMetrics,
+			medications,
+			medicationIntakes,
+			reminders,
+			settings,
+		},
+	}
+}
+
+function parseProfile(item: unknown): Profile | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.name) ||
+		!isBoolean(item.isDefault) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	return {
+		id: item.id,
+		name: item.name,
+		isDefault: item.isDefault,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseMeasurement(item: unknown): Measurement | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.profileId) ||
+		!isNumber(item.systolic) ||
+		!isNumber(item.diastolic) ||
+		!isNumber(item.pulse) ||
+		!isString(item.measuredAt) ||
+		!isString(item.periodOfDay) ||
+		!isPeriodOfDay(item.periodOfDay) ||
+		!Array.isArray(item.tags) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+
+	const tags = item.tags.filter(isString)
+	if (tags.length !== item.tags.length || !tags.every(isMeasurementTag)) {
+		return null
+	}
+
+	const wellbeing =
+		item.wellbeing === null ||
+		item.wellbeing === 'good' ||
+		item.wellbeing === 'ok' ||
+		item.wellbeing === 'bad'
+			? item.wellbeing
+			: undefined
+	if (wellbeing === undefined) {
+		return null
+	}
+
+	const note =
+		item.note === null || isString(item.note) ? item.note : undefined
+	if (note === undefined) {
+		return null
+	}
+
+	return {
+		id: item.id,
+		profileId: item.profileId,
+		systolic: item.systolic,
+		diastolic: item.diastolic,
+		pulse: item.pulse,
+		measuredAt: item.measuredAt,
+		periodOfDay: item.periodOfDay,
+		wellbeing,
+		tags,
+		note,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseHealthMetric(item: unknown): HealthMetric | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.profileId) ||
+		!isString(item.kind) ||
+		!HEALTH_KINDS.includes(item.kind as HealthMetricKind) ||
+		!isNumber(item.value) ||
+		!isString(item.measuredAt) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	const unit =
+		item.unit === null || isString(item.unit) ? item.unit : undefined
+	const note =
+		item.note === null || isString(item.note) ? item.note : undefined
+	if (unit === undefined || note === undefined) {
+		return null
+	}
+	return {
+		id: item.id,
+		profileId: item.profileId,
+		kind: item.kind as HealthMetricKind,
+		value: item.value,
+		unit,
+		measuredAt: item.measuredAt,
+		note,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseMedication(item: unknown): Medication | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.profileId) ||
+		!isString(item.name) ||
+		!isString(item.dosageText) ||
+		!Array.isArray(item.schedule) ||
+		!isBoolean(item.isActive) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	const schedule = []
+	for (const slot of item.schedule) {
+		if (!isObject(slot) || !isNumber(slot.hour) || !isNumber(slot.minute)) {
+			return null
+		}
+		if (
+			slot.hour < 0 ||
+			slot.hour > 23 ||
+			slot.minute < 0 ||
+			slot.minute > 59
+		) {
+			return null
+		}
+		schedule.push({ hour: slot.hour, minute: slot.minute })
+	}
+	return {
+		id: item.id,
+		profileId: item.profileId,
+		name: item.name,
+		dosageText: item.dosageText,
+		schedule,
+		isActive: item.isActive,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseIntake(item: unknown): MedicationIntake | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.profileId) ||
+		!isString(item.medicationId) ||
+		!isString(item.takenAt) ||
+		!isBoolean(item.taken) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	const note =
+		item.note === null || isString(item.note) ? item.note : undefined
+	if (note === undefined) {
+		return null
+	}
+	return {
+		id: item.id,
+		profileId: item.profileId,
+		medicationId: item.medicationId,
+		takenAt: item.takenAt,
+		taken: item.taken,
+		note,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseReminder(item: unknown): Reminder | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.id) ||
+		!isString(item.profileId) ||
+		!(item.medicationId === null || isString(item.medicationId)) ||
+		!isString(item.title) ||
+		!(item.body === null || isString(item.body)) ||
+		!isNumber(item.hour) ||
+		!isNumber(item.minute) ||
+		!Array.isArray(item.weekdays) ||
+		!isBoolean(item.enabled) ||
+		!(
+			item.platformNotificationId === null ||
+			isString(item.platformNotificationId)
+		) ||
+		!isString(item.createdAt) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	const weekdays = item.weekdays.filter(isNumber)
+	if (weekdays.length !== item.weekdays.length) {
+		return null
+	}
+	return {
+		id: item.id,
+		profileId: item.profileId,
+		medicationId: item.medicationId,
+		title: item.title,
+		body: item.body,
+		hour: item.hour,
+		minute: item.minute,
+		weekdays,
+		enabled: item.enabled,
+		platformNotificationId: item.platformNotificationId,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+	}
+}
+
+function parseSettings(
+	item: Record<string, unknown>,
+	profileIds: Set<string>,
+): AppSettings | null {
+	if (
+		!(item.activeProfileId === null || isString(item.activeProfileId)) ||
+		(item.locale !== 'ru' && item.locale !== 'en') ||
+		!isBoolean(item.hasCompletedFirstMeasurement)
+	) {
+		return null
+	}
+	if (
+		item.activeProfileId !== null &&
+		!profileIds.has(item.activeProfileId)
+	) {
+		return null
+	}
+	return {
+		activeProfileId: item.activeProfileId,
+		locale: item.locale,
+		hasCompletedFirstMeasurement: item.hasCompletedFirstMeasurement,
+	}
+}

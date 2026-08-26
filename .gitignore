@@ -1,5 +1,3 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # dependencies
 node_modules/
 
@@ -13,10 +11,16 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+credentials/keystore.properties
+credentials/*.jks
+credentials/*.keystore
+credentials/*.p12
+.package.json.pre-production-backup
 
 # Metro
 .metro-health-check*
@@ -30,8 +34,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# local env files — never commit real secrets
+.env
+.env.local
+.env.*.local
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +45,22 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# build artifacts
+*.apk
+*.aab
+*.ipa
+/release-artifacts/
+
+# Android Studio / IDE local files
+.idea/
+*.iml
+local.properties
+
+# test coverage
+coverage/
+
+# local smoke / agent temp artifacts (never commit)
+.tmp*
+.tmp-*/
+*.log

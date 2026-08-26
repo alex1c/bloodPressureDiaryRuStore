@@ -1,25 +1,34 @@
 {
   "expo": {
-    "name": "bloodPressureDiaryRuStore",
-    "slug": "bloodPressureDiaryRuStore",
+    "name": "Давление и пульс — дневник",
+    "slug": "bp-diary",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "bp-diary",
+    "experiments": {
+      "typedRoutes": true
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.calculatorplatform.bpdiary"
     },
     "android": {
+      "package": "com.calculatorplatform.bpdiary",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#E8F0F5",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-sqlite"
+    ]
   }
 }

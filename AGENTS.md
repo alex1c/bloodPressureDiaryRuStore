@@ -1,3 +1,7 @@
-# Expo HAS CHANGED
+# Agent notes
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+* Product: «Давление и пульс — дневник»
+* Package: `com.calculatorplatform.bpdiary` (see `docs/DECISIONS.md`)
+* Phase 0–2 only unless the user expands scope
+* Do not commit secrets/keystores; do not invent production passwords
+* Do not implement ads/AppMetrica/PDF/charts/notifications until their roadmap phase

@@ -1,0 +1,127 @@
+# Decisions
+
+## 2026-08-26 — Production package ID
+
+Status: Accepted
+
+Context: Sibling RuStore apps use the `com.calculatorplatform.*` series
+(`wallpaper`, `tile`, `template`). This product is a blood-pressure / pulse diary,
+not a calculator, but stays in the same publisher namespace for store account
+continuity.
+
+Decision: **`com.calculatorplatform.bpdiary`**
+
+Why:
+
+* Short, stable, ASCII-safe applicationId
+* Distinct from existing products
+* Reads as “blood pressure diary” without medical-device claims
+
+Consequences: All Android / Expo identity (`android.package`, iOS
+`bundleIdentifier`, listing docs, signing) must use this ID. Fixed **before**
+Android release configuration and prebuild.
+
+## 2026-08-26 — Expo SDK 57 + TypeScript, Android / RuStore first
+
+Status: Accepted
+
+Context: Proven stack in `wallpaperAppRustore` and `ceramicTilesAppRuStore`.
+
+Decision: React Native + Expo SDK ~57, TypeScript, JDK 17, development builds
+(`expo-dev-client`), Continuous Native Generation. No backend, no mandatory
+registration.
+
+Consequences: AppMetrica and Yandex Mobile Ads stay behind service interfaces
+until Phase 9. Expo Go is not the release runtime target.
+
+## 2026-08-26 — Local persistence: expo-sqlite
+
+Status: Accepted
+
+Context: Diary data is long-lived and valuable (years of measurements,
+medications, intakes). Calculator apps could tolerate lighter storage; this
+product cannot.
+
+Decision: **`expo-sqlite`** as the canonical local database.
+
+Why:
+
+* Survives process death / restart
+* Real CRUD with indexes (profileId, measuredAt)
+* `schemaVersion` + ordered migrations
+* `withTransaction` for multi-row writes (backup restore, intake + reminder)
+* Backup/restore can export validated JSON without inventing a cloud API
+* No backend dependency
+
+Alternatives rejected for V1 core:
+
+* AsyncStorage alone — weak for relational queries and migrations
+* Raw JSON file only — workable for tiny datasets, weaker for filters/indexes
+* Cloud DB — out of product scope
+
+Consequences: Domain repositories talk to a DB executor abstraction.
+Unit tests use an in-memory repository implementation; production opens SQLite.
+Backup format is versioned JSON (not raw SQLite file copy) so restore can
+validate before mutating the DB.
+
+## 2026-08-26 — No Redux / no auth / no medical engine
+
+Status: Accepted
+
+Decision:
+
+* Local React state + repository calls for UI (later phases)
+* No authentication system
+* Statistics are descriptive aggregates only — never causal medical claims
+
+## 2026-08-26 — Separate entities for BP vs other health metrics
+
+Status: Accepted
+
+Context: Weight, glucose, SpO2, temperature have their own measurement times
+and optional semantics. Forcing them into a BP row creates null-heavy records
+and awkward editing.
+
+Decision: `Measurement` = blood pressure + pulse (+ optional wellbeing/tags/note).
+`HealthMetric` = typed metric rows with their own `measuredAt`.
+
+## 2026-08-26 — Windows Android builds need short GRADLE_USER_HOME
+
+Status: Accepted
+
+Context: Native CMake/ninja fails on Windows when Gradle transforms live under a
+long sandbox cache path (`Filename longer than 260 characters`).
+
+Decision: For local Android builds on this machine, use a short cache, e.g.:
+
+```powershell
+$env:GRADLE_USER_HOME = 'D:\g'
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.8-hotspot'
+```
+
+Sibling calculator apps used the same pattern (short work copies / short Gradle home).
+
+## 2026-08-26 — Phase 3 UX and periodOfDay
+
+Status: Accepted
+
+Decisions:
+
+1. **No bottom tabs in Phase 3** — single diary stack keeps the first-run path
+   obvious; tabs can return with Phase 4+ screens.
+2. **Today list order: newest first** — matches «последнее измерение» at the top.
+3. **periodOfDay includes `night`** — local clock buckets:
+   morning 05–11, day 12–16, evening 17–21, night 22–04. Stored as TEXT; no
+   schema migration required beyond accepting the new value.
+4. **Today filter uses local-day ISO bounds** (`getLocalDayBounds`), not UTC
+   `substr(measured_at,1,10)`, so near-midnight entries stay on the correct
+   local calendar day.
+5. **Hard journal bounds** (reject): systolic 50–300, diastolic 30–200, pulse
+   20–250; systolic must be greater than diastolic.
+6. **Soft check** (warn once, still allow save): systolic 80–200, diastolic
+   40–130, pulse 35–180. Copy is only «Проверьте введённое значение.» — never
+   a medical diagnosis.
+7. **Empty create form** — no default 120/80 placeholders.
+8. **Default profile** auto-created as «Я» on first launch without onboarding.
+
