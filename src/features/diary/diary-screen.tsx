@@ -23,12 +23,13 @@ import { PrimaryButton } from './components/form-controls'
 export function DiaryScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
-	const { ready, error, todayMeasurements, refreshToday } = useDiary()
+	const { ready, error, todayMeasurements, refreshToday, refreshAll } = useDiary()
 
 	useFocusEffect(
 		useCallback(() => {
 			void refreshToday()
-		}, [refreshToday]),
+			void refreshAll()
+		}, [refreshToday, refreshAll]),
 	)
 
 	const latest = todayMeasurements[0] ?? null

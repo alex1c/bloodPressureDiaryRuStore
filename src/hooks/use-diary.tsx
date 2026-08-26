@@ -18,13 +18,16 @@ type DiaryContextValue = {
 	repos: DiaryRepositories | null
 	profile: Profile | null
 	todayMeasurements: Measurement[]
+	/** All measurements for the active profile (newest first from repo). */
+	profileMeasurements: Measurement[]
 	refreshToday: () => Promise<void>
+	refreshAll: () => Promise<void>
 }
 
 const DiaryContext = createContext<DiaryContextValue | null>(null)
 
 /**
- * Opens SQLite, ensures a default profile exists, and exposes today's diary data.
+ * Opens SQLite, ensures a default profile, exposes today + full profile history.
  */
 export function DiaryProvider({ children }: { children: ReactNode }) {
 	const [ready, setReady] = useState(false)
@@ -34,6 +37,22 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 	const [todayMeasurements, setTodayMeasurements] = useState<Measurement[]>(
 		[],
 	)
+	const [profileMeasurements, setProfileMeasurements] = useState<
+		Measurement[]
+	>([])
+
+	const refreshAll = useCallback(async () => {
+		if (!repos || !profile) {
+			return
+		}
+		const { fromIso, toIso } = getLocalDayBounds(new Date())
+		const [today, all] = await Promise.all([
+			repos.measurements.listByProfileInRange(profile.id, fromIso, toIso),
+			repos.measurements.listByProfile(profile.id),
+		])
+		setTodayMeasurements(today)
+		setProfileMeasurements(all)
+	}, [repos, profile])
 
 	const refreshToday = useCallback(async () => {
 		if (!repos || !profile) {
@@ -86,12 +105,16 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 				setRepos(database)
 				setProfile(active)
 				const { fromIso, toIso } = getLocalDayBounds(new Date())
-				const rows = await database.measurements.listByProfileInRange(
-					active.id,
-					fromIso,
-					toIso,
-				)
-				setTodayMeasurements(rows)
+				const [today, all] = await Promise.all([
+					database.measurements.listByProfileInRange(
+						active.id,
+						fromIso,
+						toIso,
+					),
+					database.measurements.listByProfile(active.id),
+				])
+				setTodayMeasurements(today)
+				setProfileMeasurements(all)
 				setReady(true)
 			} catch (err) {
 				if (!cancelled) {
@@ -116,9 +139,20 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 			repos,
 			profile,
 			todayMeasurements,
+			profileMeasurements,
 			refreshToday,
+			refreshAll,
 		}),
-		[ready, error, repos, profile, todayMeasurements, refreshToday],
+		[
+			ready,
+			error,
+			repos,
+			profile,
+			todayMeasurements,
+			profileMeasurements,
+			refreshToday,
+			refreshAll,
+		],
 	)
 
 	return (

@@ -24,11 +24,17 @@ Lean phases. Do not turn this into an enterprise process.
 * 360/390dp-friendly layout (functional)
 * Android emulator smoke (create/edit/delete/restart)
 
-## Phase 4 — History / statistics / graphs
+## Phase 4 — History / statistics / graphs ✅
 
-* History list with filters
-* Aggregates UI
-* Charts (descriptive only)
+* Bottom tabs: Дневник | Графики
+* Period selector 7 / 30 / 90 / Все
+* Average + min/max summary (descriptive only)
+* Morning / evening averages
+* SVG line chart (systolic / diastolic)
+* Tag factual averages
+* History grouped by local day → existing edit route
+* Edit form: sticky Save + scrollable Delete
+* Profile-scoped queries
 
 ## Phase 5 — Medications / reminders
 

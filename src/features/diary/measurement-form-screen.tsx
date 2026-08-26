@@ -58,17 +58,19 @@ type MeasurementFormScreenProps = {
 }
 
 /**
- * Shared add/edit form — empty defaults on create; no fake 120/80 seeds.
+ * Shared add/edit form.
+ * Save stays pinned above the keyboard; delete remains reachable via scroll.
  */
 export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
 	const params = useLocalSearchParams<{ id?: string }>()
-	const { repos, profile, refreshToday } = useDiary()
+	const { repos, profile, refreshToday, refreshAll } = useDiary()
 
 	const diastolicRef = useRef<TextInput>(null)
 	const pulseRef = useRef<TextInput>(null)
 	const noteRef = useRef<TextInput>(null)
+	const scrollRef = useRef<ScrollView>(null)
 
 	const [draft, setDraft] = useState<MeasurementFormDraft>(buildDraftFromNow)
 	const [loaded, setLoaded] = useState(mode === 'create')
@@ -124,6 +126,11 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 		})
 	}
 
+	async function persistRefresh() {
+		await refreshToday()
+		await refreshAll()
+	}
+
 	async function handleSave() {
 		if (!repos || !profile) {
 			return
@@ -165,7 +172,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					note: parsed.note,
 				})
 			}
-			await refreshToday()
+			await persistRefresh()
 			router.back()
 		} catch (err) {
 			setError(
@@ -188,13 +195,15 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				onPress: () => {
 					void (async () => {
 						await repos.measurements.delete(String(params.id))
-						await refreshToday()
+						await persistRefresh()
 						router.back()
 					})()
 				},
 			},
 		])
 	}
+
+	const footerPad = Math.max(insets.bottom, spacing.sm)
 
 	return (
 		<>
@@ -214,11 +223,14 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
 			>
 				<ScrollView
+					ref={scrollRef}
 					keyboardShouldPersistTaps="handled"
+					keyboardDismissMode="on-drag"
 					contentContainerStyle={{
 						paddingHorizontal: spacing.lg,
 						paddingTop: spacing.md,
-						paddingBottom: insets.bottom + spacing.xl,
+						// Extra space so delete clears the sticky Save footer on 360dp.
+						paddingBottom: spacing.xl * 2 + 72,
 					}}
 				>
 					{!loaded ? (
@@ -287,28 +299,21 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 								value={draft.note}
 								onChangeText={(note) => patchDraft({ note })}
 								multiline
+								scrollEnabled
 								style={styles.note}
 								placeholder="Необязательно"
 								placeholderTextColor={colors.textMuted}
 								accessibilityLabel="Заметка"
+								onFocus={() => {
+									// Keep note + actions reachable above the keyboard.
+									setTimeout(() => {
+										scrollRef.current?.scrollToEnd({ animated: true })
+									}, 100)
+								}}
 							/>
 
 							{error ? <Text style={styles.error}>{error}</Text> : null}
 							{softHint ? <Text style={styles.soft}>{softHint}</Text> : null}
-
-							<PrimaryButton
-								label={
-									saving
-										? 'Сохранение…'
-										: softHint && softAccepted
-											? 'Сохранить всё равно'
-											: 'Сохранить'
-								}
-								onPress={() => {
-									void handleSave()
-								}}
-								disabled={!canSave}
-							/>
 
 							{mode === 'edit' ? (
 								<View style={styles.deleteWrap}>
@@ -322,6 +327,22 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 						</>
 					)}
 				</ScrollView>
+
+				<View style={[styles.footer, { paddingBottom: footerPad }]}>
+					<PrimaryButton
+						label={
+							saving
+								? 'Сохранение…'
+								: softHint && softAccepted
+									? 'Сохранить всё равно'
+									: 'Сохранить'
+						}
+						onPress={() => {
+							void handleSave()
+						}}
+						disabled={!canSave}
+					/>
+				</View>
 			</KeyboardAvoidingView>
 		</>
 	)
@@ -366,6 +387,7 @@ const styles = StyleSheet.create({
 	},
 	note: {
 		minHeight: 88,
+		maxHeight: 160,
 		borderWidth: 1,
 		borderColor: colors.border,
 		borderRadius: 12,
@@ -388,6 +410,14 @@ const styles = StyleSheet.create({
 		marginBottom: spacing.sm,
 	},
 	deleteWrap: {
-		marginTop: spacing.lg,
+		marginTop: spacing.md,
+		marginBottom: spacing.lg,
+	},
+	footer: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopColor: colors.border,
+		backgroundColor: colors.background,
+		paddingHorizontal: spacing.lg,
+		paddingTop: spacing.sm,
 	},
 })

@@ -1,6 +1,6 @@
-import { DiaryScreen } from '@/features/diary/diary-screen'
+import { Redirect, type Href } from 'expo-router'
 
-/** App opens directly on today's diary. */
-export default function HomeRoute() {
-	return <DiaryScreen />
+/** Legacy root — redirect into the diary tab group. */
+export default function LegacyRootRedirect() {
+	return <Redirect href={'/(tabs)' as Href} />
 }

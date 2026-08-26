@@ -1,7 +1,10 @@
 import type { Measurement, MeasurementTag, PeriodOfDay } from '../types'
+import { localDayKeyFromIso } from '../dates/local-day'
+
+export type StatsPeriodDays = 7 | 30 | 90 | 'all'
 
 export interface DateRange {
-	/** Inclusive ISO start (compared as strings if both are ISO-8601 UTC). */
+	/** Inclusive ISO start. */
 	from: string
 	/** Inclusive ISO end. */
 	to: string
@@ -21,8 +24,9 @@ export interface MeasurementStats {
 }
 
 export interface DayGroup {
-	/** YYYY-MM-DD in local interpretation of measuredAt date portion when Z. */
+	/** Local YYYY-MM-DD. */
 	day: string
+	/** Newest first within the day. */
 	measurements: Measurement[]
 }
 
@@ -30,6 +34,13 @@ export interface TagGroup {
 	tag: MeasurementTag
 	measurements: Measurement[]
 	stats: MeasurementStats
+}
+
+export interface ChartPoint {
+	measuredAt: string
+	systolic: number
+	diastolic: number
+	pulse: number
 }
 
 function average(values: number[]): number | null {
@@ -56,7 +67,6 @@ function maxOf(values: number[]): number | null {
 
 /**
  * Descriptive aggregates only — no medical interpretation.
- * Uses saved numeric fields exclusively.
  */
 export function computeMeasurementStats(
 	measurements: readonly Measurement[],
@@ -79,7 +89,6 @@ export function computeMeasurementStats(
 	}
 }
 
-/** Inclusive ISO string range filter on measuredAt. */
 export function filterByDateRange(
 	measurements: readonly Measurement[],
 	range: DateRange,
@@ -103,14 +112,70 @@ export function filterByTag(
 	return measurements.filter((m) => m.tags.includes(tag))
 }
 
-/** Groups by UTC calendar day of measuredAt (YYYY-MM-DD). */
-export function groupByDay(
+export function filterByProfileId(
+	measurements: readonly Measurement[],
+	profileId: string,
+): Measurement[] {
+	return measurements.filter((m) => m.profileId === profileId)
+}
+
+/**
+ * Local-day inclusive range ending at `reference` local calendar day.
+ * days=7 means today + previous 6 local days.
+ */
+export function getStatsPeriodRange(
+	period: StatsPeriodDays,
+	reference: Date = new Date(),
+): DateRange | null {
+	if (period === 'all') {
+		return null
+	}
+
+	const end = new Date(
+		reference.getFullYear(),
+		reference.getMonth(),
+		reference.getDate(),
+		23,
+		59,
+		59,
+		999,
+	)
+	const start = new Date(
+		reference.getFullYear(),
+		reference.getMonth(),
+		reference.getDate() - (period - 1),
+		0,
+		0,
+		0,
+		0,
+	)
+
+	return {
+		from: start.toISOString(),
+		to: end.toISOString(),
+	}
+}
+
+export function filterByStatsPeriod(
+	measurements: readonly Measurement[],
+	period: StatsPeriodDays,
+	reference: Date = new Date(),
+): Measurement[] {
+	const range = getStatsPeriodRange(period, reference)
+	if (!range) {
+		return [...measurements]
+	}
+	return filterByDateRange(measurements, range)
+}
+
+/** Newest-first history groups by local calendar day. */
+export function groupHistoryByLocalDay(
 	measurements: readonly Measurement[],
 ): DayGroup[] {
 	const map = new Map<string, Measurement[]>()
 
 	for (const m of measurements) {
-		const day = m.measuredAt.slice(0, 10)
+		const day = localDayKeyFromIso(m.measuredAt)
 		const list = map.get(day)
 		if (list) {
 			list.push(m)
@@ -119,12 +184,30 @@ export function groupByDay(
 		}
 	}
 
+	for (const list of map.values()) {
+		list.sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
+	}
+
 	return [...map.entries()]
-		.sort(([a], [b]) => a.localeCompare(b))
+		.sort(([a], [b]) => b.localeCompare(a))
 		.map(([day, items]) => ({ day, measurements: items }))
 }
 
-/** Groups by each tag present on a measurement (a row may appear in multiple). */
+/** Chronological ascending groups (for charts / older APIs). */
+export function groupByDay(
+	measurements: readonly Measurement[],
+): DayGroup[] {
+	return groupHistoryByLocalDay(measurements)
+		.slice()
+		.reverse()
+		.map((group) => ({
+			day: group.day,
+			measurements: [...group.measurements].sort((a, b) =>
+				a.measuredAt.localeCompare(b.measuredAt),
+			),
+		}))
+}
+
 export function groupByTag(
 	measurements: readonly Measurement[],
 ): TagGroup[] {
@@ -148,4 +231,54 @@ export function groupByTag(
 			measurements: items,
 			stats: computeMeasurementStats(items),
 		}))
+		.filter((g) => g.stats.count > 0)
+}
+
+/** Chronological points for line charts (oldest → newest). */
+export function buildChartSeries(
+	measurements: readonly Measurement[],
+): ChartPoint[] {
+	return [...measurements]
+		.sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))
+		.map((m) => ({
+			measuredAt: m.measuredAt,
+			systolic: m.systolic,
+			diastolic: m.diastolic,
+			pulse: m.pulse,
+		}))
+}
+
+/**
+ * Caps chart density for very long histories while preserving order.
+ * Keeps first/last and evenly samples the middle.
+ */
+export function downsampleChartSeries(
+	points: readonly ChartPoint[],
+	maxPoints: number,
+): ChartPoint[] {
+	if (points.length <= maxPoints || maxPoints < 3) {
+		return [...points]
+	}
+
+	const result: ChartPoint[] = [points[0]!]
+	const inner = maxPoints - 2
+	for (let i = 1; i <= inner; i += 1) {
+		const index = Math.round((i * (points.length - 1)) / (inner + 1))
+		const point = points[index]
+		if (point && point !== result[result.length - 1]) {
+			result.push(point)
+		}
+	}
+	const last = points[points.length - 1]!
+	if (result[result.length - 1] !== last) {
+		result.push(last)
+	}
+	return result
+}
+
+export function roundStat(value: number | null): number | null {
+	if (value === null) {
+		return null
+	}
+	return Math.round(value)
 }

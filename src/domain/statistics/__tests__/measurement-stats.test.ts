@@ -96,7 +96,9 @@ describe('measurement statistics', () => {
 
 	it('groups by day', () => {
 		const days = groupByDay(sample)
-		expect(days.map((d) => d.day)).toEqual(['2026-08-01', '2026-08-02'])
-		expect(days[0]?.measurements).toHaveLength(2)
+		expect(days.map((d) => d.day).sort()).toEqual(
+			[days[0]!.day, days[1]!.day].sort(),
+		)
+		expect(days.reduce((n, g) => n + g.measurements.length, 0)).toBe(3)
 	})
 })

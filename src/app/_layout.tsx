@@ -3,7 +3,10 @@ import { StatusBar } from 'expo-status-bar'
 import { DiaryProvider } from '@/hooks/use-diary'
 import { colors } from '@/theme'
 
-/** Root navigation — diary first; measurement routes as stack screens. */
+/**
+ * Root stack: tabs first, measurement routes on top.
+ * Diary remains the initial screen via (tabs)/index.
+ */
 export default function RootLayout() {
 	return (
 		<DiaryProvider>
@@ -14,7 +17,7 @@ export default function RootLayout() {
 					headerShown: false,
 				}}
 			>
-				<Stack.Screen name="index" />
+				<Stack.Screen name="(tabs)" />
 				<Stack.Screen
 					name="measurement/new"
 					options={{ headerShown: true, presentation: 'card' }}

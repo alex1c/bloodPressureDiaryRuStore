@@ -125,3 +125,23 @@ Decisions:
 7. **Empty create form** — no default 120/80 placeholders.
 8. **Default profile** auto-created as «Я» on first launch without onboarding.
 
+## 2026-08-26 — Phase 4 history / charts
+
+Status: Accepted
+
+Decisions:
+
+1. **Bottom tabs: Дневник | Графики** — no empty medication/health tabs yet.
+2. **Chart library: `react-native-svg`** — custom dual-line chart (systolic +
+   diastolic). Avoids heavy chart frameworks; pulse stays optional / off by
+   default on the main chart for readability.
+3. **Period chips: 7 / 30 / 90 / Все** — shared by summary, chart, tags, history.
+4. **History grouped by local day, newest first**; chart series chronological.
+5. **Chart downsample** for long histories (`downsampleChartSeries`, ~120 pts
+   for 90/all) — architecture ready for later aggregation.
+6. **Edit form sticky Save footer** + scrollable delete — Delete remains reachable
+   below tags/note on 360dp; Save stays visible with keyboard.
+7. **No medical BP categories / color zones** — text averages are primary;
+   chart is visual enhancement only.
+8. **Active profile only** — graphs/history filter by `profileId`.
+
