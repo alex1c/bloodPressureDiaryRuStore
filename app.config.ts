@@ -14,6 +14,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
 	const plugins: NonNullable<ExpoConfig['plugins']> = [
 		'expo-router',
+		'expo-splash-screen',
+		[
+			'expo-notifications',
+			{
+				// Neutral local reminders only — no remote push.
+				icon: './assets/icon.png',
+				color: '#2B6CB0',
+			},
+		],
 		'expo-sqlite',
 	]
 

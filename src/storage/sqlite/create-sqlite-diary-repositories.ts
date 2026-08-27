@@ -379,6 +379,10 @@ export function createSqliteDiaryRepositories(
 						'DELETE FROM medication_intakes WHERE medication_id = ?',
 						[id],
 					)
+					await db.run(
+						'DELETE FROM reminders WHERE medication_id = ?',
+						[id],
+					)
 					await db.run('DELETE FROM medications WHERE id = ?', [id])
 				})
 			},
@@ -392,6 +396,8 @@ export function createSqliteDiaryRepositories(
 					taken_at: string
 					taken: number
 					note: string | null
+					scheduled_hour: number
+					scheduled_minute: number
 					created_at: string
 					updated_at: string
 				}>(
@@ -410,6 +416,8 @@ export function createSqliteDiaryRepositories(
 					taken_at: string
 					taken: number
 					note: string | null
+					scheduled_hour: number
+					scheduled_minute: number
 					created_at: string
 					updated_at: string
 				}>(
@@ -430,8 +438,9 @@ export function createSqliteDiaryRepositories(
 				}
 				await db.run(
 					`INSERT INTO medication_intakes (
-						id, profile_id, medication_id, taken_at, taken, note, created_at, updated_at
-					) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+						id, profile_id, medication_id, taken_at, taken, note,
+						scheduled_hour, scheduled_minute, created_at, updated_at
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 					[
 						row.id,
 						row.profileId,
@@ -439,6 +448,8 @@ export function createSqliteDiaryRepositories(
 						row.takenAt,
 						row.taken ? 1 : 0,
 						row.note,
+						row.scheduledHour,
+						row.scheduledMinute,
 						row.createdAt,
 						row.updatedAt,
 					],
@@ -680,6 +691,8 @@ function mapIntake(row: {
 	taken_at: string
 	taken: number
 	note: string | null
+	scheduled_hour?: number | null
+	scheduled_minute?: number | null
 	created_at: string
 	updated_at: string
 }): MedicationIntake {
@@ -688,6 +701,8 @@ function mapIntake(row: {
 		profileId: row.profile_id,
 		medicationId: row.medication_id,
 		takenAt: row.taken_at,
+		scheduledHour: row.scheduled_hour ?? 0,
+		scheduledMinute: row.scheduled_minute ?? 0,
 		taken: row.taken === 1,
 		note: row.note,
 		createdAt: row.created_at,

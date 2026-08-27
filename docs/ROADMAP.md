@@ -36,11 +36,17 @@ Lean phases. Do not turn this into an enterprise process.
 * Edit form: sticky Save + scrollable Delete
 * Profile-scoped queries
 
-## Phase 5 — Medications / reminders
+## Phase 5 — Medications / reminders ✅
 
-* Medication CRUD + schedule
-* Intake “taken” flow
-* Local notifications wiring
+* Tab Лекарства + Ionicons tab icons
+* Daily schedule (multiple local HH:mm times)
+* Today planned doses + «Принял» / undo
+* Deactivate preserves history; optional hard delete
+* Local reminders via expo-notifications + reconciliation
+* Contextual notification permission
+* Diary compact medication summary
+* Schema v2: intake scheduled hour/minute
+* expo-splash-screen (DevLauncher ClassNotFound fix)
 
 ## Phase 6 — Health metrics / profiles
 

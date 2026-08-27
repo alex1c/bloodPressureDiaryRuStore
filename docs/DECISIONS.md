@@ -145,3 +145,40 @@ Decisions:
    chart is visual enhancement only.
 8. **Active profile only** — graphs/history filter by `profileId`.
 
+## 2026-08-27 — Phase 5 medications / local reminders
+
+Status: Accepted
+
+Decisions:
+
+1. **Frequency V1 = every day only** — `Reminder.weekdays` always
+   `[0..6]`. Selected weekdays deferred to keep notification sync simple.
+2. **Schedule times are local wall-clock HH:mm** — not UTC instants. Stored as
+   `{ hour, minute }` on `Medication.schedule` and mirrored on `Reminder`.
+3. **MedicationIntake is a fact** — planned doses are computed; intake rows are
+   created only on «Принял». Schema v2 adds `scheduled_hour` /
+   `scheduled_minute` so a slot can be matched / undone without inventing
+   future rows.
+4. **Deactivate over delete** — primary UX is «Прекратить отслеживание»
+   (`isActive=false`); hard delete requires confirmation and removes intakes.
+5. **Reminders** — one `Reminder` row per schedule slot when «Напоминать» is on.
+   `platformNotificationId` holds the expo-notifications id after scheduling.
+6. **Permission** — requested only when the user enables reminders (contextual).
+   Denial keeps the schedule; UI shows a neutral banner; no aggressive re-prompt.
+   Android permissions from `expo-notifications` (debug APK audit):
+   `POST_NOTIFICATIONS` (required API 33+), `VIBRATE`, `RECEIVE_BOOT_COMPLETED`
+   (library default — reschedule after reboot; we did not add exact-alarm /
+   foreground-service ourselves). Badge helper permissions may appear via the
+   notifications dependency transitive merge.
+7. **Reconciliation** — on medications provider mount: cancel all scheduled
+   notifications, then reschedule enabled reminders if permission is granted
+   (idempotent; avoids orphans after edit/deactivate/force-stop).
+8. **Notification copy** — title «Лекарство по расписанию»; body name ± dosage.
+   Never medical urgency language. Tap / cold-start opens `Лекарства` tab via
+   notification `data.screen` + `getLastNotificationResponseAsync`.
+9. **Splash** — add `expo-splash-screen` so DevLauncher finds
+   `SplashScreenManager` (fixes ClassNotFound warning).
+10. **Tab icons** — `@expo/vector-icons` Ionicons (heart / stats-chart / medical).
+11. **Worklets** — pin `react-native-worklets@0.10.1` for Expo SDK 57 /
+    `expo-modules-core` native build compatibility.
+

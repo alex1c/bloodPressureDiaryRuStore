@@ -8,6 +8,9 @@ module.exports = {
 		'^@/(.*)$': '<rootDir>/src/$1',
 		'^expo/virtual/env$': '<rootDir>/jest/expo-virtual-env-mock.js',
 		'^expo-sqlite$': '<rootDir>/jest/expo-sqlite-mock.js',
+		'^expo-splash-screen$': '<rootDir>/jest/expo-splash-screen-mock.js',
+		'^expo-notifications$': '<rootDir>/jest/expo-notifications-mock.js',
+		'^@expo/vector-icons$': '<rootDir>/jest/vector-icons-mock.js',
 	},
 	collectCoverageFrom: [
 		'src/domain/**/*.{ts,tsx}',

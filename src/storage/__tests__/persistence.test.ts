@@ -173,11 +173,14 @@ describe('memory diary persistence', () => {
 			profileId: profile.id,
 			medicationId: med.id,
 			takenAt: '2026-08-26T08:05:00.000Z',
+			scheduledHour: 8,
+			scheduledMinute: 0,
 			taken: true,
 			note: null,
 		})
 
 		expect(intake.taken).toBe(true)
+		expect(intake.scheduledHour).toBe(8)
 		expect(await store.medicationIntakes.listByMedication(med.id)).toHaveLength(
 			1,
 		)

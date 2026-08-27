@@ -101,6 +101,12 @@ export interface MedicationIntake {
 	profileId: EntityId
 	medicationId: EntityId
 	takenAt: IsoDateTime
+	/**
+	 * Planned local wall-clock slot this intake fulfills (not UTC).
+	 * Together with the local calendar day of takenAt, identifies the dose.
+	 */
+	scheduledHour: number
+	scheduledMinute: number
 	/** true = taken; false = explicitly marked skipped. */
 	taken: boolean
 	note: string | null

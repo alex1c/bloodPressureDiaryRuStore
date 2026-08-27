@@ -239,6 +239,11 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 						intakes.delete(iid)
 					}
 				}
+				for (const [rid, reminder] of [...reminders.entries()]) {
+					if (reminder.medicationId === id) {
+						reminders.delete(rid)
+					}
+				}
 			},
 		},
 		medicationIntakes: {

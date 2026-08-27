@@ -454,6 +454,10 @@ function parseIntake(item: unknown): MedicationIntake | null {
 		profileId: item.profileId,
 		medicationId: item.medicationId,
 		takenAt: item.takenAt,
+		scheduledHour: isNumber(item.scheduledHour) ? item.scheduledHour : 0,
+		scheduledMinute: isNumber(item.scheduledMinute)
+			? item.scheduledMinute
+			: 0,
 		taken: item.taken,
 		note,
 		createdAt: item.createdAt,

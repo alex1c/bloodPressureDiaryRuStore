@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import {
 	ActivityIndicator,
+	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -9,7 +10,9 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { formatRussianLongDate } from '@/domain/dates/local-day'
+import { formatScheduleHm } from '@/domain/medications/schedule'
 import { useDiary } from '@/hooks/use-diary'
+import { useMedications } from '@/hooks/use-medications'
 import { colors, spacing, typography } from '@/theme'
 import {
 	LatestMeasurement,
@@ -23,17 +26,21 @@ import { PrimaryButton } from './components/form-controls'
 export function DiaryScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
-	const { ready, error, todayMeasurements, refreshToday, refreshAll } = useDiary()
+	const { ready, error, todayMeasurements, refreshToday, refreshAll } =
+		useDiary()
+	const { medications, todaySummary, refreshMedications } = useMedications()
 
 	useFocusEffect(
 		useCallback(() => {
 			void refreshToday()
 			void refreshAll()
-		}, [refreshToday, refreshAll]),
+			void refreshMedications()
+		}, [refreshToday, refreshAll, refreshMedications]),
 	)
 
 	const latest = todayMeasurements[0] ?? null
 	const todayLabel = formatRussianLongDate(new Date())
+	const hasAnyMedication = medications.length > 0
 
 	function handleAdd() {
 		router.push('/measurement/new')
@@ -53,7 +60,15 @@ export function DiaryScreen() {
 
 	if (error) {
 		return (
-			<View style={[styles.centered, { paddingTop: insets.top, paddingHorizontal: spacing.lg }]}>
+			<View
+				style={[
+					styles.centered,
+					{
+						paddingTop: insets.top,
+						paddingHorizontal: spacing.lg,
+					},
+				]}
+			>
 				<Text style={styles.errorTitle}>Не удалось открыть дневник</Text>
 				<Text style={styles.errorBody}>{error}</Text>
 			</View>
@@ -72,6 +87,34 @@ export function DiaryScreen() {
 					<Text style={styles.appTitle}>Давление</Text>
 					<Text style={styles.dateLine}>Сегодня, {todayLabel}</Text>
 				</View>
+
+				{hasAnyMedication && todaySummary.total > 0 ? (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel="Лекарства сегодня"
+						onPress={() => router.push('/(tabs)/medications')}
+						style={({ pressed }) => [
+							styles.medSummary,
+							pressed && styles.medSummaryPressed,
+						]}
+					>
+						<Text style={styles.medSummaryTitle}>Лекарства сегодня</Text>
+						<Text style={styles.medSummaryCount}>
+							{todaySummary.taken} из {todaySummary.total} отмечено
+						</Text>
+						{todaySummary.nextPending ? (
+							<Text style={styles.medSummaryNext}>
+								{formatScheduleHm({
+									hour: todaySummary.nextPending.hour,
+									minute: todaySummary.nextPending.minute,
+								})}{' '}
+								— {todaySummary.nextPending.medicationName}
+							</Text>
+						) : (
+							<Text style={styles.medSummaryNext}>Все отмечено</Text>
+						)}
+					</Pressable>
+				) : null}
 
 				{latest ? (
 					<>
@@ -136,6 +179,34 @@ const styles = StyleSheet.create({
 		marginTop: spacing.xs,
 		fontSize: typography.body,
 		color: colors.textMuted,
+	},
+	medSummary: {
+		marginHorizontal: spacing.lg,
+		marginBottom: spacing.md,
+		padding: spacing.md,
+		borderRadius: 12,
+		backgroundColor: colors.surface,
+		borderWidth: StyleSheet.hairlineWidth,
+		borderColor: colors.border,
+	},
+	medSummaryPressed: {
+		opacity: 0.9,
+	},
+	medSummaryTitle: {
+		fontSize: typography.secondary,
+		fontWeight: '700',
+		color: colors.textMuted,
+	},
+	medSummaryCount: {
+		marginTop: spacing.xs,
+		fontSize: typography.body,
+		fontWeight: '600',
+		color: colors.text,
+	},
+	medSummaryNext: {
+		marginTop: 4,
+		fontSize: typography.secondary,
+		color: colors.primary,
 	},
 	ctaPad: {
 		paddingHorizontal: spacing.lg,
