@@ -217,3 +217,34 @@ Decisions:
 9. **Tabs** — four items: Дневник | Графики | Лекарства | Здоровье (Ionicons
    `fitness-outline`). No fifth settings tab; profiles open from header chip.
 
+## 2026-08-31 — Phase 7 doctor PDF report / share
+
+Status: Accepted
+
+Decisions:
+
+1. **Default period = 14 local days** (inclusive of today). Presets: 7 / 14 /
+   30 / 90. Custom period uses YYYY-MM-DD start/end fields (no heavy calendar
+   dependency).
+2. **Inclusive local-day semantics** — same approach as graphs: start 00:00:00.000
+   local → end 23:59:59.999 local. Avoids UTC midnight clipping of night rows.
+3. **PDF stack** — `expo-print` (`printToFileAsync` HTML→PDF) + `expo-sharing`
+   (system Share Sheet). No Telegram/WhatsApp SDKs.
+4. **Domain split** — `buildDoctorReportData` (profile-scoped snapshot) +
+   `renderDoctorReportHtml` (escaped HTML). Generate freezes `profileId` before
+   async work so UI profile switches cannot mix data.
+5. **Measurement table order** — chronological ascending (oldest → newest) in PDF;
+   on-screen history remains newest-first.
+6. **Medications** — active meds only; show schedule + count of taken marks in
+   period. No adherence %.
+7. **Temp files** — PDF copied under `cacheDirectory/reports/` with sanitized
+   name `davlenie_{profile}_{from}_{to}.pdf`; anonymous print temp deleted
+   best-effort. Not deleted while Share Sheet may still need the URI.
+8. **Disclaimer** — short neutral footer: user-entered data; not a medical device;
+   does not replace a clinician.
+9. **Permissions** — no broad storage permissions added for report/share.
+10. **Native deps** — keep `react-native-worklets@0.10.1` (expo-modules-core).
+    Do not let `react-native-reanimated@4.6` pull worklets 0.12 (breaks native
+    link). `.npmrc` uses `legacy-peer-deps`; `react-native.config.js` disables
+    reanimated autolinking if it appears.
+

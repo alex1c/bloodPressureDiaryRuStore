@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
+	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from 'react-native'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
 	buildChartSeries,
@@ -43,6 +44,7 @@ const CHART_MAX_POINTS = 120
  */
 export function GraphsScreen() {
 	const insets = useSafeAreaInsets()
+	const router = useRouter()
 	const { ready, error, profile, profileMeasurements, refreshAll } = useDiary()
 	const [period, setPeriod] = useState<StatsPeriodDays>(7)
 
@@ -131,7 +133,20 @@ export function GraphsScreen() {
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
 			>
-				<Text style={styles.title}>Графики</Text>
+				<View style={styles.headerRow}>
+					<Text style={styles.title}>Графики</Text>
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel="Отчёт врачу"
+						onPress={() => router.push('/report' as Href)}
+						style={({ pressed }) => [
+							styles.reportLink,
+							pressed && styles.reportLinkPressed,
+						]}
+					>
+						<Text style={styles.reportLinkText}>Отчёт врачу</Text>
+					</Pressable>
+				</View>
 				<PeriodSelector value={period} onChange={setPeriod} />
 
 				<StatsSummary
@@ -180,12 +195,31 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		backgroundColor: colors.background,
 	},
-	title: {
+	headerRow: {
 		paddingHorizontal: spacing.lg,
 		marginBottom: spacing.md,
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: spacing.sm,
+	},
+	title: {
+		flexShrink: 1,
 		fontSize: typography.title,
 		fontWeight: '700',
 		color: colors.text,
+	},
+	reportLink: {
+		paddingVertical: spacing.xs,
+		paddingHorizontal: spacing.sm,
+	},
+	reportLinkPressed: {
+		opacity: 0.75,
+	},
+	reportLinkText: {
+		fontSize: typography.secondary,
+		fontWeight: '700',
+		color: colors.primary,
 	},
 	error: {
 		fontSize: typography.body,

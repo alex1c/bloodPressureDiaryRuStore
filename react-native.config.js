@@ -1,20 +1,16 @@
 /**
- * React Native / Expo autolinking overrides.
- *
- * When APP_VARIANT=production, keep expo-dev-* packages out of the native
- * Android project even though they remain in package.json for local development.
+ * Native dependency autolinking overrides.
+ * Keep react-native-reanimated out of the Android build — Expo SDK 57
+ * expo-modules-core is pinned to worklets 0.10.x (see DECISIONS.md), while
+ * current reanimated 4.6 requires worklets 0.12.x.
  */
-const isProduction = process.env.APP_VARIANT === 'production'
-
-const disabled = { platforms: { android: null, ios: null } }
-
 module.exports = {
-	dependencies: isProduction
-		? {
-				'expo-dev-client': disabled,
-				'expo-dev-launcher': disabled,
-				'expo-dev-menu': disabled,
-				'expo-dev-menu-interface': disabled,
-			}
-		: {},
+	dependencies: {
+		'react-native-reanimated': {
+			platforms: {
+				android: null,
+				ios: null,
+			},
+		},
+	},
 }

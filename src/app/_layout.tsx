@@ -59,6 +59,10 @@ export default function RootLayout() {
 						name="health/entry/[id]"
 						options={{ headerShown: true, presentation: 'card' }}
 					/>
+					<Stack.Screen
+						name="report/index"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
 				</Stack>
 			</MedicationsProvider>
 		</DiaryProvider>

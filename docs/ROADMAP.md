@@ -57,10 +57,13 @@ Lean phases. Do not turn this into an enterprise process.
 * Reminder reconciliation across all profiles
 * Schema v3: `profile_metric_settings`
 
-## Phase 7 — Doctor report / share
+## Phase 7 — Doctor report / share ✅
 
-* PDF report
-* Android Share Sheet
+* Entry from Графики → «Отчёт врачу»
+* Periods 7 / 14 (default) / 30 / 90 + custom local day keys
+* Preview summary + PDF via `expo-print` HTML
+* Share Sheet via `expo-sharing`
+* Profile-scoped snapshot builder + HTML escaping
 
 ## Phase 8 — Backup / restore hardening
 

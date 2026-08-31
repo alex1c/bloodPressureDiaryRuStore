@@ -70,7 +70,7 @@ Allowed: neutral statistics over user-entered data.
 | Health metrics | weight (default on); optional glucose, SpO₂, temperature — tab «Здоровье» |
 | Profiles | Я / Мама / Папа / custom — isolated by `profileId`; header switcher |
 | Reminders | local notifications; reconcile all profiles; tap routes to correct profile |
-| Doctor report | PDF + Android Share Sheet (Phase 7) |
+| Doctor report | PDF + Android Share Sheet — period presets, profile-scoped, no medical advice |
 | Backup / restore | versioned local export/import (contract now, UI Phase 8) |
 | Analytics / ads | AppMetrica + very moderate ads (Phase 9 only) |
 

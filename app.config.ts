@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 			},
 		],
 		'expo-sqlite',
+		'expo-sharing',
 	]
 
 	if (!isProduction) {
