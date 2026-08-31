@@ -58,7 +58,7 @@ export type HealthMetricKind = 'weight' | 'glucose' | 'spo2' | 'temperature'
 
 /**
  * Standalone health metric with its own measurement time.
- * Value semantics depend on kind (kg, mmol/L or mg/dL later, %, °C).
+ * Value semantics depend on kind (kg, mmol/L, %, °C).
  */
 export interface HealthMetric {
 	id: EntityId
@@ -70,6 +70,16 @@ export interface HealthMetric {
 	measuredAt: IsoDateTime
 	note: string | null
 	createdAt: IsoDateTime
+	updatedAt: IsoDateTime
+}
+
+/**
+ * Which optional health metrics a profile tracks.
+ * Blood pressure / pulse stay always-on via Measurement entity.
+ */
+export interface ProfileMetricSettings {
+	profileId: EntityId
+	enabledKinds: HealthMetricKind[]
 	updatedAt: IsoDateTime
 }
 

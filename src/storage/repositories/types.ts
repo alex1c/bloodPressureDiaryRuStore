@@ -2,10 +2,12 @@ import type {
 	AppSettings,
 	CreateMeasurementInput,
 	HealthMetric,
+	HealthMetricKind,
 	Measurement,
 	Medication,
 	MedicationIntake,
 	Profile,
+	ProfileMetricSettings,
 	Reminder,
 	UpdateMeasurementInput,
 } from '@/domain/types'
@@ -14,13 +16,19 @@ export interface ProfileRepository {
 	list(): Promise<Profile[]>
 	getById(id: string): Promise<Profile | null>
 	create(input: { name: string; isDefault?: boolean }): Promise<Profile>
-	update(id: string, patch: { name?: string; isDefault?: boolean }): Promise<Profile>
+	update(
+		id: string,
+		patch: { name?: string; isDefault?: boolean },
+	): Promise<Profile>
 	delete(id: string): Promise<void>
 }
 
 export interface MeasurementRepository {
 	listByProfile(profileId: string): Promise<Measurement[]>
-	listByProfileOnDay(profileId: string, dayIsoDate: string): Promise<Measurement[]>
+	listByProfileOnDay(
+		profileId: string,
+		dayIsoDate: string,
+	): Promise<Measurement[]>
 	/** Inclusive ISO range filter on measuredAt (preferred for local-day queries). */
 	listByProfileInRange(
 		profileId: string,
@@ -35,10 +43,29 @@ export interface MeasurementRepository {
 
 export interface HealthMetricRepository {
 	listByProfile(profileId: string): Promise<HealthMetric[]>
+	listByProfileAndKind(
+		profileId: string,
+		kind: HealthMetricKind,
+	): Promise<HealthMetric[]>
+	getById(id: string): Promise<HealthMetric | null>
 	create(
 		input: Omit<HealthMetric, 'id' | 'createdAt' | 'updatedAt'>,
 	): Promise<HealthMetric>
+	update(
+		id: string,
+		patch: Partial<
+			Pick<HealthMetric, 'value' | 'unit' | 'measuredAt' | 'note' | 'kind'>
+		>,
+	): Promise<HealthMetric>
 	delete(id: string): Promise<void>
+}
+
+export interface ProfileMetricSettingsRepository {
+	get(profileId: string): Promise<ProfileMetricSettings>
+	setEnabledKinds(
+		profileId: string,
+		enabledKinds: HealthMetricKind[],
+	): Promise<ProfileMetricSettings>
 }
 
 export interface MedicationRepository {
@@ -83,6 +110,7 @@ export interface DiaryRepositories {
 	profiles: ProfileRepository
 	measurements: MeasurementRepository
 	healthMetrics: HealthMetricRepository
+	profileMetricSettings: ProfileMetricSettingsRepository
 	medications: MedicationRepository
 	medicationIntakes: MedicationIntakeRepository
 	reminders: ReminderRepository

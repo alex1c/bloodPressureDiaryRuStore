@@ -12,7 +12,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 })
 
 /**
- * Root stack: tabs first, measurement + medication routes on top.
+ * Root stack: tabs first, measurement / medication / health routes on top.
  * Diary remains the initial screen via (tabs)/index.
  */
 export default function RootLayout() {
@@ -45,6 +45,18 @@ export default function RootLayout() {
 					/>
 					<Stack.Screen
 						name="medication/[id]"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
+					<Stack.Screen
+						name="health/[kind]/index"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
+					<Stack.Screen
+						name="health/[kind]/new"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
+					<Stack.Screen
+						name="health/entry/[id]"
 						options={{ headerShown: true, presentation: 'card' }}
 					/>
 				</Stack>

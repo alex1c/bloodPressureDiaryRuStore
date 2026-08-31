@@ -6,6 +6,7 @@ import type { DiaryRepositories } from '@/storage/repositories/types'
 /**
  * Builds a versioned backup document from the local store.
  * Does not write files — Phase 8 wires export UI.
+ * Includes profileMetricSettings for Phase 6 readiness.
  */
 export async function buildDiaryBackup(
 	repos: DiaryRepositories,
@@ -24,6 +25,10 @@ export async function buildDiaryBackup(
 			profiles.map((p) => repos.healthMetrics.listByProfile(p.id)),
 		)
 	).flat()
+
+	const profileMetricSettings = await Promise.all(
+		profiles.map((p) => repos.profileMetricSettings.get(p.id)),
+	)
 
 	const medications = (
 		await Promise.all(
@@ -50,6 +55,7 @@ export async function buildDiaryBackup(
 		profiles,
 		measurements,
 		healthMetrics,
+		profileMetricSettings,
 		medications,
 		medicationIntakes,
 		reminders,

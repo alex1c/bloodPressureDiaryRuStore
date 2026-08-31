@@ -67,10 +67,11 @@ Allowed: neutral statistics over user-entered data.
 | Tags (preset) | нормально, головная боль, недосып, стресс, кофе, физическая нагрузка |
 | Medications | name, dosage text, schedule, active flag, “taken” intakes |
 | Reminders | local notification-ready model (implementation later) |
-| Health metrics | weight; optional glucose, SpO2, temperature |
-| Profiles | Я / Мама / Папа / custom — data isolated by `profileId` |
-| Doctor report | PDF + Android Share Sheet (later phase) |
-| Backup / restore | versioned local export/import (contract now, UI later) |
+| Health metrics | weight (default on); optional glucose, SpO₂, temperature — tab «Здоровье» |
+| Profiles | Я / Мама / Папа / custom — isolated by `profileId`; header switcher |
+| Reminders | local notifications; reconcile all profiles; tap routes to correct profile |
+| Doctor report | PDF + Android Share Sheet (Phase 7) |
+| Backup / restore | versioned local export/import (contract now, UI Phase 8) |
 | Analytics / ads | AppMetrica + very moderate ads (Phase 9 only) |
 
 ## 5. UX principles (audience 40–45+)

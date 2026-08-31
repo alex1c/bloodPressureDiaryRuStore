@@ -11,9 +11,14 @@ import type {
 	Medication,
 	MedicationIntake,
 	Profile,
+	ProfileMetricSettings,
 	Reminder,
 	UpdateMeasurementInput,
 } from '@/domain/types'
+import {
+	DEFAULT_ENABLED_METRIC_KINDS,
+	normalizeEnabledKinds,
+} from '@/domain/health/metric-catalog'
 import { CURRENT_SCHEMA_VERSION } from '../schema-version'
 import type { DiaryRepositories } from '../repositories/types'
 
@@ -25,6 +30,7 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 	const profiles = new Map<string, Profile>()
 	const measurements = new Map<string, Measurement>()
 	const healthMetrics = new Map<string, HealthMetric>()
+	const metricSettings = new Map<string, ProfileMetricSettings>()
 	const medications = new Map<string, Medication>()
 	const intakes = new Map<string, MedicationIntake>()
 	const reminders = new Map<string, Reminder>()
@@ -34,6 +40,20 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 		hasCompletedFirstMeasurement: false,
 	}
 	const schemaVersion = CURRENT_SCHEMA_VERSION
+
+	function ensureMetricSettings(profileId: string): ProfileMetricSettings {
+		const existing = metricSettings.get(profileId)
+		if (existing) {
+			return existing
+		}
+		const created: ProfileMetricSettings = {
+			profileId,
+			enabledKinds: [...DEFAULT_ENABLED_METRIC_KINDS],
+			updatedAt: nowIso(),
+		}
+		metricSettings.set(profileId, created)
+		return created
+	}
 
 	async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
 		// Memory store is single-threaded; transaction is a sequencing seam
@@ -63,6 +83,7 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 					updatedAt: timestamp,
 				}
 				profiles.set(profile.id, profile)
+				ensureMetricSettings(profile.id)
 				if (settings.activeProfileId === null) {
 					settings = { ...settings, activeProfileId: profile.id }
 				}
@@ -86,7 +107,12 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 				return next
 			},
 			async delete(id) {
+				const remaining = [...profiles.values()].filter((p) => p.id !== id)
+				if (remaining.length === 0) {
+					throw new Error('Cannot delete the last profile')
+				}
 				profiles.delete(id)
+				metricSettings.delete(id)
 				for (const [mid, m] of [...measurements.entries()]) {
 					if (m.profileId === id) {
 						measurements.delete(mid)
@@ -113,7 +139,9 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 					}
 				}
 				if (settings.activeProfileId === id) {
-					settings = { ...settings, activeProfileId: null }
+					const fallback =
+						remaining.find((p) => p.isDefault) ?? remaining[0]!
+					settings = { ...settings, activeProfileId: fallback.id }
 				}
 			},
 		},
@@ -178,6 +206,14 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 					.filter((h) => h.profileId === profileId)
 					.sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
 			},
+			async listByProfileAndKind(profileId, kind) {
+				return [...healthMetrics.values()]
+					.filter((h) => h.profileId === profileId && h.kind === kind)
+					.sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
+			},
+			async getById(id) {
+				return healthMetrics.get(id) ?? null
+			},
 			async create(input) {
 				if (!profiles.has(input.profileId)) {
 					throw new Error(`Unknown profile: ${input.profileId}`)
@@ -192,8 +228,39 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 				healthMetrics.set(row.id, row)
 				return row
 			},
+			async update(id, patch) {
+				const existing = healthMetrics.get(id)
+				if (!existing) {
+					throw new Error(`Health metric not found: ${id}`)
+				}
+				const next: HealthMetric = {
+					...existing,
+					value: patch.value ?? existing.value,
+					unit: patch.unit === undefined ? existing.unit : patch.unit,
+					measuredAt: patch.measuredAt ?? existing.measuredAt,
+					note: patch.note === undefined ? existing.note : patch.note,
+					kind: patch.kind ?? existing.kind,
+					updatedAt: nowIso(),
+				}
+				healthMetrics.set(id, next)
+				return next
+			},
 			async delete(id) {
 				healthMetrics.delete(id)
+			},
+		},
+		profileMetricSettings: {
+			async get(profileId) {
+				return ensureMetricSettings(profileId)
+			},
+			async setEnabledKinds(profileId, enabledKinds) {
+				const settingsRow: ProfileMetricSettings = {
+					profileId,
+					enabledKinds: normalizeEnabledKinds(enabledKinds),
+					updatedAt: nowIso(),
+				}
+				metricSettings.set(profileId, settingsRow)
+				return settingsRow
 			},
 		},
 		medications: {

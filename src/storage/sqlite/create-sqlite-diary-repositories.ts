@@ -17,8 +17,13 @@ import type {
 	Profile,
 	Reminder,
 	UpdateMeasurementInput,
+	ProfileMetricSettings,
 	WellbeingLevel,
 } from '@/domain/types'
+import {
+	DEFAULT_ENABLED_METRIC_KINDS,
+	normalizeEnabledKinds,
+} from '@/domain/health/metric-catalog'
 import { applyMigrations } from '../migrate'
 import { CURRENT_SCHEMA_VERSION } from '../schema-version'
 import type { DiaryRepositories } from '../repositories/types'
@@ -75,35 +80,6 @@ export function createSqliteDiaryRepositories(
 				}>('SELECT * FROM profiles WHERE id = ?', [id])
 				return row ? mapProfile(row) : null
 			},
-			async create(input) {
-				const timestamp = nowIso()
-				const profile: Profile = {
-					id: createEntityId(),
-					name: input.name,
-					isDefault: input.isDefault ?? false,
-					createdAt: timestamp,
-					updatedAt: timestamp,
-				}
-				await db.run(
-					`INSERT INTO profiles (id, name, is_default, created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?)`,
-					[
-						profile.id,
-						profile.name,
-						profile.isDefault ? 1 : 0,
-						profile.createdAt,
-						profile.updatedAt,
-					],
-				)
-				const settings = await getSettings(db)
-				if (settings.activeProfileId === null) {
-					await db.run(
-						`UPDATE settings SET active_profile_id = ? WHERE id = 1`,
-						[profile.id],
-					)
-				}
-				return profile
-			},
 			async update(id, patch) {
 				const existing = await this.getById(id)
 				if (!existing) {
@@ -124,7 +100,55 @@ export function createSqliteDiaryRepositories(
 				)
 				return next
 			},
+			async create(input) {
+				const timestamp = nowIso()
+				const profile: Profile = {
+					id: createEntityId(),
+					name: input.name,
+					isDefault: input.isDefault ?? false,
+					createdAt: timestamp,
+					updatedAt: timestamp,
+				}
+				await db.withTransaction(async () => {
+					await db.run(
+						`INSERT INTO profiles (id, name, is_default, created_at, updated_at)
+						 VALUES (?, ?, ?, ?, ?)`,
+						[
+							profile.id,
+							profile.name,
+							profile.isDefault ? 1 : 0,
+							profile.createdAt,
+							profile.updatedAt,
+						],
+					)
+					await db.run(
+						`INSERT OR IGNORE INTO profile_metric_settings
+							(profile_id, enabled_kinds_json, updated_at)
+						 VALUES (?, ?, ?)`,
+						[
+							profile.id,
+							JSON.stringify([...DEFAULT_ENABLED_METRIC_KINDS]),
+							timestamp,
+						],
+					)
+					const settings = await getSettings(db)
+					if (settings.activeProfileId === null) {
+						await db.run(
+							`UPDATE settings SET active_profile_id = ? WHERE id = 1`,
+							[profile.id],
+						)
+					}
+				})
+				return profile
+			},
 			async delete(id) {
+				const all = await this.list()
+				const remaining = all.filter((p) => p.id !== id)
+				if (remaining.length === 0) {
+					throw new Error('Cannot delete the last profile')
+				}
+				const fallback =
+					remaining.find((p) => p.isDefault) ?? remaining[0]!
 				await db.withTransaction(async () => {
 					await db.run(
 						'DELETE FROM medication_intakes WHERE profile_id = ?',
@@ -137,15 +161,21 @@ export function createSqliteDiaryRepositories(
 						[id],
 					)
 					await db.run(
+						'DELETE FROM profile_metric_settings WHERE profile_id = ?',
+						[id],
+					)
+					await db.run(
 						'DELETE FROM measurements WHERE profile_id = ?',
 						[id],
 					)
 					await db.run('DELETE FROM profiles WHERE id = ?', [id])
-					await db.run(
-						`UPDATE settings SET active_profile_id = NULL
-						 WHERE active_profile_id = ?`,
-						[id],
-					)
+					const settings = await getSettings(db)
+					if (settings.activeProfileId === id) {
+						await db.run(
+							`UPDATE settings SET active_profile_id = ? WHERE id = 1`,
+							[fallback.id],
+						)
+					}
 				})
 			},
 		},
@@ -265,6 +295,39 @@ export function createSqliteDiaryRepositories(
 				)
 				return rows.map(mapHealthMetric)
 			},
+			async listByProfileAndKind(profileId, kind) {
+				const rows = await db.getAll<{
+					id: string
+					profile_id: string
+					kind: string
+					value: number
+					unit: string | null
+					measured_at: string
+					note: string | null
+					created_at: string
+					updated_at: string
+				}>(
+					`SELECT * FROM health_metrics
+					 WHERE profile_id = ? AND kind = ?
+					 ORDER BY measured_at DESC`,
+					[profileId, kind],
+				)
+				return rows.map(mapHealthMetric)
+			},
+			async getById(id) {
+				const row = await db.getFirst<{
+					id: string
+					profile_id: string
+					kind: string
+					value: number
+					unit: string | null
+					measured_at: string
+					note: string | null
+					created_at: string
+					updated_at: string
+				}>('SELECT * FROM health_metrics WHERE id = ?', [id])
+				return row ? mapHealthMetric(row) : null
+			},
 			async create(input) {
 				const timestamp = nowIso()
 				const row: HealthMetric = {
@@ -291,8 +354,89 @@ export function createSqliteDiaryRepositories(
 				)
 				return row
 			},
+			async update(id, patch) {
+				const existing = await this.getById(id)
+				if (!existing) {
+					throw new Error(`Health metric not found: ${id}`)
+				}
+				const next: HealthMetric = {
+					...existing,
+					value: patch.value ?? existing.value,
+					unit: patch.unit === undefined ? existing.unit : patch.unit,
+					measuredAt: patch.measuredAt ?? existing.measuredAt,
+					note: patch.note === undefined ? existing.note : patch.note,
+					kind: patch.kind ?? existing.kind,
+					updatedAt: nowIso(),
+				}
+				await db.run(
+					`UPDATE health_metrics SET
+						kind = ?, value = ?, unit = ?, measured_at = ?, note = ?, updated_at = ?
+					 WHERE id = ?`,
+					[
+						next.kind,
+						next.value,
+						next.unit,
+						next.measuredAt,
+						next.note,
+						next.updatedAt,
+						id,
+					],
+				)
+				return next
+			},
 			async delete(id) {
 				await db.run('DELETE FROM health_metrics WHERE id = ?', [id])
+			},
+		},
+		profileMetricSettings: {
+			async get(profileId) {
+				const row = await db.getFirst<{
+					profile_id: string
+					enabled_kinds_json: string
+					updated_at: string
+				}>(
+					'SELECT * FROM profile_metric_settings WHERE profile_id = ?',
+					[profileId],
+				)
+				if (!row) {
+					const timestamp = nowIso()
+					const settings: ProfileMetricSettings = {
+						profileId,
+						enabledKinds: [...DEFAULT_ENABLED_METRIC_KINDS],
+						updatedAt: timestamp,
+					}
+					await db.run(
+						`INSERT INTO profile_metric_settings
+							(profile_id, enabled_kinds_json, updated_at)
+						 VALUES (?, ?, ?)`,
+						[
+							profileId,
+							JSON.stringify(settings.enabledKinds),
+							timestamp,
+						],
+					)
+					return settings
+				}
+				return mapProfileMetricSettings(row)
+			},
+			async setEnabledKinds(profileId, enabledKinds) {
+				const timestamp = nowIso()
+				const kinds = normalizeEnabledKinds(enabledKinds)
+				const settings: ProfileMetricSettings = {
+					profileId,
+					enabledKinds: kinds,
+					updatedAt: timestamp,
+				}
+				await db.run(
+					`INSERT INTO profile_metric_settings
+						(profile_id, enabled_kinds_json, updated_at)
+					 VALUES (?, ?, ?)
+					 ON CONFLICT(profile_id) DO UPDATE SET
+						enabled_kinds_json = excluded.enabled_kinds_json,
+						updated_at = excluded.updated_at`,
+					[profileId, JSON.stringify(kinds), timestamp],
+				)
+				return settings
 			},
 		},
 		medications: {
@@ -658,6 +802,19 @@ function mapHealthMetric(row: {
 		measuredAt: row.measured_at,
 		note: row.note,
 		createdAt: row.created_at,
+		updatedAt: row.updated_at,
+	}
+}
+
+function mapProfileMetricSettings(row: {
+	profile_id: string
+	enabled_kinds_json: string
+	updated_at: string
+}): ProfileMetricSettings {
+	const parsed = JSON.parse(row.enabled_kinds_json) as HealthMetricKind[]
+	return {
+		profileId: row.profile_id,
+		enabledKinds: normalizeEnabledKinds(parsed),
 		updatedAt: row.updated_at,
 	}
 }

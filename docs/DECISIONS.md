@@ -182,3 +182,38 @@ Decisions:
 11. **Worklets** — pin `react-native-worklets@0.10.1` for Expo SDK 57 /
     `expo-modules-core` native build compatibility.
 
+## 2026-08-31 — Phase 6 health metrics / family profiles
+
+Status: Accepted
+
+Decisions:
+
+1. **Units (RU journal)** — weight `кг`; glucose `ммоль/л` (UI «Сахар крови»);
+   SpO₂ `%` integer; temperature `°C`. Decimal comma/dot accepted in input;
+   stored as normalized numbers; display uses comma for decimals.
+2. **Hard technical ranges** (reject typos) — weight 1–500 kg; glucose 0.1–50;
+   SpO₂ 50–100; temperature 30–45 °C. Soft hint ranges (second confirm,
+   «Проверьте введённое значение.»): weight 30–250; glucose 2.5–20;
+   SpO₂ 85–100; temperature 35–40. Never medical alarms / norms / BMI.
+3. **Default enabled metrics** — weight ON for new/migrated profiles; glucose /
+   SpO₂ / temperature OFF. BP + pulse remain always-on via `Measurement`.
+   No setup wizard.
+4. **`profile_metric_settings` (schema v3)** — per-profile `enabled_kinds_json`.
+   Seeded on migration for existing profiles with `["weight"]`. New profiles
+   get the same default in the same create transaction.
+5. **`activeProfileId`** — persisted in `settings`. After restart, last profile
+   opens. If missing/deleted → default or first remaining profile. Not
+   React-only state.
+6. **Profile delete** — cascading (intakes → reminders → medications →
+   health_metrics → profile_metric_settings → measurements → profile).
+   Double confirmation in UI when data may exist. Refuses deleting the last
+   profile. Active profile falls back to remaining default/first.
+7. **Reminder reconciliation** — `cancel-all` then reschedule enabled reminders
+   for **all** profiles (not only active). Multi-profile notification title:
+   `{Имя} — лекарство по расписанию`. Payload includes `profileId`; tap
+   switches active profile then opens Лекарства.
+8. **Backup readiness** — `DiaryBackup` includes `profileMetricSettings`
+   (optional on older payloads → empty). No Phase 8 export UI yet.
+9. **Tabs** — four items: Дневник | Графики | Лекарства | Здоровье (Ionicons
+   `fitness-outline`). No fifth settings tab; profiles open from header chip.
+

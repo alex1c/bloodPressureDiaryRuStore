@@ -23,7 +23,7 @@ import {
 } from '@/services/medication-notifications'
 import {
 	disableMedicationReminders,
-	reconcileProfileNotifications,
+	reconcileAllProfileNotifications,
 	syncMedicationReminders,
 } from '@/services/reconcile-medication-reminders'
 
@@ -89,10 +89,9 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 		}
 		let cancelled = false
 		void (async () => {
-			await reconcileProfileNotifications({
-				repos,
-				profileId: profile.id,
-			})
+			// Reconcile ALL profiles so switching active profile never drops
+			// another family member's scheduled notifications.
+			await reconcileAllProfileNotifications({ repos })
 			if (!cancelled) {
 				await refreshMedications()
 			}
@@ -102,10 +101,18 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 		}
 	}, [ready, repos, profile, refreshMedications])
 
-	const todayDoses = useMemo(
-		() => buildPlannedDosesForDay(medications, intakes, new Date()),
-		[medications, intakes],
-	)
+	const todayDoses = useMemo(() => {
+		// Hide planned doses until refresh catches up after a profile switch.
+		if (!profile) {
+			return []
+		}
+		return buildPlannedDosesForDay(medications, intakes, new Date()).filter(
+			(dose) =>
+				medications.some(
+					(m) => m.id === dose.medicationId && m.profileId === profile.id,
+				),
+		)
+	}, [medications, intakes, profile])
 	const todaySummary = useMemo(
 		() => summarizeTodaysDoses(todayDoses),
 		[todayDoses],
@@ -212,10 +219,7 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 				})
 			}
 
-			await reconcileProfileNotifications({
-				repos,
-				profileId: profile.id,
-			})
+			await reconcileAllProfileNotifications({ repos })
 			await refreshMedications()
 			return medication
 		},
@@ -235,10 +239,7 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 				medication,
 				remindEnabled: false,
 			})
-			await reconcileProfileNotifications({
-				repos,
-				profileId: profile.id,
-			})
+			await reconcileAllProfileNotifications({ repos })
 			await refreshMedications()
 		},
 		[repos, profile, refreshMedications],
@@ -259,10 +260,7 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 				await cancelPlatformNotification(reminder.platformNotificationId)
 			}
 			await repos.medications.delete(id)
-			await reconcileProfileNotifications({
-				repos,
-				profileId: profile.id,
-			})
+			await reconcileAllProfileNotifications({ repos })
 			await refreshMedications()
 		},
 		[repos, profile, refreshMedications],

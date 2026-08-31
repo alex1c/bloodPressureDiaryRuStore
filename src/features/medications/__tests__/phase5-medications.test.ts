@@ -354,8 +354,8 @@ describe('reminder sync', () => {
 	})
 })
 
-describe('schema migration to v2', () => {
-	it('upgrades from v1 to CURRENT without dropping tables', async () => {
+describe('schema migration through Phase 5–6', () => {
+	it('upgrades from empty to CURRENT without dropping core tables', async () => {
 		const tables = new Set<string>()
 		let schema = 0
 		const db: SqlExecutor = {
@@ -365,6 +365,9 @@ describe('schema migration to v2', () => {
 				}
 				if (sql.includes('ALTER TABLE medication_intakes')) {
 					tables.add('altered_intakes')
+				}
+				if (sql.includes('profile_metric_settings')) {
+					tables.add('profile_metric_settings')
 				}
 			},
 			async run(sql, params = []) {
@@ -388,12 +391,13 @@ describe('schema migration to v2', () => {
 
 		const version = await applyMigrations(db)
 		expect(version).toBe(CURRENT_SCHEMA_VERSION)
-		expect(CURRENT_SCHEMA_VERSION).toBe(2)
+		expect(CURRENT_SCHEMA_VERSION).toBe(3)
 		expect(tables.has('measurements')).toBe(true)
 		expect(tables.has('altered_intakes')).toBe(true)
+		expect(tables.has('profile_metric_settings')).toBe(true)
 	})
 
-	it('is a no-op at v2', async () => {
+	it('is a no-op at CURRENT schema version', async () => {
 		const db: SqlExecutor = {
 			async exec() {},
 			async run() {
@@ -403,12 +407,12 @@ describe('schema migration to v2', () => {
 				return []
 			},
 			async getFirst<T>() {
-				return { value: '2' } as T
+				return { value: String(CURRENT_SCHEMA_VERSION) } as T
 			},
 			async withTransaction(fn) {
 				return fn()
 			},
 		}
-		await expect(applyMigrations(db)).resolves.toBe(2)
+		await expect(applyMigrations(db)).resolves.toBe(CURRENT_SCHEMA_VERSION)
 	})
 })

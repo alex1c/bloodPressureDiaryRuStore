@@ -2,21 +2,39 @@ import { Tabs, useRouter } from 'expo-router'
 import { useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
+import { useDiary } from '@/hooks/use-diary'
 import { colors, typography } from '@/theme'
 
+/**
+ * Opens medications after optionally switching to the reminder's profile.
+ * Profile switch runs first so today's doses match the notification context.
+ */
 function openMedicationsFromNotificationData(
 	data: unknown,
 	router: ReturnType<typeof useRouter>,
+	switchProfile: (profileId: string) => Promise<void>,
 ) {
-	const payload = data as { screen?: string } | null
-	if (payload?.screen === 'medications') {
-		router.push('/(tabs)/medications')
+	const payload = data as { screen?: string; profileId?: string } | null
+	if (payload?.screen !== 'medications') {
+		return
 	}
+
+	void (async () => {
+		if (payload.profileId) {
+			try {
+				await switchProfile(payload.profileId)
+			} catch {
+				// Still navigate if switch fails (profile may already be active).
+			}
+		}
+		router.push('/(tabs)/medications')
+	})()
 }
 
-/** Bottom tabs: Diary (default) | Graphs | Medications. */
+/** Bottom tabs: Diary | Graphs | Medications | Health. */
 export default function TabsLayout() {
 	const router = useRouter()
+	const { switchProfile } = useDiary()
 
 	// Open medications when the user taps a local reminder notification.
 	useEffect(() => {
@@ -25,6 +43,7 @@ export default function TabsLayout() {
 				openMedicationsFromNotificationData(
 					response.notification.request.content.data,
 					router,
+					switchProfile,
 				)
 			},
 		)
@@ -37,11 +56,12 @@ export default function TabsLayout() {
 			openMedicationsFromNotificationData(
 				response.notification.request.content.data,
 				router,
+				switchProfile,
 			)
 		})
 
 		return () => sub.remove()
-	}, [router])
+	}, [router, switchProfile])
 
 	return (
 		<Tabs
@@ -91,6 +111,16 @@ export default function TabsLayout() {
 					tabBarLabel: 'Лекарства',
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="medical-outline" size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="health"
+				options={{
+					title: 'Здоровье',
+					tabBarLabel: 'Здоровье',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="fitness-outline" size={size} color={color} />
 					),
 				}}
 			/>

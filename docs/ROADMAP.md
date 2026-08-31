@@ -48,10 +48,14 @@ Lean phases. Do not turn this into an enterprise process.
 * Schema v2: intake scheduled hour/minute
 * expo-splash-screen (DevLauncher ClassNotFound fix)
 
-## Phase 6 — Health metrics / profiles
+## Phase 6 — Health metrics / profiles ✅
 
-* Weight + optional glucose / SpO2 / temperature
-* Profile switcher (Я / family)
+* Tab Здоровье (4 tabs: Дневник | Графики | Лекарства | Здоровье)
+* Weight / glucose / SpO₂ / temperature (opt-in per profile)
+* Metric history + create/edit/delete
+* Family profiles + activeProfileId persistence
+* Reminder reconciliation across all profiles
+* Schema v3: `profile_metric_settings`
 
 ## Phase 7 — Doctor report / share
 
@@ -62,6 +66,7 @@ Lean phases. Do not turn this into an enterprise process.
 
 * Export / import UI
 * Validated restore, conflict/merge policy
+* Contract already includes profiles / health metrics / profileMetricSettings
 
 ## Phase 9 — Analytics / ads
 

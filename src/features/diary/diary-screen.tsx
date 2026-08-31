@@ -14,6 +14,7 @@ import { formatScheduleHm } from '@/domain/medications/schedule'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
 import { colors, spacing, typography } from '@/theme'
+import { ProfileSelector } from '@/features/profiles/profile-selector'
 import {
 	LatestMeasurement,
 	MeasurementRow,
@@ -85,6 +86,7 @@ export function DiaryScreen() {
 			>
 				<View style={styles.header}>
 					<Text style={styles.appTitle}>Давление</Text>
+					<ProfileSelector />
 					<Text style={styles.dateLine}>Сегодня, {todayLabel}</Text>
 				</View>
 

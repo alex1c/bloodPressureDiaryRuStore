@@ -1,4 +1,4 @@
-import type { Medication, Reminder } from '@/domain/types'
+import type { Medication, Profile, Reminder } from '@/domain/types'
 import {
 	DAILY_WEEKDAYS,
 	formatScheduleHm,
@@ -20,6 +20,9 @@ export async function syncMedicationReminders(input: {
 	repos: DiaryRepositories
 	medication: Medication
 	remindEnabled: boolean
+	/** When omitted, profile name / multi-profile title is resolved from repos. */
+	profileName?: string
+	includeProfileName?: boolean
 }): Promise<Reminder[]> {
 	const { repos, medication, remindEnabled } = input
 	const existing = (
@@ -32,9 +35,22 @@ export async function syncMedicationReminders(input: {
 			: [],
 	)
 
+	let includeProfileName = input.includeProfileName
+	let profileName = input.profileName
+	if (includeProfileName === undefined || profileName === undefined) {
+		const profiles = await repos.profiles.list()
+		includeProfileName = profiles.length > 1
+		if (profileName === undefined) {
+			profileName =
+				profiles.find((p) => p.id === medication.profileId)?.name ?? ''
+		}
+	}
+
 	const content = buildReminderContent({
 		medicationName: medication.name,
 		dosageText: medication.dosageText,
+		profileName,
+		includeProfileName,
 	})
 
 	const kept: Reminder[] = []
@@ -86,27 +102,39 @@ export async function syncMedicationReminders(input: {
 
 /**
  * Idempotent: cancel all scheduled notifications, then reschedule enabled
- * reminders for the active profile when OS permission is granted.
+ * reminders for EVERY profile (not only the active one).
+ *
+ * Switching active profile must never drop another profile's reminders.
  */
-export async function reconcileProfileNotifications(input: {
+export async function reconcileAllProfileNotifications(input: {
 	repos: DiaryRepositories
-	profileId: string
 }): Promise<{ scheduled: number; permission: string }> {
-	const { repos, profileId } = input
+	const { repos } = input
 	await cancelAllScheduledNotifications()
 
 	const permission = await getNotificationPermissionState()
-	const reminders = (await repos.reminders.listByProfile(profileId)).filter(
-		(r) => r.enabled,
-	)
+	const profiles = await repos.profiles.list()
+	const includeProfileName = profiles.length > 1
+	const profileById = new Map(profiles.map((p) => [p.id, p]))
 
-	// Clear stale platform ids first.
-	for (const reminder of reminders) {
-		if (reminder.platformNotificationId) {
-			await repos.reminders.update(reminder.id, {
-				platformNotificationId: null,
-			})
-		}
+	const allReminders: Reminder[] = (
+		await Promise.all(profiles.map((p) => repos.reminders.listByProfile(p.id)))
+	)
+		.flat()
+		.filter((r) => r.enabled)
+
+	// Clear stale platform ids and refresh titles for multi-profile copy.
+	for (const reminder of allReminders) {
+		const profile = profileById.get(reminder.profileId)
+		const titlePatch = buildTitleForStoredReminder(
+			reminder,
+			profile,
+			includeProfileName,
+		)
+		await repos.reminders.update(reminder.id, {
+			platformNotificationId: null,
+			...(titlePatch ? { title: titlePatch } : {}),
+		})
 	}
 
 	if (permission !== 'granted') {
@@ -114,9 +142,12 @@ export async function reconcileProfileNotifications(input: {
 	}
 
 	let scheduled = 0
-	const fresh = (await repos.reminders.listByProfile(profileId)).filter(
-		(r) => r.enabled,
+	const fresh = (
+		await Promise.all(profiles.map((p) => repos.reminders.listByProfile(p.id)))
 	)
+		.flat()
+		.filter((r) => r.enabled)
+
 	for (const reminder of fresh) {
 		const platformId = await scheduleDailyReminderNotification(reminder)
 		await repos.reminders.update(reminder.id, {
@@ -128,6 +159,18 @@ export async function reconcileProfileNotifications(input: {
 	}
 
 	return { scheduled, permission }
+}
+
+/**
+ * @deprecated Prefer reconcileAllProfileNotifications — kept as a thin alias
+ * so older call sites keep compiling during Phase 6.
+ */
+export async function reconcileProfileNotifications(input: {
+	repos: DiaryRepositories
+	profileId: string
+}): Promise<{ scheduled: number; permission: string }> {
+	void input.profileId
+	return reconcileAllProfileNotifications({ repos: input.repos })
 }
 
 /**
@@ -150,4 +193,23 @@ export async function disableMedicationReminders(input: {
 			platformNotificationId: null,
 		})
 	}
+}
+
+function buildTitleForStoredReminder(
+	reminder: Reminder,
+	profile: Profile | undefined,
+	includeProfileName: boolean,
+): string | null {
+	if (!includeProfileName || !profile) {
+		return null
+	}
+	const bodyParts = (reminder.body ?? '').split(' — ')
+	const medicationName = bodyParts[0] ?? ''
+	const dosageText = bodyParts.slice(1).join(' — ')
+	return buildReminderContent({
+		medicationName,
+		dosageText,
+		profileName: profile.name,
+		includeProfileName: true,
+	}).title
 }

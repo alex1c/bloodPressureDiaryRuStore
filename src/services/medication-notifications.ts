@@ -4,12 +4,23 @@ import type { Reminder } from '@/domain/types'
 
 const ANDROID_CHANNEL_ID = 'medication-reminders'
 
-/** Neutral copy for local medication reminders — never medical advice. */
+/**
+ * Neutral copy for local medication reminders — never medical advice.
+ * When multiple profiles exist, prefix the title with the profile name.
+ */
 export function buildReminderContent(input: {
 	medicationName: string
 	dosageText: string
+	profileName?: string | null
+	/** When true, include profile name in the title even for a single profile. */
+	includeProfileName?: boolean
 }): { title: string; body: string } {
-	const title = 'Лекарство по расписанию'
+	const baseTitle = 'Лекарство по расписанию'
+	const profileName = input.profileName?.trim()
+	const title =
+		input.includeProfileName && profileName
+			? `${profileName} — ${baseTitle.toLowerCase()}`
+			: baseTitle
 	const dosage = input.dosageText.trim()
 	const body = dosage
 		? `${input.medicationName} — ${dosage}`
@@ -94,6 +105,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 /**
  * Schedules a daily local notification for a reminder slot.
  * Returns the platform notification id, or null if scheduling is unavailable.
+ * Payload always includes profileId for correct profile routing on tap.
  */
 export async function scheduleDailyReminderNotification(
 	reminder: Reminder,
@@ -114,6 +126,7 @@ export async function scheduleDailyReminderNotification(
 				screen: 'medications',
 				reminderId: reminder.id,
 				medicationId: reminder.medicationId,
+				profileId: reminder.profileId,
 			},
 			sound: true,
 			...(Platform.OS === 'android'
@@ -150,7 +163,7 @@ export async function cancelPlatformNotification(
 
 /**
  * Cancels every scheduled notification for this app.
- * Used before idempotent reconciliation.
+ * Used before idempotent reconciliation across all profiles.
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {
 	await Notifications.cancelAllScheduledNotificationsAsync()

@@ -7,8 +7,10 @@ import type {
 	Medication,
 	MedicationIntake,
 	Profile,
+	ProfileMetricSettings,
 	Reminder,
 } from '../types'
+import { normalizeEnabledKinds } from '../health/metric-catalog'
 
 /** Current backup document format version. */
 export const BACKUP_FORMAT_VERSION = 1
@@ -20,6 +22,8 @@ export interface DiaryBackup {
 	profiles: Profile[]
 	measurements: Measurement[]
 	healthMetrics: HealthMetric[]
+	/** Per-profile enabled metric kinds (Phase 6). Optional in older payloads. */
+	profileMetricSettings: ProfileMetricSettings[]
 	medications: Medication[]
 	medicationIntakes: MedicationIntake[]
 	reminders: Reminder[]
@@ -244,6 +248,36 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 		reminders.push(reminder)
 	}
 
+	// Older Phase 5 backups omit profileMetricSettings — treat as empty.
+	const profileMetricSettings: ProfileMetricSettings[] = []
+	if (raw.profileMetricSettings !== undefined) {
+		if (!Array.isArray(raw.profileMetricSettings)) {
+			return {
+				ok: false,
+				code: 'INVALID_FIELD',
+				message: 'profileMetricSettings must be an array when present',
+			}
+		}
+		for (const item of raw.profileMetricSettings) {
+			const row = parseProfileMetricSettings(item)
+			if (!row) {
+				return {
+					ok: false,
+					code: 'INVALID_FIELD',
+					message: 'Invalid profileMetricSettings entry',
+				}
+			}
+			if (!profileIds.has(row.profileId)) {
+				return {
+					ok: false,
+					code: 'PROFILE_ISOLATION',
+					message: `Metric settings reference unknown profile ${row.profileId}`,
+				}
+			}
+			profileMetricSettings.push(row)
+		}
+	}
+
 	const settings = parseSettings(raw.settings, profileIds)
 	if (!settings) {
 		return {
@@ -262,11 +296,39 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 			profiles,
 			measurements,
 			healthMetrics,
+			profileMetricSettings,
 			medications,
 			medicationIntakes,
 			reminders,
 			settings,
 		},
+	}
+}
+
+function parseProfileMetricSettings(
+	item: unknown,
+): ProfileMetricSettings | null {
+	if (!isObject(item)) {
+		return null
+	}
+	if (
+		!isString(item.profileId) ||
+		!Array.isArray(item.enabledKinds) ||
+		!isString(item.updatedAt)
+	) {
+		return null
+	}
+	const kinds = item.enabledKinds.filter(
+		(k): k is HealthMetricKind =>
+			isString(k) && HEALTH_KINDS.includes(k as HealthMetricKind),
+	)
+	if (kinds.length !== item.enabledKinds.length) {
+		return null
+	}
+	return {
+		profileId: item.profileId,
+		enabledKinds: normalizeEnabledKinds(kinds),
+		updatedAt: item.updatedAt,
 	}
 }
 
