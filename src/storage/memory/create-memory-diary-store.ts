@@ -21,6 +21,12 @@ import {
 } from '@/domain/health/metric-catalog'
 import { CURRENT_SCHEMA_VERSION } from '../schema-version'
 import type { DiaryRepositories } from '../repositories/types'
+import type { DiaryBackup } from '@/domain/backup/validate-backup'
+import {
+	captureMemorySnapshot,
+	importBackupDatasetMemory,
+	restoreMemorySnapshot,
+} from '../backup/import-backup-dataset-memory'
 
 /**
  * In-memory diary store for unit tests and Node-side domain persistence checks.
@@ -56,14 +62,56 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 	}
 
 	async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
-		// Memory store is single-threaded; transaction is a sequencing seam
-		// matching the SQLite repository API for shared call sites / tests.
-		return fn()
+		const before = captureMemorySnapshot({
+			profiles,
+			measurements,
+			healthMetrics,
+			metricSettings,
+			medications,
+			intakes,
+			reminders,
+			settings,
+		})
+		try {
+			return await fn()
+		} catch (err) {
+			restoreMemorySnapshot(
+				{
+					profiles,
+					measurements,
+					healthMetrics,
+					metricSettings,
+					medications,
+					intakes,
+					reminders,
+					settings,
+				},
+				before,
+			)
+			throw err
+		}
 	}
 
 	return {
 		getSchemaVersion: async () => schemaVersion,
 		withTransaction,
+		importBackupDataset: async (backup: DiaryBackup) => {
+			await withTransaction(async () => {
+				importBackupDatasetMemory(
+					{
+						profiles,
+						measurements,
+						healthMetrics,
+						metricSettings,
+						medications,
+						intakes,
+						reminders,
+						settings,
+					},
+					backup,
+				)
+			})
+		},
 		profiles: {
 			async list() {
 				return [...profiles.values()].sort((a, b) =>

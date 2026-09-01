@@ -248,3 +248,28 @@ Decisions:
     link). `.npmrc` uses `legacy-peer-deps`; `react-native.config.js` disables
     reanimated autolinking if it appears.
 
+## 2026-09-01 — Phase 8 backup / restore
+
+Status: Accepted
+
+Decisions:
+
+1. **Backup format** — JSON document: `format: "bpdiary-backup"`, `backupVersion: 1`,
+   `schemaVersion` (metadata only), `appVersion`, `createdAt`, entity arrays +
+   `settings`. Not a raw SQLite file copy.
+2. **Replace semantics** — restore fully replaces the user dataset atomically.
+   No merge in V1.
+3. **Validation before mutation** — parse → identify format/version → validate
+   references/duplicates/domain rules → preview → confirm → transactional import.
+4. **Platform notification IDs** — not exported as authoritative state
+   (`null` in backup). Pre-restore IDs collected and cancelled after successful
+   DB commit; then `reconcileAllProfileNotifications`.
+5. **Notification cancel scope** — cancel only reminder rows' platform IDs
+   (`cancelManagedPlatformNotifications`), not global `cancelAllScheduledNotificationsAsync`,
+   to avoid breaking future notification categories.
+6. **Temp backup files** — `cacheDirectory/backups/davlenie_backup_{date}_{time}.json`;
+   overwritten on repeat export; not deleted during Share Sheet.
+7. **Import picker** — `expo-document-picker` (system picker, no broad storage).
+8. **Privacy** — backup never auto-uploaded; no analytics/logging of backup contents.
+9. **schemaVersion in backup** — diagnostic only; data imports into current app schema.
+

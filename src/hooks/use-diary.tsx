@@ -34,6 +34,8 @@ type DiaryContextValue = {
 	refreshProfiles: () => Promise<void>
 	/** Persist active profile and reload diary / health for that profile. */
 	switchProfile: (profileId: string) => Promise<void>
+	/** Reload all UI state after a full backup restore. */
+	reloadAfterRestore: () => Promise<void>
 	createProfile: (name: string) => Promise<Profile>
 	renameProfile: (profileId: string, name: string) => Promise<Profile>
 	/**
@@ -139,6 +141,32 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 		setEnabledKindsState(settingsRow.enabledKinds)
 		setHealthMetrics(metrics)
 	}, [repos, profile])
+
+	const reloadAfterRestore = useCallback(async () => {
+		if (!repos) {
+			return
+		}
+		const list = await repos.profiles.list()
+		setProfiles(list)
+		const settings = await repos.settings.get()
+		let active =
+			settings.activeProfileId !== null
+				? await repos.profiles.getById(settings.activeProfileId)
+				: null
+		if (!active) {
+			active = list.find((p) => p.isDefault) ?? list[0] ?? null
+		}
+		if (!active) {
+			throw new Error('No profile after restore')
+		}
+		if (settings.activeProfileId !== active.id) {
+			await repos.settings.update({ activeProfileId: active.id })
+		}
+		setTodayMeasurements([])
+		setProfileMeasurements([])
+		setHealthMetrics([])
+		await applyProfileData(repos, active)
+	}, [repos, applyProfileData])
 
 	const switchProfile = useCallback(
 		async (profileId: string) => {
@@ -313,6 +341,7 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 			refreshHealth,
 			refreshProfiles,
 			switchProfile,
+			reloadAfterRestore,
 			createProfile,
 			renameProfile,
 			deleteProfile,
@@ -333,6 +362,7 @@ export function DiaryProvider({ children }: { children: ReactNode }) {
 			refreshHealth,
 			refreshProfiles,
 			switchProfile,
+			reloadAfterRestore,
 			createProfile,
 			renameProfile,
 			deleteProfile,

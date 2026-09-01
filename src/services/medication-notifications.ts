@@ -161,9 +161,36 @@ export async function cancelPlatformNotification(
 	}
 }
 
+/** Cancels a list of known platform notification ids (pre-restore cleanup). */
+export async function cancelPlatformNotificationIds(
+	ids: string[],
+): Promise<void> {
+	for (const id of ids) {
+		await cancelPlatformNotification(id)
+	}
+}
+
+/**
+ * Cancels scheduled notifications tracked in reminder rows for this app.
+ * Prefer this over global cancel-all so future notification categories stay intact.
+ */
+export async function cancelManagedPlatformNotifications(input: {
+	repos: { profiles: { list(): Promise<{ id: string }[]> }; reminders: { listByProfile(profileId: string): Promise<Reminder[]> } }
+}): Promise<void> {
+	const profiles = await input.repos.profiles.list()
+	const reminders = (
+		await Promise.all(
+			profiles.map((p) => input.repos.reminders.listByProfile(p.id)),
+		)
+	).flat()
+	for (const reminder of reminders) {
+		await cancelPlatformNotification(reminder.platformNotificationId)
+	}
+}
+
 /**
  * Cancels every scheduled notification for this app.
- * Used before idempotent reconciliation across all profiles.
+ * @deprecated Prefer cancelManagedPlatformNotifications when possible.
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {
 	await Notifications.cancelAllScheduledNotificationsAsync()

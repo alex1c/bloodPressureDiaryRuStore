@@ -11,6 +11,7 @@ import type {
 	Reminder,
 	UpdateMeasurementInput,
 } from '@/domain/types'
+import type { DiaryBackup } from '@/domain/backup/validate-backup'
 
 export interface ProfileRepository {
 	list(): Promise<Profile[]>
@@ -118,4 +119,9 @@ export interface DiaryRepositories {
 	/** Current schema version for this store. */
 	getSchemaVersion(): Promise<number>
 	withTransaction<T>(fn: () => Promise<T>): Promise<T>
+	/**
+	 * Atomically replaces all user data with a validated backup snapshot.
+	 * Must run inside a transaction with rollback on failure.
+	 */
+	importBackupDataset(backup: DiaryBackup): Promise<void>
 }

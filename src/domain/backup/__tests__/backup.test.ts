@@ -1,5 +1,6 @@
 import { derivePeriodOfDay } from '@/domain/catalog'
 import {
+	BACKUP_FORMAT_ID,
 	BACKUP_FORMAT_VERSION,
 	validateDiaryBackup,
 } from '@/domain/backup/validate-backup'
@@ -37,6 +38,7 @@ describe('backup validation contract', () => {
 		const result = validateDiaryBackup(backup)
 		expect(result.ok).toBe(true)
 		if (result.ok) {
+			expect(result.backup.format).toBe(BACKUP_FORMAT_ID)
 			expect(result.backup.backupVersion).toBe(BACKUP_FORMAT_VERSION)
 			expect(result.backup.measurements).toHaveLength(1)
 		}
@@ -71,7 +73,15 @@ describe('backup validation contract', () => {
 			backupVersion: 1,
 			appVersion: '1.0.0',
 			createdAt: '2026-08-26T00:00:00.000Z',
-			profiles: [],
+			profiles: [
+				{
+					id: 'p1',
+					name: 'Я',
+					isDefault: true,
+					createdAt: '2026-08-26T00:00:00.000Z',
+					updatedAt: '2026-08-26T00:00:00.000Z',
+				},
+			],
 			measurements: [
 				{
 					id: 'm1',
@@ -93,7 +103,7 @@ describe('backup validation contract', () => {
 			medicationIntakes: [],
 			reminders: [],
 			settings: {
-				activeProfileId: null,
+				activeProfileId: 'p1',
 				locale: 'ru',
 				hasCompletedFirstMeasurement: false,
 			},

@@ -12,11 +12,17 @@ import type {
 } from '../types'
 import { normalizeEnabledKinds } from '../health/metric-catalog'
 
+/** Stable identifier for backup JSON documents. */
+export const BACKUP_FORMAT_ID = 'bpdiary-backup'
+
 /** Current backup document format version. */
 export const BACKUP_FORMAT_VERSION = 1
 
 export interface DiaryBackup {
+	format: typeof BACKUP_FORMAT_ID
 	backupVersion: number
+	/** SQLite schema at export time — metadata only, not applied on restore. */
+	schemaVersion: number
 	appVersion: string
 	createdAt: string
 	profiles: Profile[]
@@ -33,8 +39,10 @@ export interface DiaryBackup {
 export type BackupValidationErrorCode =
 	| 'NOT_OBJECT'
 	| 'UNSUPPORTED_VERSION'
+	| 'UNSUPPORTED_FORMAT'
 	| 'MISSING_FIELD'
 	| 'INVALID_FIELD'
+	| 'DUPLICATE_ID'
 	| 'PROFILE_ISOLATION'
 	| 'ORPHAN_REFERENCE'
 
@@ -90,6 +98,22 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 		}
 	}
 
+	if (raw.format !== undefined && raw.format !== BACKUP_FORMAT_ID) {
+		return {
+			ok: false,
+			code: 'UNSUPPORTED_FORMAT',
+			message: `Unsupported backup format ${String(raw.format)}`,
+		}
+	}
+
+	if (raw.schemaVersion !== undefined && !isNumber(raw.schemaVersion)) {
+		return {
+			ok: false,
+			code: 'INVALID_FIELD',
+			message: 'schemaVersion must be a number when present',
+		}
+	}
+
 	if (!isString(raw.appVersion) || !isString(raw.createdAt)) {
 		return {
 			ok: false,
@@ -115,6 +139,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 	}
 
 	const profiles: Profile[] = []
+	const profileIdSet = new Set<string>()
 	for (const item of raw.profiles) {
 		const profile = parseProfile(item)
 		if (!profile) {
@@ -124,12 +149,29 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid profile entry',
 			}
 		}
+		if (profileIdSet.has(profile.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate profile id ${profile.id}`,
+			}
+		}
+		profileIdSet.add(profile.id)
 		profiles.push(profile)
 	}
 
-	const profileIds = new Set(profiles.map((p) => p.id))
+	if (profiles.length === 0) {
+		return {
+			ok: false,
+			code: 'INVALID_FIELD',
+			message: 'Backup must contain at least one profile',
+		}
+	}
+
+	const profileIds = profileIdSet
 
 	const measurements: Measurement[] = []
+	const measurementIds = new Set<string>()
 	for (const item of raw.measurements) {
 		const m = parseMeasurement(item)
 		if (!m) {
@@ -139,6 +181,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid measurement entry',
 			}
 		}
+		if (measurementIds.has(m.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate measurement id ${m.id}`,
+			}
+		}
+		measurementIds.add(m.id)
 		if (!profileIds.has(m.profileId)) {
 			return {
 				ok: false,
@@ -150,6 +200,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 	}
 
 	const healthMetrics: HealthMetric[] = []
+	const healthMetricIds = new Set<string>()
 	for (const item of raw.healthMetrics) {
 		const h = parseHealthMetric(item)
 		if (!h) {
@@ -159,6 +210,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid healthMetric entry',
 			}
 		}
+		if (healthMetricIds.has(h.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate healthMetric id ${h.id}`,
+			}
+		}
+		healthMetricIds.add(h.id)
 		if (!profileIds.has(h.profileId)) {
 			return {
 				ok: false,
@@ -170,6 +229,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 	}
 
 	const medications: Medication[] = []
+	const medicationIds = new Set<string>()
 	for (const item of raw.medications) {
 		const med = parseMedication(item)
 		if (!med) {
@@ -179,6 +239,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid medication entry',
 			}
 		}
+		if (medicationIds.has(med.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate medication id ${med.id}`,
+			}
+		}
+		medicationIds.add(med.id)
 		if (!profileIds.has(med.profileId)) {
 			return {
 				ok: false,
@@ -189,9 +257,10 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 		medications.push(med)
 	}
 
-	const medicationIds = new Set(medications.map((m) => m.id))
+	const medicationIdSet = medicationIds
 
 	const medicationIntakes: MedicationIntake[] = []
+	const intakeIds = new Set<string>()
 	for (const item of raw.medicationIntakes) {
 		const intake = parseIntake(item)
 		if (!intake) {
@@ -201,6 +270,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid medicationIntake entry',
 			}
 		}
+		if (intakeIds.has(intake.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate medicationIntake id ${intake.id}`,
+			}
+		}
+		intakeIds.add(intake.id)
 		if (!profileIds.has(intake.profileId)) {
 			return {
 				ok: false,
@@ -208,7 +285,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: `Intake ${intake.id} references unknown profile`,
 			}
 		}
-		if (!medicationIds.has(intake.medicationId)) {
+		if (!medicationIdSet.has(intake.medicationId)) {
 			return {
 				ok: false,
 				code: 'ORPHAN_REFERENCE',
@@ -219,6 +296,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 	}
 
 	const reminders: Reminder[] = []
+	const reminderIds = new Set<string>()
 	for (const item of raw.reminders) {
 		const reminder = parseReminder(item)
 		if (!reminder) {
@@ -228,6 +306,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'Invalid reminder entry',
 			}
 		}
+		if (reminderIds.has(reminder.id)) {
+			return {
+				ok: false,
+				code: 'DUPLICATE_ID',
+				message: `Duplicate reminder id ${reminder.id}`,
+			}
+		}
+		reminderIds.add(reminder.id)
 		if (!profileIds.has(reminder.profileId)) {
 			return {
 				ok: false,
@@ -237,7 +323,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 		}
 		if (
 			reminder.medicationId !== null &&
-			!medicationIds.has(reminder.medicationId)
+			!medicationIdSet.has(reminder.medicationId)
 		) {
 			return {
 				ok: false,
@@ -258,6 +344,7 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: 'profileMetricSettings must be an array when present',
 			}
 		}
+		const metricSettingsProfileIds = new Set<string>()
 		for (const item of raw.profileMetricSettings) {
 			const row = parseProfileMetricSettings(item)
 			if (!row) {
@@ -267,6 +354,14 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 					message: 'Invalid profileMetricSettings entry',
 				}
 			}
+			if (metricSettingsProfileIds.has(row.profileId)) {
+				return {
+					ok: false,
+					code: 'DUPLICATE_ID',
+					message: `Duplicate profileMetricSettings for profile ${row.profileId}`,
+				}
+			}
+			metricSettingsProfileIds.add(row.profileId)
 			if (!profileIds.has(row.profileId)) {
 				return {
 					ok: false,
@@ -290,7 +385,9 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 	return {
 		ok: true,
 		backup: {
+			format: BACKUP_FORMAT_ID,
 			backupVersion: BACKUP_FORMAT_VERSION,
+			schemaVersion: isNumber(raw.schemaVersion) ? raw.schemaVersion : 0,
 			appVersion: raw.appVersion,
 			createdAt: raw.createdAt,
 			profiles,
@@ -364,6 +461,13 @@ function parseMeasurement(item: unknown): Measurement | null {
 		!isNumber(item.systolic) ||
 		!isNumber(item.diastolic) ||
 		!isNumber(item.pulse) ||
+		item.systolic <= item.diastolic ||
+		item.systolic < 50 ||
+		item.systolic > 300 ||
+		item.diastolic < 30 ||
+		item.diastolic > 200 ||
+		item.pulse < 20 ||
+		item.pulse > 250 ||
 		!isString(item.measuredAt) ||
 		!isString(item.periodOfDay) ||
 		!isPeriodOfDay(item.periodOfDay) ||
@@ -456,6 +560,7 @@ function parseMedication(item: unknown): Medication | null {
 		!isString(item.id) ||
 		!isString(item.profileId) ||
 		!isString(item.name) ||
+		item.name.trim().length === 0 ||
 		!isString(item.dosageText) ||
 		!Array.isArray(item.schedule) ||
 		!isBoolean(item.isActive) ||

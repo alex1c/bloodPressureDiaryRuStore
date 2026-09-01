@@ -1,12 +1,16 @@
-import { BACKUP_FORMAT_VERSION, type DiaryBackup } from '@/domain/backup/validate-backup'
+import {
+	BACKUP_FORMAT_ID,
+	BACKUP_FORMAT_VERSION,
+	type DiaryBackup,
+	validateDiaryBackup,
+} from '@/domain/backup/validate-backup'
 import { appConfig } from '@/config/app-config'
 import { nowIso } from '@/domain/ids'
 import type { DiaryRepositories } from '@/storage/repositories/types'
 
 /**
  * Builds a versioned backup document from the local store.
- * Does not write files — Phase 8 wires export UI.
- * Includes profileMetricSettings for Phase 6 readiness.
+ * Strips platform notification ids — they are device-specific.
  */
 export async function buildDiaryBackup(
 	repos: DiaryRepositories,
@@ -46,10 +50,15 @@ export async function buildDiaryBackup(
 		await Promise.all(
 			profiles.map((p) => repos.reminders.listByProfile(p.id)),
 		)
-	).flat()
+	).flat().map((reminder) => ({
+		...reminder,
+		platformNotificationId: null,
+	}))
 
-	return {
+	const backup: DiaryBackup = {
+		format: BACKUP_FORMAT_ID,
 		backupVersion: BACKUP_FORMAT_VERSION,
+		schemaVersion: await repos.getSchemaVersion(),
 		appVersion: appConfig.versionName,
 		createdAt: nowIso(),
 		profiles,
@@ -61,4 +70,11 @@ export async function buildDiaryBackup(
 		reminders,
 		settings,
 	}
+
+	const validation = validateDiaryBackup(backup)
+	if (!validation.ok) {
+		throw new Error(`Backup validation failed: ${validation.message}`)
+	}
+
+	return backup
 }

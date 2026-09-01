@@ -7,7 +7,7 @@ import {
 	Text,
 	View,
 } from 'react-native'
-import { useFocusEffect, useRouter } from 'expo-router'
+import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { formatRussianLongDate } from '@/domain/dates/local-day'
 import { formatScheduleHm } from '@/domain/medications/schedule'
@@ -85,7 +85,20 @@ export function DiaryScreen() {
 				keyboardShouldPersistTaps="handled"
 			>
 				<View style={styles.header}>
-					<Text style={styles.appTitle}>Давление</Text>
+					<View style={styles.headerTop}>
+						<Text style={styles.appTitle}>Давление</Text>
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel="Настройки"
+							onPress={() => router.push('/settings/index' as Href)}
+							style={({ pressed }) => [
+								styles.settingsLink,
+								pressed && styles.settingsLinkPressed,
+							]}
+						>
+							<Text style={styles.settingsLinkText}>Ещё</Text>
+						</Pressable>
+					</View>
 					<ProfileSelector />
 					<Text style={styles.dateLine}>Сегодня, {todayLabel}</Text>
 				</View>
@@ -171,6 +184,24 @@ const styles = StyleSheet.create({
 	header: {
 		paddingHorizontal: spacing.lg,
 		marginBottom: spacing.sm,
+	},
+	headerTop: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: spacing.sm,
+	},
+	settingsLink: {
+		paddingVertical: spacing.xs,
+		paddingHorizontal: spacing.sm,
+	},
+	settingsLinkPressed: {
+		opacity: 0.75,
+	},
+	settingsLinkText: {
+		fontSize: typography.secondary,
+		fontWeight: '700',
+		color: colors.primary,
 	},
 	appTitle: {
 		fontSize: typography.title,

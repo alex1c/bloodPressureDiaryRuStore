@@ -290,4 +290,37 @@ describe('filename + HTML renderer', () => {
 		expect(html).toContain('не является медицинским прибором')
 		expect(html).toContain('Кофе')
 	})
+
+	it('renders long 200+ measurement HTML without layout-breaking raw notes', async () => {
+		const store = createMemoryDiaryStore()
+		const me = await store.profiles.create({ name: 'Я', isDefault: true })
+		for (let i = 0; i < 220; i++) {
+			await store.measurements.create({
+				profileId: me.id,
+				systolic: 120 + (i % 15),
+				diastolic: 80 + (i % 8),
+				pulse: 70 + (i % 4),
+				measuredAt: new Date(Date.UTC(2026, 5, 1) + i * 3600_000).toISOString(),
+				periodOfDay: i % 2 === 0 ? 'morning' : 'evening',
+				tags: i % 5 === 0 ? ['stress'] : [],
+				note: i % 20 === 0 ? 'Длинная заметка с кириллицей и ё' : null,
+			})
+		}
+
+		const report = await buildDoctorReportData({
+			repos: store,
+			profileId: me.id,
+			selection: {
+				kind: 'custom',
+				fromDayKey: '2026-06-01',
+				toDayKey: '2026-09-01',
+			},
+			reference: new Date(2026, 8, 1),
+		})
+		expect(report.measurements.length).toBeGreaterThanOrEqual(200)
+		const html = renderDoctorReportHtml(report)
+		expect(html.length).toBeGreaterThan(20_000)
+		expect(html).toContain('page-break-inside: avoid')
+		expect((html.match(/<tr>/g) ?? []).length).toBeGreaterThanOrEqual(200)
+	})
 })

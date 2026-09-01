@@ -47,6 +47,8 @@ jest.mock('@/services/medication-notifications', () => ({
 		return `notif-${reminder.id}`
 	}),
 	cancelPlatformNotification: jest.fn(async () => {}),
+	cancelPlatformNotificationIds: jest.fn(async () => {}),
+	cancelManagedPlatformNotifications: jest.fn(async () => {}),
 	cancelAllScheduledNotifications: jest.fn(async () => {}),
 }))
 
@@ -307,15 +309,15 @@ describe('family profile isolation', () => {
 })
 
 describe('reminder reconciliation across profiles', () => {
-	it('schedules reminders for every profile after cancel-all', async () => {
+	it('schedules reminders for every profile after managed cancel', async () => {
 		const {
-			cancelAllScheduledNotifications,
+			cancelManagedPlatformNotifications,
 			scheduleDailyReminderNotification,
 		} = jest.requireMock('@/services/medication-notifications') as {
-			cancelAllScheduledNotifications: jest.Mock
+			cancelManagedPlatformNotifications: jest.Mock
 			scheduleDailyReminderNotification: jest.Mock
 		}
-		cancelAllScheduledNotifications.mockClear()
+		cancelManagedPlatformNotifications.mockClear()
 		scheduleDailyReminderNotification.mockClear()
 
 		const store = createMemoryDiaryStore()
@@ -349,7 +351,7 @@ describe('reminder reconciliation across profiles', () => {
 		})
 
 		const result = await reconcileAllProfileNotifications({ repos: store })
-		expect(cancelAllScheduledNotifications).toHaveBeenCalled()
+		expect(cancelManagedPlatformNotifications).toHaveBeenCalled()
 		expect(result.scheduled).toBe(2)
 		expect(scheduleDailyReminderNotification).toHaveBeenCalledTimes(2)
 

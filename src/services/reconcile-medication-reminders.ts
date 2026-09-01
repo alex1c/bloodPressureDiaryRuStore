@@ -6,8 +6,9 @@ import {
 import type { DiaryRepositories } from '@/storage/repositories/types'
 import {
 	buildReminderContent,
-	cancelAllScheduledNotifications,
+	cancelManagedPlatformNotifications,
 	cancelPlatformNotification,
+	cancelPlatformNotificationIds,
 	getNotificationPermissionState,
 	scheduleDailyReminderNotification,
 } from '@/services/medication-notifications'
@@ -108,9 +109,14 @@ export async function syncMedicationReminders(input: {
  */
 export async function reconcileAllProfileNotifications(input: {
 	repos: DiaryRepositories
+	/** When restoring, pass ids collected before DB replace. */
+	extraPlatformIdsToCancel?: string[]
 }): Promise<{ scheduled: number; permission: string }> {
 	const { repos } = input
-	await cancelAllScheduledNotifications()
+	await cancelManagedPlatformNotifications({ repos })
+	if (input.extraPlatformIdsToCancel?.length) {
+		await cancelPlatformNotificationIds(input.extraPlatformIdsToCancel)
+	}
 
 	const permission = await getNotificationPermissionState()
 	const profiles = await repos.profiles.list()

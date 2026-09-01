@@ -6,5 +6,7 @@ export * from './dates/local-day'
 export * from './statistics/measurement-stats'
 export * from './backup/validate-backup'
 export * from './backup/build-backup'
+export * from './backup/restore-diary-backup'
+export * from './backup/backup-filename'
 export * from './measurement/build-measurement'
 

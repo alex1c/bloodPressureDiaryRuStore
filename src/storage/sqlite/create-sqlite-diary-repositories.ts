@@ -25,6 +25,7 @@ import {
 	normalizeEnabledKinds,
 } from '@/domain/health/metric-catalog'
 import { applyMigrations } from '../migrate'
+import { importBackupDatasetSqlite } from '../backup/import-backup-dataset'
 import { CURRENT_SCHEMA_VERSION } from '../schema-version'
 import type { DiaryRepositories } from '../repositories/types'
 import type { SqlExecutor } from '../sql-executor'
@@ -59,6 +60,11 @@ export function createSqliteDiaryRepositories(
 			return row ? Number(row.value) : 0
 		},
 		withTransaction: (fn) => db.withTransaction(fn),
+		importBackupDataset: async (backup) => {
+			await db.withTransaction(async () => {
+				await importBackupDatasetSqlite(db, backup)
+			})
+		},
 		profiles: {
 			async list() {
 				const rows = await db.getAll<{

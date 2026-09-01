@@ -65,11 +65,15 @@ Lean phases. Do not turn this into an enterprise process.
 * Share Sheet via `expo-sharing`
 * Profile-scoped snapshot builder + HTML escaping
 
-## Phase 8 — Backup / restore hardening
+## Phase 8 — Backup / restore ✅
 
-* Export / import UI
-* Validated restore, conflict/merge policy
-* Contract already includes profiles / health metrics / profileMetricSettings
+* Settings entry: Дневник → «Ещё» (stack screen, no fifth tab)
+* Versioned JSON export (`bpdiary-backup`, backupVersion 1, schemaVersion metadata)
+* System Share Sheet export + document picker import
+* Preview counts + destructive confirmation
+* Full replace restore (not merge) in one transaction
+* Platform notification IDs stripped on export; reconciled after restore
+* Managed notification cancel (not global cancel-all)
 
 ## Phase 9 — Analytics / ads
 

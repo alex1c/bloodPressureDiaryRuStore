@@ -63,6 +63,10 @@ export default function RootLayout() {
 						name="report/index"
 						options={{ headerShown: true, presentation: 'card' }}
 					/>
+					<Stack.Screen
+						name="settings/index"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
 				</Stack>
 			</MedicationsProvider>
 		</DiaryProvider>

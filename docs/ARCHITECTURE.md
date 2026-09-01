@@ -83,26 +83,33 @@ Versioned JSON document (not a raw DB file dump):
 
 ```ts
 {
+  format: "bpdiary-backup"
   backupVersion: number
+  schemaVersion: number   // metadata — not applied to SQLite on restore
   appVersion: string
   createdAt: string // ISO
   profiles: Profile[]
   measurements: Measurement[]
   healthMetrics: HealthMetric[]
+  profileMetricSettings: ProfileMetricSettings[]
   medications: Medication[]
   medicationIntakes: MedicationIntake[]
-  reminders: Reminder[]
+  reminders: Reminder[]   // platformNotificationId null on export
   settings: AppSettings
 }
 ```
 
-Restore pipeline (future UI, contract now):
+Restore pipeline:
 
-1. Read file
-2. Check shape
-3. Check `backupVersion`
-4. Validate entities
-5. Only then mutate local DB (transactional replace/merge)
+1. Read file (document picker)
+2. JSON parse
+3. Validate format + backupVersion + referential integrity + duplicates
+4. Show preview counts
+5. Explicit destructive confirmation
+6. Transaction: delete user data (FK order) → insert validated rows → update settings
+7. Cancel pre-restore platform notification IDs
+8. Reconcile reminders for all profiles
+9. Reload React providers
 
 Destructive restore without validation is forbidden.
 
