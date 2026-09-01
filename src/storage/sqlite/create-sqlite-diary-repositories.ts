@@ -579,6 +579,12 @@ export function createSqliteDiaryRepositories(
 				return rows.map(mapIntake)
 			},
 			async create(input) {
+				const medication = await db.getFirst<{ profile_id: string }>(
+					'SELECT profile_id FROM medications WHERE id = ?',
+					[input.medicationId],
+				)
+				if (!medication) throw new Error(`Medication not found: ${input.medicationId}`)
+				if (medication.profile_id !== input.profileId) throw new Error('Medication intake profile mismatch')
 				const timestamp = nowIso()
 				const row: MedicationIntake = {
 					...input,
@@ -629,6 +635,14 @@ export function createSqliteDiaryRepositories(
 				return rows.map(mapReminder)
 			},
 			async create(input) {
+				if (input.medicationId !== null) {
+					const medication = await db.getFirst<{ profile_id: string }>(
+						'SELECT profile_id FROM medications WHERE id = ?',
+						[input.medicationId],
+					)
+					if (!medication) throw new Error(`Medication not found: ${input.medicationId}`)
+					if (medication.profile_id !== input.profileId) throw new Error('Reminder profile mismatch')
+				}
 				const timestamp = nowIso()
 				const row: Reminder = {
 					...input,

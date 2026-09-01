@@ -13,6 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 	const isProduction = process.env.APP_VARIANT === 'production'
 
 	const plugins: NonNullable<ExpoConfig['plugins']> = [
+		'./plugins/with-worklets-packaging',
 		'expo-router',
 		'expo-splash-screen',
 		[
@@ -63,6 +64,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 				? {
 						blockedPermissions: [
 							'android.permission.SYSTEM_ALERT_WINDOW',
+							'android.permission.READ_EXTERNAL_STORAGE',
+							'android.permission.WRITE_EXTERNAL_STORAGE',
 						],
 					}
 				: {}),

@@ -4,6 +4,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 	type ReactNode,
 } from 'react'
@@ -62,6 +63,7 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 	const [reminders, setReminders] = useState<Reminder[]>([])
 	const [permission, setPermission] =
 		useState<NotificationPermissionState>('undetermined')
+	const markingSlots = useRef(new Set<string>())
 
 	const refreshMedications = useCallback(async () => {
 		if (!repos || !profile) {
@@ -123,6 +125,15 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 			if (!repos || !profile) {
 				throw new Error('Diary is not ready')
 			}
+			const day = new Date()
+			const slotKey = `${profile.id}|${dose.medicationId}|${dose.hour}:${dose.minute}|${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`
+			if (markingSlots.current.has(slotKey)) {
+				const existing = findTakenIntakeForSlot(intakes, dose.medicationId, dose.hour, dose.minute, day)
+				if (existing) return existing
+				throw new Error('Dose is already being saved')
+			}
+			markingSlots.current.add(slotKey)
+			try {
 			const existing = findTakenIntakeForSlot(
 				intakes,
 				dose.medicationId,
@@ -144,6 +155,9 @@ export function MedicationsProvider({ children }: { children: ReactNode }) {
 			})
 			await refreshMedications()
 			return created
+			} finally {
+				markingSlots.current.delete(slotKey)
+			}
 		},
 		[repos, profile, intakes, refreshMedications],
 	)

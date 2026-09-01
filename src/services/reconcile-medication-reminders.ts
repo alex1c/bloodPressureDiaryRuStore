@@ -112,6 +112,17 @@ export async function reconcileAllProfileNotifications(input: {
 	/** When restoring, pass ids collected before DB replace. */
 	extraPlatformIdsToCancel?: string[]
 }): Promise<{ scheduled: number; permission: string }> {
+	const run = reconciliationChain.then(() => reconcileAllProfileNotificationsUnlocked(input))
+	reconciliationChain = run.then(() => undefined, () => undefined)
+	return run
+}
+
+let reconciliationChain: Promise<void> = Promise.resolve()
+
+async function reconcileAllProfileNotificationsUnlocked(input: {
+	repos: DiaryRepositories
+	extraPlatformIdsToCancel?: string[]
+}): Promise<{ scheduled: number; permission: string }> {
 	const { repos } = input
 	await cancelManagedPlatformNotifications({ repos })
 	if (input.extraPlatformIdsToCancel?.length) {

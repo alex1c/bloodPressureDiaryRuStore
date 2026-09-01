@@ -62,6 +62,10 @@ function isNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value)
 }
 
+function isIsoTimestamp(value: unknown): value is string {
+	return isString(value) && Number.isFinite(Date.parse(value))
+}
+
 function isBoolean(value: unknown): value is boolean {
 	return typeof value === 'boolean'
 }
@@ -292,6 +296,10 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				message: `Intake ${intake.id} references unknown medication`,
 			}
 		}
+		const intakeMedication = medications.find((m) => m.id === intake.medicationId)
+		if (!intakeMedication || intakeMedication.profileId !== intake.profileId) {
+			return { ok: false, code: 'PROFILE_ISOLATION', message: `Intake ${intake.id} crosses profile boundary` }
+		}
 		medicationIntakes.push(intake)
 	}
 
@@ -329,6 +337,12 @@ export function validateDiaryBackup(raw: unknown): BackupValidationResult {
 				ok: false,
 				code: 'ORPHAN_REFERENCE',
 				message: `Reminder ${reminder.id} references unknown medication`,
+			}
+		}
+		if (reminder.medicationId !== null) {
+			const reminderMedication = medications.find((m) => m.id === reminder.medicationId)
+			if (!reminderMedication || reminderMedication.profileId !== reminder.profileId) {
+				return { ok: false, code: 'PROFILE_ISOLATION', message: `Reminder ${reminder.id} crosses profile boundary` }
 			}
 		}
 		reminders.push(reminder)
@@ -468,12 +482,12 @@ function parseMeasurement(item: unknown): Measurement | null {
 		item.diastolic > 200 ||
 		item.pulse < 20 ||
 		item.pulse > 250 ||
-		!isString(item.measuredAt) ||
+		!isIsoTimestamp(item.measuredAt) ||
 		!isString(item.periodOfDay) ||
 		!isPeriodOfDay(item.periodOfDay) ||
 		!Array.isArray(item.tags) ||
-		!isString(item.createdAt) ||
-		!isString(item.updatedAt)
+		!isIsoTimestamp(item.createdAt) ||
+		!isIsoTimestamp(item.updatedAt)
 	) {
 		return null
 	}
@@ -526,9 +540,9 @@ function parseHealthMetric(item: unknown): HealthMetric | null {
 		!isString(item.kind) ||
 		!HEALTH_KINDS.includes(item.kind as HealthMetricKind) ||
 		!isNumber(item.value) ||
-		!isString(item.measuredAt) ||
-		!isString(item.createdAt) ||
-		!isString(item.updatedAt)
+		!isIsoTimestamp(item.measuredAt) ||
+		!isIsoTimestamp(item.createdAt) ||
+		!isIsoTimestamp(item.updatedAt)
 	) {
 		return null
 	}
@@ -564,8 +578,8 @@ function parseMedication(item: unknown): Medication | null {
 		!isString(item.dosageText) ||
 		!Array.isArray(item.schedule) ||
 		!isBoolean(item.isActive) ||
-		!isString(item.createdAt) ||
-		!isString(item.updatedAt)
+		!isIsoTimestamp(item.createdAt) ||
+		!isIsoTimestamp(item.updatedAt)
 	) {
 		return null
 	}
@@ -604,10 +618,10 @@ function parseIntake(item: unknown): MedicationIntake | null {
 		!isString(item.id) ||
 		!isString(item.profileId) ||
 		!isString(item.medicationId) ||
-		!isString(item.takenAt) ||
+		!isIsoTimestamp(item.takenAt) ||
 		!isBoolean(item.taken) ||
-		!isString(item.createdAt) ||
-		!isString(item.updatedAt)
+		!isIsoTimestamp(item.createdAt) ||
+		!isIsoTimestamp(item.updatedAt)
 	) {
 		return null
 	}
@@ -650,8 +664,8 @@ function parseReminder(item: unknown): Reminder | null {
 			item.platformNotificationId === null ||
 			isString(item.platformNotificationId)
 		) ||
-		!isString(item.createdAt) ||
-		!isString(item.updatedAt)
+		!isIsoTimestamp(item.createdAt) ||
+		!isIsoTimestamp(item.updatedAt)
 	) {
 		return null
 	}

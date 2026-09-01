@@ -9,6 +9,7 @@ import type { DiaryRepositories } from '../repositories/types'
 const DB_NAME = 'bp_diary.db'
 
 let cached: DiaryRepositories | null = null
+let opening: Promise<DiaryRepositories> | null = null
 
 /**
  * Opens the on-device SQLite database, applies migrations, returns repositories.
@@ -19,14 +20,23 @@ export async function openDiaryDatabase(): Promise<DiaryRepositories> {
 		return cached
 	}
 
-	const sqlite = await openDatabaseAsync(DB_NAME)
-	const executor = createSqliteExecutor(sqlite)
-	await bootstrapSqliteSchema(executor)
-	cached = createSqliteDiaryRepositories(executor)
-	return cached
+	if (!opening) {
+		opening = (async () => {
+			const sqlite = await openDatabaseAsync(DB_NAME)
+			const executor = createSqliteExecutor(sqlite)
+			await bootstrapSqliteSchema(executor)
+			const repositories = createSqliteDiaryRepositories(executor)
+			cached = repositories
+			return repositories
+		})().finally(() => {
+			opening = null
+		})
+	}
+	return opening
 }
 
 /** Test / hot-reload helper. */
 export function resetDiaryDatabaseCacheForTests(): void {
 	cached = null
+	opening = null
 }
