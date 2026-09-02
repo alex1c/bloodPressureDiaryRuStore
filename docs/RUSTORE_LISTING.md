@@ -1,11 +1,9 @@
-# RuStore listing draft — «Дневник давления»
+# RuStore listing — «Дневник давления»
 
 Package: `com.calculatorplatform.bpdiary`  
 Version: `1.0.0` (versionCode `1`)  
 Support: [rustore-alex1c@yandex.ru](mailto:rustore-alex1c@yandex.ru)  
-Privacy: [Политика конфиденциальности](https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html)
-
-> Git remote was not configured at Phase 10 prep. Privacy URL assumes GitHub Pages for repository `bloodPressureDiaryRuStore` under user `alex1c`.
+Privacy: [https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html](https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html)
 
 ## Название
 
@@ -13,7 +11,7 @@ Privacy: [Политика конфиденциальности](https://alex1c.
 
 ## Короткое описание
 
-Давление, пульс, лекарства и показатели здоровья в одном удобном дневнике.
+Давление, пульс, лекарства и здоровье в удобном дневнике
 
 ## Полное описание
 
@@ -35,41 +33,30 @@ Privacy: [Политика конфиденциальности](https://alex1c.
 
 Данные хранятся **локально на устройстве**. Резервная копия и PDF передаются только по вашему явному действию через Share Sheet.
 
-## Disclaimer
-
 **Приложение не является медицинским прибором и не заменяет консультацию врача.**
 
-## Ключевые слова (черновик)
+## Рекомендуемая категория
+
+Здоровье / Здоровый образ жизни (Health & Fitness)
+
+## Рекомендуемые теги / поисковые слова
 
 - давление
-- дневник давления
 - пульс
-- артериальное давление
-- журнал давления
-- контроль давления
-- лекарства
 - здоровье
-- измерения давления
+- лекарства
+- дневник
+- артериальное давление
 
-## Store icon
+## Store assets
 
-`release-artifacts/icon-512.png` (512×512, derived from `assets/icon_gpt.png`).
-
-## Screenshot plan (future)
-
-Synthetic demo data only — no real health values, no loaded production ad creatives.
-
-| # | Screen | Notes |
-|---|--------|-------|
-| 1 | Дневник | Demo BP 128/82, 134/86, 125/80 |
-| 2 | Добавление давления | Empty form, no ads |
-| 3 | Графики | Period selector, summary + chart |
-| 4 | Лекарства | No banner; demo medication schedule |
-| 5 | Здоровье | Weight/glucose cards |
-| 6 | Профили | Profile switcher |
-| 7 | Отчёт врачу | Preview / PDF flow, ad-free |
-
-Capture in dev/test ad mode or with ads collapsed — never show real production ad creatives in store screenshots.
+| Asset | Path |
+|-------|------|
+| AAB | `release-artifacts/bp-diary-1.0.0-v1.aab` |
+| Icon 512 | `release-artifacts/icon-512.png` |
+| Screenshots | `release-artifacts/screenshots/rustore/01…07-*.png` |
+| Verification | `release-artifacts/bp-diary-1.0.0-v1-verification.txt` |
+| Upload checklist | `docs/RUSTORE_UPLOAD_CHECKLIST.md` |
 
 ## Production IDs (reference)
 

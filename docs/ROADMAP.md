@@ -101,8 +101,24 @@ Status: **Implemented** (signing blocked until keystore created)
 * RuStore listing draft `docs/RUSTORE_LISTING.md` + screenshot plan
 * Production keystore: **not auto-created** — see `credentials/README.md`
 
-## Phase 11 — RuStore upload (manual)
+## Phase 11 — Production signing + AAB
 
-* Create production keystore + signed AAB
-* GitHub Pages publish for privacy URL
-* Final screenshots + store submission
+Status: **Implemented**
+
+* Production keystore `bp-diary-release.jks` / alias `bp-diary`
+* Signed AAB: `release-artifacts/bp-diary-1.0.0-v1.aab`
+* Verification: `release-artifacts/bp-diary-1.0.0-v1-verification.txt`
+
+## Phase 12 — RuStore storefront assets
+
+Status: **Implemented**
+
+* GitHub remote + Pages (`/docs` from `master`)
+* Privacy URL live: `https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html`
+* Final screenshot pack: `release-artifacts/screenshots/rustore/` (7×1080×1920)
+* Upload checklist: `docs/RUSTORE_UPLOAD_CHECKLIST.md`
+
+## Phase 13 — Manual RuStore upload
+
+* Operator uploads AAB + assets in RuStore Console
+* Moderation submission is manual
