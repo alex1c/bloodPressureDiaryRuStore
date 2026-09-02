@@ -9,8 +9,10 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AdBanner } from '@/ads/ad-banner'
 import { formatRussianLongDate } from '@/domain/dates/local-day'
 import { formatScheduleHm } from '@/domain/medications/schedule'
+import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
 import { colors, spacing, typography } from '@/theme'
@@ -29,6 +31,7 @@ export function DiaryScreen() {
 	const router = useRouter()
 	const { ready, error, todayMeasurements, refreshToday, refreshAll } =
 		useDiary()
+	const { canShowAds } = useAdPolicy()
 	const { medications, todaySummary, refreshMedications } = useMedications()
 
 	useFocusEffect(
@@ -165,6 +168,7 @@ export function DiaryScreen() {
 						/>
 					</View>
 				)}
+				<AdBanner placement="diaryBanner" visible={canShowAds} />
 			</ScrollView>
 		</View>
 	)

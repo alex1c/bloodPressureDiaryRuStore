@@ -72,7 +72,7 @@ Allowed: neutral statistics over user-entered data.
 | Reminders | local notifications; reconcile all profiles; tap routes to correct profile |
 | Doctor report | PDF + Android Share Sheet — period presets, profile-scoped, no medical advice |
 | Backup / restore | versioned local export/import (contract now, UI Phase 8) |
-| Analytics / ads | AppMetrica + very moderate ads (Phase 9 only) |
+| Analytics / ads | AppMetrica (`233587e7-4552-4959-a6f4-5f06eb451319`) + Yandex banners on Diary/Graphs/Health; interstitial on Graphs policy; **health values never in analytics** |
 
 ## 5. UX principles (audience 40–45+)
 

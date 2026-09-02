@@ -1,7 +1,19 @@
-/**
- * Analytics seam for future AppMetrica (Phase 9).
- * No-op in Phase 0–2 — never blocks diary UX.
- */
+export { analytics } from './events'
+export {
+	getAnalyticsBackend,
+	initializeAnalytics,
+	installProductionAnalyticsBackend,
+	setAnalyticsBackend,
+	trackLegacyEvent,
+} from './backend'
+export { sanitizeAnalyticsParams } from './sanitize'
+export { FORBIDDEN_ANALYTICS_KEYS } from './forbidden-keys'
+export {
+	createAppMetricaAnalyticsService,
+	resetAppMetricaInitializationForTests,
+} from './appmetrica-service'
+
+/** @deprecated Use typed `analytics` helpers from `@/analytics/events`. */
 export type AnalyticsEventName =
 	| 'app_open'
 	| 'measurement_saved'
@@ -9,28 +21,11 @@ export type AnalyticsEventName =
 	| 'backup_exported'
 	| 'backup_restored'
 
-export interface AnalyticsService {
-	initialize(): void
-	track(event: AnalyticsEventName, params?: Record<string, string | number | boolean>): void
-}
+/** @deprecated Use `getAnalyticsBackend()` or typed `analytics` helpers. */
+export { getAnalyticsBackend as getAnalyticsService } from './backend'
 
-export function createNoopAnalyticsService(): AnalyticsService {
-	return {
-		initialize() {
-			/* Phase 9 */
-		},
-		track() {
-			/* Phase 9 */
-		},
-	}
-}
+/** @deprecated Use `setAnalyticsBackend()`. */
+export { setAnalyticsBackend as setAnalyticsService } from './backend'
 
-let analyticsService: AnalyticsService = createNoopAnalyticsService()
-
-export function getAnalyticsService(): AnalyticsService {
-	return analyticsService
-}
-
-export function setAnalyticsService(service: AnalyticsService): void {
-	analyticsService = service
-}
+/** @deprecated */
+export { createNoopAnalyticsBackend as createNoopAnalyticsService } from './noop-backend'

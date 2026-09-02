@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AdBanner } from '@/ads/ad-banner'
 import { localDayKeyFromIso } from '@/domain/dates/local-day'
 import {
 	ALL_METRIC_KINDS,
@@ -24,6 +25,7 @@ import {
 import type { HealthMetric, HealthMetricKind } from '@/domain/types'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { ProfileSelector } from '@/features/profiles/profile-selector'
+import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
@@ -42,6 +44,7 @@ export function HealthScreen() {
 		refreshHealth,
 		setEnabledMetricKinds,
 	} = useDiary()
+	const { canShowAds } = useAdPolicy()
 
 	const [pickerOpen, setPickerOpen] = useState(false)
 	const [draftKinds, setDraftKinds] = useState<HealthMetricKind[]>([])
@@ -158,6 +161,7 @@ export function HealthScreen() {
 						</View>
 					</>
 				)}
+				<AdBanner placement="healthBanner" visible={canShowAds && !pickerOpen} />
 			</ScrollView>
 
 			<Modal

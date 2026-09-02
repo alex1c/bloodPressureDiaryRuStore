@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import { formatLocalDayKey } from '@/domain/dates/local-day'
 import {
 	DEFAULT_REPORT_PERIOD_DAYS,
@@ -99,6 +100,7 @@ export function DoctorReportScreen() {
 		useCallback(() => {
 			void refreshAll()
 			void loadPreview()
+			analytics.trackDoctorReportOpened()
 		}, [refreshAll, loadPreview]),
 	)
 
@@ -127,6 +129,10 @@ export function DoctorReportScreen() {
 			const generated = await generateDoctorPdf(snapshot)
 			setPdf(generated)
 			setPreview(snapshot)
+			analytics.trackDoctorReportPdfCreated({
+				reportPeriod: snapshot.periodLabelRu,
+				hasMeasurements: snapshot.measurements.length > 0,
+			})
 		} catch (err) {
 			if (__DEV__) {
 				console.warn('Doctor PDF generation failed', err)
@@ -146,6 +152,12 @@ export function DoctorReportScreen() {
 		setActionError(null)
 		try {
 			await shareDoctorPdf(pdf)
+			if (preview) {
+				analytics.trackDoctorReportShared({
+					reportPeriod: preview.periodLabelRu,
+					hasMeasurements: preview.measurements.length > 0,
+				})
+			}
 		} catch (err) {
 			if (__DEV__) {
 				console.warn('Doctor PDF share failed', err)

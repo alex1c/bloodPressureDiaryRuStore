@@ -10,6 +10,15 @@ import {
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
+	AdBanner,
+} from '@/ads/ad-banner'
+import {
+	getAdService,
+	recordGraphsFocus,
+	recordGraphsPeriodChange,
+} from '@/ads'
+import { analytics } from '@/analytics'
+import {
 	buildChartSeries,
 	computeMeasurementStats,
 	downsampleChartSeries,
@@ -19,6 +28,7 @@ import {
 	groupHistoryByLocalDay,
 	type StatsPeriodDays,
 } from '@/domain/statistics/measurement-stats'
+import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
 import { colors, spacing, typography } from '@/theme'
 import { BpLineChart } from './components/bp-line-chart'
@@ -46,13 +56,28 @@ export function GraphsScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
 	const { ready, error, profile, profileMeasurements, refreshAll } = useDiary()
+	const { canShowAds, hasCompletedFirstMeasurement } = useAdPolicy()
 	const [period, setPeriod] = useState<StatsPeriodDays>(7)
 
 	useFocusEffect(
 		useCallback(() => {
 			void refreshAll()
+			recordGraphsFocus()
+			analytics.trackGraphsOpened()
 		}, [refreshAll]),
 	)
+
+	function handlePeriodChange(next: StatsPeriodDays) {
+		if (next === period) {
+			return
+		}
+		setPeriod(next)
+		analytics.trackGraphPeriodChanged(next)
+		recordGraphsPeriodChange()
+		getAdService().maybeShowGraphsInterstitial({
+			hasCompletedFirstMeasurement,
+		})
+	}
 
 	const scoped = useMemo(() => {
 		if (!profile) {
@@ -147,7 +172,7 @@ export function GraphsScreen() {
 						<Text style={styles.reportLinkText}>Отчёт врачу</Text>
 					</Pressable>
 				</View>
-				<PeriodSelector value={period} onChange={setPeriod} />
+				<PeriodSelector value={period} onChange={handlePeriodChange} />
 
 				<StatsSummary
 					periodLabel={periodLabel}
@@ -179,6 +204,7 @@ export function GraphsScreen() {
 
 				<TagStatsSection items={tagItems} />
 				<HistorySection groups={historyGroups} />
+				<AdBanner placement="graphsBanner" visible={canShowAds} />
 			</ScrollView>
 		</View>
 	)

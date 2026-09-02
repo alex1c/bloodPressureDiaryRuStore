@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import {
 	formatLocalTime,
 	formatRussianLongDate,
@@ -194,6 +195,14 @@ function MedicationFormEditor({
 				isActive,
 				remindEnabled: remindEnabled && isActive,
 			})
+			if (mode === 'create') {
+				analytics.trackMedicationCreated()
+			} else {
+				analytics.trackMedicationUpdated()
+			}
+			if (remindEnabled && isActive) {
+				analytics.trackReminderEnabled()
+			}
 			router.back()
 		} catch (err) {
 			setError(
@@ -217,6 +226,7 @@ function MedicationFormEditor({
 					onPress: () => {
 						void (async () => {
 							await deactivateMedication(String(medicationId))
+							analytics.trackMedicationDeactivated()
 							router.back()
 						})()
 					},

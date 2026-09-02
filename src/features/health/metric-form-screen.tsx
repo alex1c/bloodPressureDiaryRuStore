@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import {
 	formatLocalDayKey,
 	formatLocalTime,
@@ -190,6 +191,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 					measuredAt,
 					note,
 				})
+				analytics.trackHealthMetricCreated(kind)
 			} else if (params.id) {
 				await repos.healthMetrics.update(String(params.id), {
 					value: parsed.value,

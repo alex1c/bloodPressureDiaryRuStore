@@ -31,8 +31,37 @@ Decision: React Native + Expo SDK ~57, TypeScript, JDK 17, development builds
 (`expo-dev-client`), Continuous Native Generation. No backend, no mandatory
 registration.
 
-Consequences: AppMetrica and Yandex Mobile Ads stay behind service interfaces
-until Phase 9. Expo Go is not the release runtime target.
+Consequences: AppMetrica and Yandex Mobile Ads are integrated behind typed
+service interfaces (`src/analytics`, `src/ads`). Expo Go is not the release
+runtime target.
+
+## 2026-09-02 — AppMetrica + Yandex Mobile Ads (Phase 9)
+
+Status: Accepted
+
+Production identifiers (Дневник давления / Yandex Advertising Network):
+
+* AppMetrica: `233587e7-4552-4959-a6f4-5f06eb451319`
+* Diary banner: `R-M-19857656-1`
+* Graphs banner: `R-M-19857656-2`
+* Health banner: `R-M-19857656-3`
+* Interstitial: `R-M-19857656-4`
+
+Decision:
+
+* Central config in `src/config/analytics.ts` and `src/config/ads.ts`
+* Typed analytics wrapper — UI never calls SDK directly
+* **Health values are never sent as analytics event parameters** (no BP, pulse,
+  weight, glucose, medication names, notes, profile names, backup/PDF content)
+* Banners only on Diary / Graphs / Health overview screens; never on forms,
+  Medications, Settings, backup, or doctor report flows
+* Interstitial only after meaningful Graphs interaction with session ≥4 and 24h
+  cooldown; never on notification-open flows
+* Dev builds use Yandex demo ad units; `validate:release-config` fails if
+  production map contains demo IDs
+
+Consequences: Release prep requires `npm run validate:release-config` PASS and
+clean production prebuild without manual `android/` edits.
 
 ## 2026-08-26 — Local persistence: expo-sqlite
 

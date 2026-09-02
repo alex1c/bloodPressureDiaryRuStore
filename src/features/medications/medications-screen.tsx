@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import {
 	Alert,
 	Pressable,
@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import {
 	formatIntakeTakenClock,
 	formatScheduleHm,
@@ -32,11 +33,16 @@ export function MedicationsScreen() {
 		markTaken,
 		undoTaken,
 	} = useMedications()
+	const permissionTracked = useRef(false)
 
 	useFocusEffect(
 		useCallback(() => {
 			void refreshMedications()
-		}, [refreshMedications]),
+			if (permission === 'denied' && !permissionTracked.current) {
+				permissionTracked.current = true
+				analytics.trackReminderPermissionDenied()
+			}
+		}, [refreshMedications, permission]),
 	)
 
 	const active = medications.filter((m) => m.isActive)
@@ -44,6 +50,7 @@ export function MedicationsScreen() {
 
 	async function handleTaken(dose: PlannedDose) {
 		await markTaken(dose)
+		analytics.trackMedicationIntakeMarked()
 	}
 
 	function handleUndo(dose: PlannedDose) {
@@ -56,7 +63,10 @@ export function MedicationsScreen() {
 				text: 'Отменить',
 				style: 'destructive',
 				onPress: () => {
-					void undoTaken(dose.intake!.id)
+					void (async () => {
+						await undoTaken(dose.intake!.id)
+						analytics.trackMedicationIntakeUndone()
+					})()
 				},
 			},
 		])

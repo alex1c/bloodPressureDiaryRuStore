@@ -1,5 +1,6 @@
 import { appConfig } from '@/config/app-config'
 import { getAdService } from '@/ads'
+import { resolveAdRuntimeVariant } from '@/config/ads'
 
 describe('app identity', () => {
 	it('locks production package id chosen in DECISIONS.md', () => {
@@ -17,5 +18,15 @@ describe('ad policy seam', () => {
 		expect(
 			getAdService().canShowAds({ hasCompletedFirstMeasurement: true }),
 		).toBe(true)
+	})
+})
+
+describe('ad runtime variant', () => {
+	it('uses production IDs in release JS even without APP_VARIANT', () => {
+		expect(resolveAdRuntimeVariant('development', false)).toBe('production')
+	})
+
+	it('uses demo IDs in dev when APP_VARIANT is not production', () => {
+		expect(resolveAdRuntimeVariant('development', true)).toBe('development')
 	})
 })

@@ -10,6 +10,7 @@ import {
 	View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import { useDiary } from '@/hooks/use-diary'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
@@ -60,6 +61,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 			setBusy(true)
 			try {
 				await switchProfile(id)
+				analytics.trackProfileSwitched()
 				setOpen(false)
 				setEditor({ type: 'idle' })
 				setAddDraft('')
@@ -83,6 +85,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 		setBusy(true)
 		try {
 			const created = await createProfile(trimmed)
+			analytics.trackProfileCreated()
 			setAddDraft('')
 			setEditor({ type: 'idle' })
 			await switchProfile(created.id)

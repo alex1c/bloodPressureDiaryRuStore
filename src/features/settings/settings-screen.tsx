@@ -11,6 +11,7 @@ import {
 import { Stack } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import { appConfig } from '@/config/app-config'
 import {
 	buildBackupPreviewSummary,
@@ -71,6 +72,7 @@ export function SettingsScreen() {
 		try {
 			const file = await exportDiaryBackupFile(repos)
 			await shareBackupFile(file)
+			analytics.trackBackupCreated()
 		} catch (err) {
 			if (__DEV__) {
 				console.warn('Backup export failed', err)
@@ -138,10 +140,12 @@ export function SettingsScreen() {
 		}
 		setRestoring(true)
 		clearMessages()
+		analytics.trackBackupRestoreStarted()
 		try {
 			const oldPlatformIds = await collectPlatformNotificationIds(repos)
 			const result = await restoreDiaryBackup(repos, raw)
 			if (!result.ok) {
+				analytics.trackBackupRestoreFailed()
 				setActionError(result.message)
 				return
 			}
@@ -153,7 +157,9 @@ export function SettingsScreen() {
 			await refreshMedications()
 			setPendingRestoreRaw(null)
 			setSuccessMessage('Данные восстановлены')
+			analytics.trackBackupRestoreSuccess()
 		} catch (err) {
+			analytics.trackBackupRestoreFailed()
 			if (__DEV__) {
 				console.warn('Restore failed', err)
 			}

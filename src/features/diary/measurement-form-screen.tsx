@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { analytics } from '@/analytics'
 import type { Measurement, MeasurementTag } from '@/domain/types'
 import {
 	formatLocalDayKey,
@@ -161,6 +162,10 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					note: parsed.note,
 					wellbeing: null,
 				})
+				analytics.trackMeasurementCreated({
+					hasTags: parsed.tags.length > 0,
+					hasNote: Boolean(parsed.note?.trim()),
+				})
 			} else if (params.id) {
 				await repos.measurements.update(String(params.id), {
 					systolic: parsed.systolic,
@@ -170,6 +175,10 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					periodOfDay: parsed.periodOfDay,
 					tags: parsed.tags,
 					note: parsed.note,
+				})
+				analytics.trackMeasurementUpdated({
+					hasTags: parsed.tags.length > 0,
+					hasNote: Boolean(parsed.note?.trim()),
 				})
 			}
 			await persistRefresh()
@@ -195,6 +204,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				onPress: () => {
 					void (async () => {
 						await repos.measurements.delete(String(params.id))
+						analytics.trackMeasurementDeleted()
 						await persistRefresh()
 						router.back()
 					})()
