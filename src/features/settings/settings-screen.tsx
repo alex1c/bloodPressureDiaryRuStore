@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
+	Linking,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -13,6 +14,7 @@ import * as DocumentPicker from 'expo-document-picker'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
 import { appConfig } from '@/config/app-config'
+import { buildSupportMailtoUrl, releaseConfig } from '@/config/release'
 import {
 	buildBackupPreviewSummary,
 	collectPlatformNotificationIds,
@@ -112,6 +114,30 @@ export function SettingsScreen() {
 	function handleCancelPreview() {
 		setPendingRestoreRaw(null)
 		clearMessages()
+	}
+
+	async function handleOpenPrivacyPolicy() {
+		try {
+			await Linking.openURL(releaseConfig.privacyPolicyUrl)
+		} catch (err) {
+			if (__DEV__) {
+				console.warn('Privacy link failed', err)
+			}
+			setActionError('Не удалось открыть политику конфиденциальности.')
+		}
+	}
+
+	async function handleContactDeveloper() {
+		try {
+			await Linking.openURL(
+				buildSupportMailtoUrl(`${appConfig.displayName} — обратная связь`),
+			)
+		} catch (err) {
+			if (__DEV__) {
+				console.warn('Mailto failed', err)
+			}
+			setActionError('Не удалось открыть почтовое приложение.')
+		}
 	}
 
 	function handleConfirmRestore() {
@@ -306,6 +332,34 @@ export function SettingsScreen() {
 					<Text style={styles.successText}>{successMessage}</Text>
 				) : null}
 
+				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
+					О приложении
+				</Text>
+
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Политика конфиденциальности"
+					onPress={() => void handleOpenPrivacyPolicy()}
+					style={({ pressed }) => [
+						styles.linkRow,
+						pressed && styles.pressed,
+					]}
+				>
+					<Text style={styles.linkRowText}>Политика конфиденциальности</Text>
+				</Pressable>
+
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Связаться с разработчиком"
+					onPress={() => void handleContactDeveloper()}
+					style={({ pressed }) => [
+						styles.linkRow,
+						pressed && styles.pressed,
+					]}
+				>
+					<Text style={styles.linkRowText}>Связаться с разработчиком</Text>
+				</Pressable>
+
 				<View style={styles.versionBlock}>
 					<Text style={styles.versionLabel}>
 						Версия {appConfig.versionName}
@@ -350,6 +404,24 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 		color: colors.text,
 		marginBottom: spacing.md,
+	},
+	sectionSpaced: {
+		marginTop: spacing.xl,
+	},
+	linkRow: {
+		minHeight: touchTargetMin,
+		justifyContent: 'center',
+		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: colors.border,
+		backgroundColor: colors.surface,
+		paddingHorizontal: spacing.md,
+		marginBottom: spacing.sm,
+	},
+	linkRowText: {
+		fontSize: typography.body,
+		fontWeight: '600',
+		color: colors.primary,
 	},
 	gap: {
 		height: spacing.sm,

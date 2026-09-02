@@ -1,12 +1,22 @@
 import { appConfig } from '@/config/app-config'
 import { getAdService } from '@/ads'
 import { resolveAdRuntimeVariant } from '@/config/ads'
+import { releaseConfig } from '@/config/release'
 
 describe('app identity', () => {
 	it('locks production package id chosen in DECISIONS.md', () => {
 		expect(appConfig.androidPackage).toBe('com.calculatorplatform.bpdiary')
 		expect(appConfig.versionName).toBe('1.0.0')
 		expect(appConfig.versionCode).toBe(1)
+		expect(appConfig.displayName).toBe('Дневник давления')
+	})
+})
+
+describe('release metadata', () => {
+	it('uses production support email and privacy URL', () => {
+		expect(releaseConfig.supportEmail).toBe('rustore-alex1c@yandex.ru')
+		expect(releaseConfig.privacyPolicyUrl).toContain('privacy.html')
+		expect(releaseConfig.appDisplayName).toBe('Дневник давления')
 	})
 })
 

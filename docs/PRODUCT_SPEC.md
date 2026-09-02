@@ -1,7 +1,9 @@
-# Product Spec — «Давление и пульс — дневник»
+# Product Spec — «Дневник давления»
 
-**Working title:** Давление и пульс — дневник  
+**Release name:** Дневник давления  
 **Package ID:** `com.calculatorplatform.bpdiary`  
+**Support:** `rustore-alex1c@yandex.ru`  
+**Privacy:** `docs/privacy.html` (GitHub Pages URL in `src/config/release.ts`)  
 **Platform:** Android first (RuStore)  
 **Stack:** React Native + Expo + TypeScript, local-only data
 

@@ -1,7 +1,7 @@
 # Agent notes
 
-* Product: «Давление и пульс — дневник»
-* Package: `com.calculatorplatform.bpdiary` (see `docs/DECISIONS.md`)
-* Phase 0–9 implemented; Phase 10 (RuStore release prep) is next unless the user expands scope
+* Product: «Дневник давления» (`com.calculatorplatform.bpdiary`)
+* Phase 0–10 implemented; Phase 11 = manual RuStore upload + keystore
+* Support: `rustore-alex1c@yandex.ru`; privacy: `docs/privacy.html`
 * Do not commit secrets/keystores; do not invent production passwords
-* Do not implement RuStore publishing/production keystore until Phase 10 unless the user expands scope
+* Production keystore is created by the operator only (see `credentials/README.md`)

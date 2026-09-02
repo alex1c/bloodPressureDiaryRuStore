@@ -89,8 +89,20 @@ Status: **Implemented** (release integration gate)
 * Dev/debug uses Yandex demo ad units; production IDs only in release builds
 * `npm run validate:release-config` guards tracked IDs before release prep
 
-## Phase 10 — Release QA / RuStore
+## Phase 10 — Production release prep
 
-* Production signing
-* Listing, privacy, store QA
-* Release build verification
+Status: **Implemented** (signing blocked until keystore created)
+
+* App name **Дневник давления**; support `rustore-alex1c@yandex.ru`
+* Privacy page `docs/privacy.html` → GitHub Pages URL in `src/config/release.ts`
+* Settings: privacy link + mailto contact
+* Final icon from approved `assets/icon_gpt.png` → launcher / adaptive / `release-artifacts/icon-512.png`
+* Extended `validate:release-config` (identity, privacy, icons, ads, signing report)
+* RuStore listing draft `docs/RUSTORE_LISTING.md` + screenshot plan
+* Production keystore: **not auto-created** — see `credentials/README.md`
+
+## Phase 11 — RuStore upload (manual)
+
+* Create production keystore + signed AAB
+* GitHub Pages publish for privacy URL
+* Final screenshots + store submission

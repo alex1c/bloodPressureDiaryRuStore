@@ -34,7 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
 	return {
 		...config,
-		name: 'Давление и пульс — дневник',
+		name: 'Дневник давления',
 		slug: 'bp-diary',
 		version: '1.0.0',
 		orientation: 'portrait',

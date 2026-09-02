@@ -45,14 +45,31 @@ function parseProperties(filePath) {
 }
 
 if (!fs.existsSync(propertiesSrc)) {
-	fail(
-		[
-			'Missing credentials/keystore.properties.',
-			'Generate the production keystore first (see credentials/README.md),',
-			'then copy credentials/keystore.properties.example and fill in local values.',
-			'Passwords must be chosen by you — they are not stored in git.',
-		].join('\n'),
-	)
+	const envProps = require('./check-signing-credentials.cjs').resolveFromEnv()
+	if (envProps) {
+		const lines = [
+			'# Generated from BP_DIARY_* environment variables — do not commit.',
+			`storeFile=${envProps.storeFile.replace(/\\/g, '/')}`,
+			`storePassword=${envProps.storePassword}`,
+			`keyAlias=${envProps.keyAlias}`,
+			`keyPassword=${envProps.keyPassword}`,
+			'',
+		]
+		fs.mkdirSync(path.dirname(propertiesSrc), { recursive: true })
+		fs.writeFileSync(propertiesSrc, lines.join('\n'), 'utf8')
+		console.log('Created credentials/keystore.properties from environment variables.')
+	} else {
+		fail(
+			[
+				'Missing credentials/keystore.properties.',
+				'Generate the production keystore first (see credentials/README.md),',
+				'then copy credentials/keystore.properties.example and fill in local values,',
+				'or export BP_DIARY_KEYSTORE_PATH / BP_DIARY_KEYSTORE_PASSWORD /',
+				'BP_DIARY_KEY_ALIAS / BP_DIARY_KEY_PASSWORD.',
+				'Passwords must be chosen by you — they are not stored in git.',
+			].join('\n'),
+		)
+	}
 }
 
 if (!fs.existsSync(androidDir) || !fs.existsSync(appBuildGradle)) {

@@ -28,7 +28,16 @@ keytool -genkeypair -v -storetype PKCS12 `
 ```
 
 Copy `keystore.properties.example` → `keystore.properties` and fill absolute
-`storeFile` paths. Then:
+`storeFile` paths. Alternatively export environment variables (never commit):
+
+| Variable | Purpose |
+|----------|---------|
+| `BP_DIARY_KEYSTORE_PATH` | Absolute path to `.jks` / `.keystore` |
+| `BP_DIARY_KEYSTORE_PASSWORD` | Keystore password |
+| `BP_DIARY_KEY_ALIAS` | Key alias (e.g. `bpdiary`) |
+| `BP_DIARY_KEY_PASSWORD` | Key password |
+
+Then:
 
 ```bash
 npm run apply:release-signing

@@ -63,6 +63,26 @@ Decision:
 Consequences: Release prep requires `npm run validate:release-config` PASS and
 clean production prebuild without manual `android/` edits.
 
+## 2026-09-02 — Production release identity + privacy (Phase 10)
+
+Status: Accepted
+
+Decision:
+
+* RuStore / in-app display name: **Дневник давления**
+* Support email: `rustore-alex1c@yandex.ru`
+* Privacy policy: tracked `docs/privacy.html`, URL in `src/config/release.ts`
+  (`https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html` — assumes
+  GitHub Pages for this repository; no `git remote` was configured at prep time)
+* Final launcher + store icons derived only from approved master
+  `assets/icon_gpt.png` (1254×1254 PNG)
+* Production keystore is **never** auto-created by agents; signing via
+  gitignored `credentials/keystore.properties` or `BP_DIARY_*` env vars
+
+Consequences: Signed AAB blocked until operator creates keystore locally.
+Settings exposes privacy URL + mailto contact. Health values remain out of
+analytics payloads.
+
 ## 2026-08-26 — Local persistence: expo-sqlite
 
 Status: Accepted

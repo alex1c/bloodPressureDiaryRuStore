@@ -63,4 +63,9 @@ coverage/
 # local smoke / agent temp artifacts (never commit)
 .tmp*
 .tmp-*/
+.runtime-smoke/
+android_stale_*/
+runtime-backup.json
+runtime-invalid.json
+runtime-smoke-log.txt
 *.log

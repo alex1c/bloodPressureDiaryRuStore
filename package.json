@@ -16,7 +16,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "validate": "npm run lint && npm run typecheck && npm test",
-    "validate:release-config": "node scripts/validate-release-config.cjs"
+    "validate:release-config": "node scripts/validate-release-config.cjs",
+    "prepare:release-icons": "python scripts/prepare-release-icons.py"
   },
   "dependencies": {
     "@appmetrica/react-native-analytics": "^4.2.0",

@@ -1,15 +1,23 @@
 #!/usr/bin/env node
 /**
  * Validates tracked release integration config before production builds.
- * Fails when AppMetrica key or Yandex block IDs are missing or demo placeholders.
+ * Signing credentials are reported separately — config can pass without a keystore.
  */
 const fs = require('node:fs')
 const path = require('node:path')
 
 const ROOT = path.resolve(__dirname, '..')
+const EXPECTED_EMAIL = 'rustore-alex1c@yandex.ru'
+const EXPECTED_PRIVACY =
+	'https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html'
+const EXPECTED_APP_NAME = 'Дневник давления'
 
 function read(file) {
 	return fs.readFileSync(path.join(ROOT, file), 'utf8')
+}
+
+function exists(file) {
+	return fs.existsSync(path.join(ROOT, file))
 }
 
 function fail(message) {
@@ -21,17 +29,45 @@ function ok(message) {
 	console.log(`  ✓ ${message}`)
 }
 
+function warn(message) {
+	console.log(`  ⚠ ${message}`)
+}
+
 const analyticsSrc = read('src/config/analytics.ts')
 const adsSrc = read('src/config/ads.ts')
 const appConfigSrc = read('app.config.ts')
 const appConfigJs = read('src/config/app-config.ts')
-const pluginExists = fs.existsSync(
-	path.join(ROOT, 'plugins/with-worklets-packaging.js'),
-)
+const releaseSrc = read('src/config/release.ts')
+const privacyHtml = read('docs/privacy.html')
+const pluginExists = exists('plugins/with-worklets-packaging.js')
 
-const apiKeyMatch = analyticsSrc.match(
-	/apiKey:\s*'([^']+)'/,
-)
+if (!appConfigJs.includes(`displayName: '${EXPECTED_APP_NAME}'`)) {
+	fail(`app display name must be ${EXPECTED_APP_NAME}`)
+}
+if (!appConfigSrc.includes(`name: '${EXPECTED_APP_NAME}'`)) {
+	fail(`Expo app name must be ${EXPECTED_APP_NAME}`)
+}
+ok(`app name = ${EXPECTED_APP_NAME}`)
+
+if (!releaseSrc.includes(`supportEmail: '${EXPECTED_EMAIL}'`)) {
+	fail(`support email must be ${EXPECTED_EMAIL}`)
+}
+if (!privacyHtml.includes(EXPECTED_EMAIL)) {
+	fail('privacy.html missing support email')
+}
+ok(`support email = ${EXPECTED_EMAIL}`)
+
+if (!releaseSrc.includes(`privacyPolicyUrl:\n\t\t'${EXPECTED_PRIVACY}'`)) {
+	if (!releaseSrc.includes(`'${EXPECTED_PRIVACY}'`)) {
+		fail(`privacy policy URL must be ${EXPECTED_PRIVACY}`)
+	}
+}
+if (!exists('docs/privacy.html')) {
+	fail('docs/privacy.html missing')
+}
+ok(`privacy policy URL = ${EXPECTED_PRIVACY}`)
+
+const apiKeyMatch = analyticsSrc.match(/apiKey:\s*'([^']+)'/)
 const apiKey = apiKeyMatch?.[1]
 if (!apiKey) {
 	fail('AppMetrica apiKey missing in src/config/analytics.ts')
@@ -90,6 +126,28 @@ if (!appConfigJs.includes('versionCode: 1')) {
 }
 ok('versionCode = 1')
 
+const iconFiles = [
+	'assets/icon_gpt.png',
+	'assets/icon.png',
+	'assets/android-icon-foreground.png',
+	'assets/android-icon-background.png',
+	'release-artifacts/icon-512.png',
+]
+for (const file of iconFiles) {
+	if (!exists(file)) {
+		fail(`icon asset missing: ${file}`)
+	}
+}
+ok('final icon assets present (master, launcher, adaptive, store 512)')
+
+if (!appConfigSrc.includes('./assets/icon.png')) {
+	fail('app.config.ts must reference ./assets/icon.png')
+}
+if (appConfigSrc.includes('tile') || appConfigSrc.includes('wallpaper')) {
+	fail('placeholder icon references detected in app.config.ts')
+}
+ok('launcher icon wired to assets/icon.png')
+
 if (!appConfigSrc.includes('./plugins/with-worklets-packaging')) {
 	fail('with-worklets-packaging plugin missing from app.config.ts')
 }
@@ -112,17 +170,7 @@ for (const perm of [
 }
 ok('blocked permissions configured')
 
-const remaining = []
-if (!/supportEmail|support_email|support@/i.test(appConfigJs + appConfigSrc)) {
-	remaining.push('support email URL')
-}
-if (!/privacyPolicy|privacy_url|privacy/i.test(appConfigJs + appConfigSrc)) {
-	remaining.push('privacy policy URL')
-}
+console.log('validate:release-config PASS (release config valid)')
 
-console.log('validate:release-config PASS')
-if (remaining.length > 0) {
-	console.log(
-		`Remaining release requirements (not validated here): ${remaining.join(', ')}`,
-	)
-}
+const signing = require('./check-signing-credentials.cjs')
+signing.report()

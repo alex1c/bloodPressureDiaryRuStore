@@ -8,7 +8,7 @@ export const appConfig = {
 	productId: 'bp-diary',
 	versionName: '1.0.0',
 	versionCode: 1,
-	displayName: 'Давление и пульс — дневник',
+	displayName: 'Дневник давления',
 } as const
 
 export type SupportedLocale = (typeof appConfig.supportedLocales)[number]
