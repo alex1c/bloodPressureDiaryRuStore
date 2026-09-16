@@ -1,6 +1,9 @@
-import { buildReminderContent } from '@/services/medication-notifications'
+import {
+	buildMeasurementReminderContent,
+	buildReminderContent,
+} from '@/domain/reminders/reminder-content'
 
-describe('buildReminderContent', () => {
+describe('reminder notification copy', () => {
 	it('uses medication reminder title and schedule time in the body', () => {
 		expect(
 			buildReminderContent({
@@ -22,5 +25,12 @@ describe('buildReminderContent', () => {
 		})
 		expect(content.title).toBe('Мама — напоминание о лекарстве')
 		expect(content.body).toContain('20:30')
+	})
+
+	it('builds calm measurement reminder copy', () => {
+		expect(buildMeasurementReminderContent()).toEqual({
+			title: 'Пора измерить давление',
+			body: 'Если сейчас удобно, запишите новое измерение в дневник.',
+		})
 	})
 })
