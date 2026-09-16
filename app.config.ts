@@ -36,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		...config,
 		name: 'Дневник давления',
 		slug: 'bp-diary',
-		version: '1.0.0',
+		version: '1.0.1',
 		orientation: 'portrait',
 		icon: './assets/icon.png',
 		userInterfaceStyle: 'light',
@@ -50,7 +50,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		},
 		android: {
 			package: 'com.calculatorplatform.bpdiary',
-			versionCode: 1,
+			versionCode: 2,
 			adaptiveIcon: {
 				backgroundColor: '#E8F0F5',
 				foregroundImage: './assets/android-icon-foreground.png',
@@ -73,7 +73,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		plugins,
 		extra: {
 			appVariant: isProduction ? 'production' : 'development',
-			foundationVersion: '1.0.0',
+			foundationVersion: '1.0.1',
 		},
 	}
 }

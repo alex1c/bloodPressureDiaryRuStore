@@ -6,8 +6,8 @@ export const appConfig = {
 	supportedLocales: ['ru', 'en'] as const,
 	androidPackage: 'com.calculatorplatform.bpdiary',
 	productId: 'bp-diary',
-	versionName: '1.0.0',
-	versionCode: 1,
+	versionName: '1.0.1',
+	versionCode: 2,
 	displayName: 'Дневник давления',
 } as const
 
