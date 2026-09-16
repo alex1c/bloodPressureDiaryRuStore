@@ -142,8 +142,10 @@ export function formatWeekdaysRu(weekdays: number[]): string {
 	if (isEveryDay(weekdays)) {
 		return 'Каждый день'
 	}
-	return [...weekdays]
-		.sort((a, b) => a - b)
+	const order = [1, 2, 3, 4, 5, 6, 0]
+	const set = new Set(weekdays)
+	return order
+		.filter((d) => set.has(d))
 		.map((d) => WEEKDAY_LABELS_RU[d] ?? '?')
 		.join(', ')
 }

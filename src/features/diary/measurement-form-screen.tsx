@@ -9,7 +9,7 @@ import {
 	TextInput,
 	View,
 } from 'react-native'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
 import { REMINDERS_ROUTE } from '@/config/routes'
@@ -528,7 +528,7 @@ async function maybeOfferMeasurementReminder(input: {
 				{
 					text: 'Настроить напоминание',
 					onPress: () => {
-						router.replace(REMINDERS_ROUTE)
+						router.replace(REMINDERS_ROUTE as Href)
 						resolve()
 					},
 				},
