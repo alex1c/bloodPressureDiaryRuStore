@@ -490,9 +490,7 @@ export function RemindersScreen() {
 									<Text style={styles.rowTime}>{med.name}</Text>
 									<Text style={styles.rowDays}>
 										{med.schedule
-											.map((t) =>
-												formatReminderHm(t as Reminder),
-											)
+											.map((t) => formatReminderHm(t))
 											.join(', ')}
 									</Text>
 								</View>
