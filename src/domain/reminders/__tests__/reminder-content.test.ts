@@ -3,7 +3,7 @@ import {
 	buildReminderContent,
 } from '@/domain/reminders/reminder-content'
 
-describe('reminder notification copy', () => {
+describe('buildReminderContent', () => {
 	it('uses medication reminder title and schedule time in the body', () => {
 		expect(
 			buildReminderContent({
@@ -26,8 +26,10 @@ describe('reminder notification copy', () => {
 		expect(content.title).toBe('Мама — напоминание о лекарстве')
 		expect(content.body).toContain('20:30')
 	})
+})
 
-	it('builds calm measurement reminder copy', () => {
+describe('buildMeasurementReminderContent', () => {
+	it('returns fixed measurement copy', () => {
 		expect(buildMeasurementReminderContent()).toEqual({
 			title: 'Пора измерить давление',
 			body: 'Если сейчас удобно, запишите новое измерение в дневник.',
