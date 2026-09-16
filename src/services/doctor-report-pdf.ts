@@ -15,6 +15,9 @@ export type GeneratedDoctorPdf = {
 	fileName: string
 }
 
+// A crashed Android WebView can leave expo-print's native promise unresolved.
+const PDF_RENDER_TIMEOUT_MS = 60_000
+
 /**
  * Generates a PDF into the app cache with a stable, sanitized filename.
  * Does not share — caller invokes shareDoctorPdf after success UI.
@@ -24,7 +27,21 @@ export async function generateDoctorPdf(
 ): Promise<GeneratedDoctorPdf> {
 	const fileName = buildDoctorReportFileName(data)
 	const html = renderDoctorReportHtml(data)
-	const printed = await Print.printToFileAsync({ html })
+	let renderTimeout: ReturnType<typeof setTimeout> | undefined
+	let printed: Awaited<ReturnType<typeof Print.printToFileAsync>>
+	try {
+		printed = await Promise.race([
+			Print.printToFileAsync({ html }),
+			new Promise<never>((_, reject) => {
+				renderTimeout = setTimeout(
+					() => reject(new Error('PDF rendering timed out')),
+					PDF_RENDER_TIMEOUT_MS,
+				)
+			}),
+		])
+	} finally {
+		clearTimeout(renderTimeout)
+	}
 
 	const base = cacheDirectory
 	if (!base) {

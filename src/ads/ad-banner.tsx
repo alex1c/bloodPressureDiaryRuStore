@@ -136,7 +136,7 @@ function AdBannerInner({ placement }: { placement: BannerPlacement }) {
 				}}
 				onAdFailedToLoad={(error) => {
 					if (__DEV__) {
-						console.warn('[ads] AD FAILED', placement, adUnitId, error)
+						console.warn('[ads] AD FAILED', placement, adUnitId, error.nativeEvent)
 					}
 					setLoaded(false)
 					scheduleRetry(attempt + 1)

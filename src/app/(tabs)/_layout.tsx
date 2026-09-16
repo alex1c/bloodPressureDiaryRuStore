@@ -2,6 +2,7 @@ import { Tabs, useRouter } from 'expo-router'
 import { useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
+import { markOpenedFromMedicationNotification } from '@/ads'
 import { useDiary } from '@/hooks/use-diary'
 import { colors, typography } from '@/theme'
 
@@ -24,6 +25,8 @@ function openFromNotificationData(
 	if (screen !== 'medications' && screen !== 'diary') {
 		return
 	}
+	// Warm notification opens must block ads before the async profile switch too.
+	markOpenedFromMedicationNotification()
 
 	void (async () => {
 		if (payload?.profileId) {
