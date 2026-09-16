@@ -289,6 +289,14 @@ describe('filename + HTML renderer', () => {
 		expect(html).toContain('кг')
 		expect(html).toContain('не является медицинским прибором')
 		expect(html).toContain('Кофе')
+		expect(html).toContain(
+			'Отчёт сформирован бесплатным приложением „Дневник давления“',
+		)
+		expect(html).toContain('Скачать в RuStore')
+		expect(html).toContain(
+			'href="https://www.rustore.ru/catalog/app/com.calculatorplatform.bpdiary"',
+		)
+		expect(html).not.toContain('bloodpressurediary')
 	})
 
 	it('renders long 200+ measurement HTML without layout-breaking raw notes', async () => {

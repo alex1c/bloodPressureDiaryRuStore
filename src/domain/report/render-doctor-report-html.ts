@@ -4,6 +4,15 @@ import type { DoctorReportData } from './build-doctor-report'
 const DISCLAIMER_RU =
 	'Отчёт сформирован на основе данных, введённых пользователем. Приложение не является медицинским прибором и не заменяет консультацию врача.'
 
+/** Public RuStore catalog URL for the published package (never invent). */
+export const RUSTORE_APP_URL =
+	'https://www.rustore.ru/catalog/app/com.calculatorplatform.bpdiary'
+
+const PDF_FOOTER_LINE_RU =
+	'Отчёт сформирован бесплатным приложением „Дневник давления“'
+
+const PDF_FOOTER_LINK_LABEL_RU = 'Скачать в RuStore'
+
 /** Escapes text for safe insertion into HTML templates. */
 export function escapeHtml(value: string): string {
 	return value
@@ -265,6 +274,25 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 			color: #555;
 			page-break-inside: avoid;
 		}
+		.rustore-footer {
+			margin-top: 16px;
+			padding-top: 10px;
+			border-top: 1px solid #bbb;
+			font-size: 9pt;
+			color: #444;
+			page-break-inside: avoid;
+		}
+		.rustore-footer a {
+			color: #1a5fb4;
+			text-decoration: underline;
+		}
+		.rustore-footer .url {
+			display: block;
+			margin-top: 4px;
+			font-size: 8pt;
+			color: #666;
+			word-break: break-all;
+		}
 	</style>
 </head>
 <body>
@@ -282,8 +310,22 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	${tagsSection}
 
 	<p class="disclaimer">${escapeHtml(DISCLAIMER_RU)}</p>
+	${buildRustorePdfFooterHtml()}
 </body>
 </html>`
+}
+
+/**
+ * RuStore distribution footer with a real HTML hyperlink annotation.
+ * expo-print preserves &lt;a href&gt; as a clickable PDF link.
+ */
+export function buildRustorePdfFooterHtml(): string {
+	const url = escapeHtml(RUSTORE_APP_URL)
+	return `<div class="rustore-footer">
+		<div>${escapeHtml(PDF_FOOTER_LINE_RU)}</div>
+		<div><a href="${url}">${escapeHtml(PDF_FOOTER_LINK_LABEL_RU)}</a></div>
+		<span class="url">${url}</span>
+	</div>`
 }
 
 function pluralRecords(count: number): string {

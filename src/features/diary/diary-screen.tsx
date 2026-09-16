@@ -7,11 +7,12 @@ import {
 	Text,
 	View,
 } from 'react-native'
-import { useFocusEffect, useRouter, type Href } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AdBanner } from '@/ads/ad-banner'
 import { formatRussianLongDate } from '@/domain/dates/local-day'
 import { formatScheduleHm } from '@/domain/medications/schedule'
+import { SETTINGS_ROUTE } from '@/config/routes'
 import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
@@ -93,7 +94,8 @@ export function DiaryScreen() {
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel="Настройки"
-							onPress={() => router.push('/settings/index' as Href)}
+							// Expo Router maps settings/index.tsx to `/settings` (not `/settings/index`).
+							onPress={() => router.push(SETTINGS_ROUTE)}
 							style={({ pressed }) => [
 								styles.settingsLink,
 								pressed && styles.settingsLinkPressed,

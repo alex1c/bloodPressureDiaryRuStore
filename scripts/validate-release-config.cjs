@@ -82,10 +82,10 @@ if (
 ok(`AppMetrica key present (${apiKey})`)
 
 const adIds = {
-	diaryBanner: 'R-M-19857656-1',
-	graphsBanner: 'R-M-19857656-2',
-	healthBanner: 'R-M-19857656-3',
-	interstitial: 'R-M-19857656-4',
+	diaryBanner: 'R-M-20056373-1',
+	graphsBanner: 'R-M-20056373-2',
+	healthBanner: 'R-M-20056373-3',
+	interstitial: 'R-M-20056373-4',
 }
 
 for (const [name, expected] of Object.entries(adIds)) {

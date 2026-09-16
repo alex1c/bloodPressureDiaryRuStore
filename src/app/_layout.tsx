@@ -67,6 +67,10 @@ export default function RootLayout() {
 						name="settings/index"
 						options={{ headerShown: true, presentation: 'card' }}
 					/>
+					<Stack.Screen
+						name="settings/reminders"
+						options={{ headerShown: true, presentation: 'card' }}
+					/>
 				</Stack>
 			</MedicationsProvider>
 		</DiaryProvider>

@@ -1,5 +1,6 @@
 import type { DiaryBackup } from '@/domain/backup/validate-backup'
 import { validateDiaryBackup } from '@/domain/backup/validate-backup'
+import { unpackPlatformNotificationIds } from '@/services/reminder-notification-ids'
 import type { DiaryRepositories } from '@/storage/repositories/types'
 
 export type RestoreDiaryBackupResult =
@@ -34,9 +35,9 @@ export async function collectPlatformNotificationIds(
 	).flat()
 	const ids: string[] = []
 	for (const reminder of reminders) {
-		if (reminder.platformNotificationId) {
-			ids.push(reminder.platformNotificationId)
-		}
+		ids.push(
+			...unpackPlatformNotificationIds(reminder.platformNotificationId),
+		)
 	}
 	return ids
 }

@@ -1,8 +1,18 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import type { Reminder } from '@/domain/types'
+import {
+	isEveryDayWeekdays,
+	jsWeekdayToExpoWeekday,
+	packPlatformNotificationIds,
+	unpackPlatformNotificationIds,
+} from '@/services/reminder-notification-ids'
 
-const ANDROID_CHANNEL_ID = 'medication-reminders'
+const ANDROID_CHANNEL_ID = 'app-reminders'
+
+export const MEASUREMENT_REMINDER_TITLE = 'Пора измерить давление'
+export const MEASUREMENT_REMINDER_BODY =
+	'Если сейчас удобно, запишите новое измерение в дневник.'
 
 /**
  * Neutral copy for local medication reminders — never medical advice.
@@ -10,22 +20,49 @@ const ANDROID_CHANNEL_ID = 'medication-reminders'
  */
 export function buildReminderContent(input: {
 	medicationName: string
-	dosageText: string
+	/** @deprecated Prefer scheduleHm — kept for older call sites. */
+	dosageText?: string
+	/** Local wall-clock HH:mm shown in the body. */
+	scheduleHm?: string
+	hour?: number
+	minute?: number
 	profileName?: string | null
 	/** When true, include profile name in the title even for a single profile. */
 	includeProfileName?: boolean
 }): { title: string; body: string } {
-	const baseTitle = 'Лекарство по расписанию'
+	const baseTitle = 'Напоминание о лекарстве'
 	const profileName = input.profileName?.trim()
 	const title =
 		input.includeProfileName && profileName
 			? `${profileName} — ${baseTitle.toLowerCase()}`
 			: baseTitle
-	const dosage = input.dosageText.trim()
-	const body = dosage
-		? `${input.medicationName} — ${dosage}`
-		: input.medicationName
+
+	const scheduleHm =
+		input.scheduleHm ??
+		(typeof input.hour === 'number' && typeof input.minute === 'number'
+			? `${String(input.hour).padStart(2, '0')}:${String(input.minute).padStart(2, '0')}`
+			: null)
+
+	const body = scheduleHm
+		? `${input.medicationName} — запланированный приём в ${scheduleHm}`
+		: input.dosageText?.trim()
+			? `${input.medicationName} — ${input.dosageText.trim()}`
+			: input.medicationName
+
 	return { title, body }
+}
+
+/** Fixed copy for blood-pressure measurement reminders. */
+export function buildMeasurementReminderContent(input?: {
+	profileName?: string | null
+	includeProfileName?: boolean
+}): { title: string; body: string } {
+	const profileName = input?.profileName?.trim()
+	const title =
+		input?.includeProfileName && profileName
+			? `${profileName} — ${MEASUREMENT_REMINDER_TITLE.toLowerCase()}`
+			: MEASUREMENT_REMINDER_TITLE
+	return { title, body: MEASUREMENT_REMINDER_BODY }
 }
 
 let handlerConfigured = false
@@ -52,7 +89,7 @@ export async function ensureAndroidChannel(): Promise<void> {
 		return
 	}
 	await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-		name: 'Напоминания о лекарствах',
+		name: 'Напоминания',
 		importance: Notifications.AndroidImportance.DEFAULT,
 		vibrationPattern: [0, 250, 250, 250],
 		lightColor: '#2B6CB0',
@@ -103,9 +140,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 /**
- * Schedules a daily local notification for a reminder slot.
- * Returns the platform notification id, or null if scheduling is unavailable.
- * Payload always includes profileId for correct profile routing on tap.
+ * Schedules local notification(s) for a reminder slot.
+ * Daily when all weekdays selected; otherwise one WEEKLY per weekday.
+ * Returns packed platform notification id(s), or null if unavailable.
  */
 export async function scheduleDailyReminderNotification(
 	reminder: Reminder,
@@ -114,50 +151,82 @@ export async function scheduleDailyReminderNotification(
 	await ensureAndroidChannel()
 
 	const permission = await getNotificationPermissionState()
-	if (permission !== 'granted') {
+	if (permission !== 'granted' || !reminder.enabled) {
 		return null
 	}
 
-	const id = await Notifications.scheduleNotificationAsync({
-		content: {
-			title: reminder.title,
-			body: reminder.body ?? undefined,
-			data: {
-				screen: 'medications',
-				reminderId: reminder.id,
-				medicationId: reminder.medicationId,
-				profileId: reminder.profileId,
+	const isMeasurement = reminder.medicationId == null
+	const screen = isMeasurement ? 'diary' : 'medications'
+	const content = {
+		title: reminder.title,
+		body: reminder.body ?? undefined,
+		data: {
+			screen,
+			reminderId: reminder.id,
+			medicationId: reminder.medicationId,
+			profileId: reminder.profileId,
+		},
+		sound: true as const,
+		...(Platform.OS === 'android' ? { channelId: ANDROID_CHANNEL_ID } : {}),
+	}
+
+	const weekdays =
+		reminder.weekdays.length > 0 ? reminder.weekdays : [0, 1, 2, 3, 4, 5, 6]
+
+	if (isEveryDayWeekdays(weekdays)) {
+		const id = await Notifications.scheduleNotificationAsync({
+			content,
+			trigger: {
+				type: Notifications.SchedulableTriggerInputTypes.DAILY,
+				hour: reminder.hour,
+				minute: reminder.minute,
+				...(Platform.OS === 'android'
+					? { channelId: ANDROID_CHANNEL_ID }
+					: {}),
 			},
-			sound: true,
-			...(Platform.OS === 'android'
-				? { channelId: ANDROID_CHANNEL_ID }
-				: {}),
-		},
-		trigger: {
-			type: Notifications.SchedulableTriggerInputTypes.DAILY,
-			hour: reminder.hour,
-			minute: reminder.minute,
-			...(Platform.OS === 'android'
-				? { channelId: ANDROID_CHANNEL_ID }
-				: {}),
-		},
-	})
-	return id
+		})
+		return packPlatformNotificationIds([id])
+	}
+
+	const ids: string[] = []
+	for (const jsDay of [...new Set(weekdays)].sort((a, b) => a - b)) {
+		if (jsDay < 0 || jsDay > 6) {
+			continue
+		}
+		const id = await Notifications.scheduleNotificationAsync({
+			content,
+			trigger: {
+				type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+				weekday: jsWeekdayToExpoWeekday(jsDay),
+				hour: reminder.hour,
+				minute: reminder.minute,
+				...(Platform.OS === 'android'
+					? { channelId: ANDROID_CHANNEL_ID }
+					: {}),
+			},
+		})
+		ids.push(id)
+	}
+	return packPlatformNotificationIds(ids)
 }
+
+/**
+ * Conceptual rename: schedules daily or weekly reminder notifications.
+ * Kept as an alias so call sites / tests can mock either name.
+ */
+export const scheduleReminderNotification = scheduleDailyReminderNotification
 
 /** Cancels one scheduled notification if the id is known. */
 export async function cancelPlatformNotification(
 	platformNotificationId: string | null | undefined,
 ): Promise<void> {
-	if (!platformNotificationId) {
-		return
-	}
-	try {
-		await Notifications.cancelScheduledNotificationAsync(
-			platformNotificationId,
-		)
-	} catch {
-		// Already cancelled or unknown — safe to ignore.
+	const ids = unpackPlatformNotificationIds(platformNotificationId)
+	for (const id of ids) {
+		try {
+			await Notifications.cancelScheduledNotificationAsync(id)
+		} catch {
+			// Already cancelled or unknown — safe to ignore.
+		}
 	}
 }
 
@@ -175,7 +244,12 @@ export async function cancelPlatformNotificationIds(
  * Prefer this over global cancel-all so future notification categories stay intact.
  */
 export async function cancelManagedPlatformNotifications(input: {
-	repos: { profiles: { list(): Promise<{ id: string }[]> }; reminders: { listByProfile(profileId: string): Promise<Reminder[]> } }
+	repos: {
+		profiles: { list(): Promise<{ id: string }[]> }
+		reminders: {
+			listByProfile(profileId: string): Promise<Reminder[]>
+		}
+	}
 }): Promise<void> {
 	const profiles = await input.repos.profiles.list()
 	const reminders = (
@@ -194,4 +268,25 @@ export async function cancelManagedPlatformNotifications(input: {
  */
 export async function cancelAllScheduledNotifications(): Promise<void> {
 	await Notifications.cancelAllScheduledNotificationsAsync()
+}
+
+/** Opens Android app notification settings when the OS allows. */
+export async function openSystemNotificationSettings(): Promise<void> {
+	if (Platform.OS !== 'android') {
+		return
+	}
+	try {
+		await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+			name: 'Напоминания',
+			importance: Notifications.AndroidImportance.DEFAULT,
+		})
+	} catch {
+		/* ignore */
+	}
+	try {
+		const Linking = await import('react-native').then((m) => m.Linking)
+		await Linking.openSettings()
+	} catch {
+		/* ignore */
+	}
 }

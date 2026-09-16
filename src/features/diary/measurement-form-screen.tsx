@@ -12,12 +12,22 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
+import { REMINDERS_ROUTE } from '@/config/routes'
 import type { Measurement, MeasurementTag } from '@/domain/types'
 import {
 	formatLocalDayKey,
 	formatLocalTime,
 } from '@/domain/dates/local-day'
+import {
+	onDismissMeasurementReminderPrompt,
+	onMeasurementCreatedForPrompt,
+} from '@/domain/reminders/measurement-reminder-prompt'
 import { useDiary } from '@/hooks/use-diary'
+import { filterMeasurementReminders } from '@/services/measurement-reminders'
+import {
+	readReminderPromptState,
+	writeReminderPromptState,
+} from '@/services/reminder-prompt-persistence'
 import { colors, spacing, typography } from '@/theme'
 import { IntegerField, PrimaryButton } from './components/form-controls'
 import { TagChips } from './components/tag-chips'
@@ -150,7 +160,11 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 
 		setSaving(true)
 		try {
+			let createdFirstMeasurement = false
 			if (mode === 'create') {
+				const beforeCount = (
+					await repos.measurements.listByProfile(profile.id)
+				).length
 				await repos.measurements.create({
 					profileId: profile.id,
 					systolic: parsed.systolic,
@@ -162,6 +176,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					note: parsed.note,
 					wellbeing: null,
 				})
+				createdFirstMeasurement = beforeCount === 0
 				analytics.trackMeasurementCreated({
 					hasTags: parsed.tags.length > 0,
 					hasNote: Boolean(parsed.note?.trim()),
@@ -182,6 +197,17 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				})
 			}
 			await persistRefresh()
+
+			if (mode === 'create') {
+				await maybeOfferMeasurementReminder({
+					repos,
+					profileId: profile.id,
+					isFirstMeasurement: createdFirstMeasurement,
+					router,
+				})
+				return
+			}
+
 			router.back()
 		} catch (err) {
 			setError(
@@ -431,3 +457,83 @@ const styles = StyleSheet.create({
 		paddingTop: spacing.sm,
 	},
 })
+
+/**
+ * Soft discoverability prompt after a successful measurement create.
+ * Never requests Android notification permission here.
+ */
+async function maybeOfferMeasurementReminder(input: {
+	repos: NonNullable<ReturnType<typeof useDiary>['repos']>
+	profileId: string
+	isFirstMeasurement: boolean
+	router: ReturnType<typeof useRouter>
+}): Promise<void> {
+	const { repos, profileId, isFirstMeasurement, router } = input
+	const promptState = await readReminderPromptState()
+	const reminders = await repos.reminders.listByProfile(profileId)
+	const hasActiveMeasurementReminder = filterMeasurementReminders(
+		reminders,
+	).some((r) => r.enabled)
+
+	const decision = onMeasurementCreatedForPrompt({
+		state: {
+			dismissCount: promptState.dismissCount,
+			measurementsSinceDismiss: promptState.measurementsSinceDismiss,
+		},
+		hasActiveMeasurementReminder,
+		isFirstMeasurement,
+	})
+
+	// Persist counter progress even when not showing (post-dismiss tracking).
+	if (
+		decision.state.dismissCount !== promptState.dismissCount ||
+		decision.state.measurementsSinceDismiss !==
+			promptState.measurementsSinceDismiss
+	) {
+		await writeReminderPromptState({
+			...promptState,
+			...decision.state,
+		})
+	}
+
+	if (!decision.shouldShow) {
+		router.back()
+		return
+	}
+
+	await new Promise<void>((resolve) => {
+		Alert.alert(
+			'Измеряете давление регулярно?',
+			'Можем напоминать об измерении в удобное для вас время.',
+			[
+				{
+					text: 'Не сейчас',
+					style: 'cancel',
+					onPress: () => {
+						void (async () => {
+							const latest = await readReminderPromptState()
+							await writeReminderPromptState({
+								...latest,
+								...onDismissMeasurementReminderPrompt({
+									dismissCount: latest.dismissCount,
+									measurementsSinceDismiss:
+										latest.measurementsSinceDismiss,
+								}),
+							})
+							router.back()
+							resolve()
+						})()
+					},
+				},
+				{
+					text: 'Настроить напоминание',
+					onPress: () => {
+						router.replace(REMINDERS_ROUTE)
+						resolve()
+					},
+				},
+			],
+			{ cancelable: false },
+		)
+	})
+}

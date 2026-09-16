@@ -29,6 +29,10 @@ import type { MedicationScheduleTime } from '@/domain/types'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
+import {
+	markMedicationRemindPrompted,
+	shouldOfferMedicationRemindPrompt,
+} from '@/services/reminder-prompt-persistence'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 type Mode = 'create' | 'edit'
@@ -187,7 +191,9 @@ function MedicationFormEditor({
 		setSaving(true)
 		setError(null)
 		try {
-			await saveMedication({
+			const wasCreate = mode === 'create'
+			const startedWithoutRemind = wasCreate && !remindEnabled
+			const saved = await saveMedication({
 				id: mode === 'edit' ? medicationId : undefined,
 				name: trimmed,
 				dosageText,
@@ -203,6 +209,46 @@ function MedicationFormEditor({
 			if (remindEnabled && isActive) {
 				analytics.trackReminderEnabled()
 			}
+
+			if (
+				startedWithoutRemind &&
+				isActive &&
+				(await shouldOfferMedicationRemindPrompt(saved.id))
+			) {
+				await markMedicationRemindPrompted(saved.id)
+				await new Promise<void>((resolve) => {
+					Alert.alert(
+						'Напоминать о приёме?',
+						undefined,
+						[
+							{
+								text: 'Не сейчас',
+								style: 'cancel',
+								onPress: () => resolve(),
+							},
+							{
+								text: 'Включить',
+								onPress: () => {
+									void (async () => {
+										await saveMedication({
+											id: saved.id,
+											name: trimmed,
+											dosageText,
+											schedule,
+											isActive: true,
+											remindEnabled: true,
+										})
+										analytics.trackReminderEnabled()
+										resolve()
+									})()
+								},
+							},
+						],
+						{ cancelable: false },
+					)
+				})
+			}
+
 			router.back()
 		} catch (err) {
 			setError(

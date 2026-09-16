@@ -3,10 +3,10 @@
  * Dev/debug builds resolve to official Yandex demo units — never production impressions.
  */
 export const yandexAdsProduction = {
-	diaryBanner: 'R-M-19857656-1',
-	graphsBanner: 'R-M-19857656-2',
-	healthBanner: 'R-M-19857656-3',
-	interstitial: 'R-M-19857656-4',
+	diaryBanner: 'R-M-20056373-1',
+	graphsBanner: 'R-M-20056373-2',
+	healthBanner: 'R-M-20056373-3',
+	interstitial: 'R-M-20056373-4',
 } as const
 
 /** Official Yandex demo ad units for development and automated smoke. */

@@ -5,29 +5,39 @@ import * as Notifications from 'expo-notifications'
 import { useDiary } from '@/hooks/use-diary'
 import { colors, typography } from '@/theme'
 
+type NotificationNavPayload = {
+	screen?: string
+	profileId?: string
+} | null
+
 /**
- * Opens medications after optionally switching to the reminder's profile.
- * Profile switch runs first so today's doses match the notification context.
+ * Opens the matching tab after optionally switching to the reminder's profile.
+ * Profile switch runs first so today's data matches the notification context.
  */
-function openMedicationsFromNotificationData(
+function openFromNotificationData(
 	data: unknown,
 	router: ReturnType<typeof useRouter>,
 	switchProfile: (profileId: string) => Promise<void>,
 ) {
-	const payload = data as { screen?: string; profileId?: string } | null
-	if (payload?.screen !== 'medications') {
+	const payload = data as NotificationNavPayload
+	const screen = payload?.screen
+	if (screen !== 'medications' && screen !== 'diary') {
 		return
 	}
 
 	void (async () => {
-		if (payload.profileId) {
+		if (payload?.profileId) {
 			try {
 				await switchProfile(payload.profileId)
 			} catch {
 				// Still navigate if switch fails (profile may already be active).
 			}
 		}
-		router.push('/(tabs)/medications')
+		if (screen === 'diary') {
+			router.push('/(tabs)')
+		} else {
+			router.push('/(tabs)/medications')
+		}
 	})()
 }
 
@@ -36,11 +46,11 @@ export default function TabsLayout() {
 	const router = useRouter()
 	const { switchProfile } = useDiary()
 
-	// Open medications when the user taps a local reminder notification.
+	// Open diary or medications when the user taps a local reminder notification.
 	useEffect(() => {
 		const sub = Notifications.addNotificationResponseReceivedListener(
 			(response) => {
-				openMedicationsFromNotificationData(
+				openFromNotificationData(
 					response.notification.request.content.data,
 					router,
 					switchProfile,
@@ -53,7 +63,7 @@ export default function TabsLayout() {
 			if (!response) {
 				return
 			}
-			openMedicationsFromNotificationData(
+			openFromNotificationData(
 				response.notification.request.content.data,
 				router,
 				switchProfile,

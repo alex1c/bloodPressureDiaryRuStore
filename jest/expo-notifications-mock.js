@@ -20,5 +20,5 @@ module.exports = {
 	AndroidImportance: { DEFAULT: 3 },
 	IosAuthorizationStatus: { PROVISIONAL: 2 },
 	PermissionStatus: { UNDETERMINED: 'undetermined' },
-	SchedulableTriggerInputTypes: { DAILY: 'daily' },
+	SchedulableTriggerInputTypes: { DAILY: 'daily', WEEKLY: 'weekly' },
 }

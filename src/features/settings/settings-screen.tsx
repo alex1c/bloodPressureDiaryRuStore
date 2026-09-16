@@ -9,11 +9,12 @@ import {
 	Text,
 	View,
 } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useRouter, type Href } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
 import { appConfig } from '@/config/app-config'
+import { REMINDERS_ROUTE } from '@/config/routes'
 import { buildSupportMailtoUrl, releaseConfig } from '@/config/release'
 import {
 	buildBackupPreviewSummary,
@@ -39,6 +40,7 @@ import { colors, spacing, touchTargetMin, typography } from '@/theme'
  */
 export function SettingsScreen() {
 	const insets = useSafeAreaInsets()
+	const router = useRouter()
 	const { ready, error, repos, reloadAfterRestore } = useDiary()
 	const { refreshMedications } = useMedications()
 
@@ -229,7 +231,23 @@ export function SettingsScreen() {
 					},
 				]}
 			>
-				<Text style={styles.sectionTitle}>Данные</Text>
+				<Text style={styles.sectionTitle}>Напоминания</Text>
+
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Напоминания"
+					onPress={() => router.push(REMINDERS_ROUTE as Href)}
+					style={({ pressed }) => [
+						styles.linkRow,
+						pressed && styles.pressed,
+					]}
+				>
+					<Text style={styles.linkRowText}>Напоминания</Text>
+				</Pressable>
+
+				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
+					Данные
+				</Text>
 
 				<PrimaryButton
 					label={

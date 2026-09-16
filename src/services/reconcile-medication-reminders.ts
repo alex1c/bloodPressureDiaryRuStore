@@ -10,7 +10,7 @@ import {
 	cancelPlatformNotification,
 	cancelPlatformNotificationIds,
 	getNotificationPermissionState,
-	scheduleDailyReminderNotification,
+	scheduleReminderNotification,
 } from '@/services/medication-notifications'
 
 /**
@@ -47,13 +47,6 @@ export async function syncMedicationReminders(input: {
 		}
 	}
 
-	const content = buildReminderContent({
-		medicationName: medication.name,
-		dosageText: medication.dosageText,
-		profileName,
-		includeProfileName,
-	})
-
 	const kept: Reminder[] = []
 
 	for (const reminder of existing) {
@@ -67,6 +60,12 @@ export async function syncMedicationReminders(input: {
 			continue
 		}
 		desiredKeys.delete(key)
+		const content = buildReminderContent({
+			medicationName: medication.name,
+			scheduleHm: key,
+			profileName,
+			includeProfileName,
+		})
 		const updated = await repos.reminders.update(reminder.id, {
 			title: content.title,
 			body: content.body,
@@ -83,6 +82,12 @@ export async function syncMedicationReminders(input: {
 		if (!desiredKeys.has(key)) {
 			continue
 		}
+		const content = buildReminderContent({
+			medicationName: medication.name,
+			scheduleHm: key,
+			profileName,
+			includeProfileName,
+		})
 		const created = await repos.reminders.create({
 			profileId: medication.profileId,
 			medicationId: medication.id,
@@ -106,14 +111,20 @@ export async function syncMedicationReminders(input: {
  * reminders for EVERY profile (not only the active one).
  *
  * Switching active profile must never drop another profile's reminders.
+ * Handles both medication reminders and measurement reminders (medicationId null).
  */
 export async function reconcileAllProfileNotifications(input: {
 	repos: DiaryRepositories
 	/** When restoring, pass ids collected before DB replace. */
 	extraPlatformIdsToCancel?: string[]
 }): Promise<{ scheduled: number; permission: string }> {
-	const run = reconciliationChain.then(() => reconcileAllProfileNotificationsUnlocked(input))
-	reconciliationChain = run.then(() => undefined, () => undefined)
+	const run = reconciliationChain.then(() =>
+		reconcileAllProfileNotificationsUnlocked(input),
+	)
+	reconciliationChain = run.then(
+		() => undefined,
+		() => undefined,
+	)
 	return run
 }
 
@@ -166,7 +177,7 @@ async function reconcileAllProfileNotificationsUnlocked(input: {
 		.filter((r) => r.enabled)
 
 	for (const reminder of fresh) {
-		const platformId = await scheduleDailyReminderNotification(reminder)
+		const platformId = await scheduleReminderNotification(reminder)
 		await repos.reminders.update(reminder.id, {
 			platformNotificationId: platformId,
 		})
@@ -217,15 +228,28 @@ function buildTitleForStoredReminder(
 	profile: Profile | undefined,
 	includeProfileName: boolean,
 ): string | null {
+	// Measurement reminders keep a fixed title; only prefix for multi-profile.
+	if (reminder.medicationId == null) {
+		if (!includeProfileName || !profile) {
+			return null
+		}
+		const base = reminder.title.includes(' — ')
+			? reminder.title.split(' — ').slice(-1)[0]!
+			: reminder.title
+		return `${profile.name} — ${base}`
+	}
+
 	if (!includeProfileName || !profile) {
 		return null
 	}
 	const bodyParts = (reminder.body ?? '').split(' — ')
 	const medicationName = bodyParts[0] ?? ''
-	const dosageText = bodyParts.slice(1).join(' — ')
 	return buildReminderContent({
 		medicationName,
-		dosageText,
+		scheduleHm: formatScheduleHm({
+			hour: reminder.hour,
+			minute: reminder.minute,
+		}),
 		profileName: profile.name,
 		includeProfileName: true,
 	}).title

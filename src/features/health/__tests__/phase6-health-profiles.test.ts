@@ -19,38 +19,50 @@ import {
 	syncMedicationReminders,
 } from '@/services/reconcile-medication-reminders'
 
-jest.mock('@/services/medication-notifications', () => ({
-	buildReminderContent: ({
-		medicationName,
-		dosageText,
-		profileName,
-		includeProfileName,
-	}: {
-		medicationName: string
-		dosageText: string
-		profileName?: string | null
-		includeProfileName?: boolean
-	}) => ({
-		title:
-			includeProfileName && profileName
-				? `${profileName} — лекарство по расписанию`
-				: 'Лекарство по расписанию',
-		body: dosageText
-			? `${medicationName} — ${dosageText}`
-			: medicationName,
-	}),
-	configureNotificationHandler: jest.fn(),
-	ensureAndroidChannel: jest.fn(async () => {}),
-	getNotificationPermissionState: jest.fn(async () => 'granted'),
-	requestNotificationPermission: jest.fn(async () => 'granted'),
-	scheduleDailyReminderNotification: jest.fn(async (reminder: { id: string }) => {
+jest.mock('@/services/medication-notifications', () => {
+	const schedule = jest.fn(async (reminder: { id: string }) => {
 		return `notif-${reminder.id}`
-	}),
-	cancelPlatformNotification: jest.fn(async () => {}),
-	cancelPlatformNotificationIds: jest.fn(async () => {}),
-	cancelManagedPlatformNotifications: jest.fn(async () => {}),
-	cancelAllScheduledNotifications: jest.fn(async () => {}),
-}))
+	})
+	return {
+		buildReminderContent: ({
+			medicationName,
+			scheduleHm,
+			dosageText,
+			profileName,
+			includeProfileName,
+		}: {
+			medicationName: string
+			scheduleHm?: string
+			dosageText?: string
+			profileName?: string | null
+			includeProfileName?: boolean
+		}) => ({
+			title:
+				includeProfileName && profileName
+					? `${profileName} — напоминание о лекарстве`
+					: 'Напоминание о лекарстве',
+			body: scheduleHm
+				? `${medicationName} — запланированный приём в ${scheduleHm}`
+				: dosageText
+					? `${medicationName} — ${dosageText}`
+					: medicationName,
+		}),
+		buildMeasurementReminderContent: () => ({
+			title: 'Пора измерить давление',
+			body: 'Если сейчас удобно, запишите новое измерение в дневник.',
+		}),
+		configureNotificationHandler: jest.fn(),
+		ensureAndroidChannel: jest.fn(async () => {}),
+		getNotificationPermissionState: jest.fn(async () => 'granted'),
+		requestNotificationPermission: jest.fn(async () => 'granted'),
+		scheduleDailyReminderNotification: schedule,
+		scheduleReminderNotification: schedule,
+		cancelPlatformNotification: jest.fn(async () => {}),
+		cancelPlatformNotificationIds: jest.fn(async () => {}),
+		cancelManagedPlatformNotifications: jest.fn(async () => {}),
+		cancelAllScheduledNotifications: jest.fn(async () => {}),
+	}
+})
 
 describe('health metric parsing', () => {
 	it('parses weight with comma and dot', () => {

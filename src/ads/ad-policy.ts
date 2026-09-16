@@ -3,14 +3,18 @@ import {
 	writePersistedAdSessionState,
 } from './ad-session-persistence'
 
-const INTERSTITIAL_COOLDOWN_MS = 24 * 60 * 60 * 1000
-const MIN_SESSIONS_FOR_INTERSTITIAL = 4
+/** ForestMusic-style cooldown between interstitials. */
+const INTERSTITIAL_COOLDOWN_MS = 5 * 60 * 1000
+/** Meaningful navigations / analytics actions required before first interstitial. */
+const MIN_MEANINGFUL_ACTIONS = 5
 
 export type AdSessionMemoryState = {
 	sessionCount: number
 	lastInterstitialAt: string | null
 	interstitialShownThisSession: boolean
 	openedFromMedicationNotification: boolean
+	/** Safe tab / period / analytics actions that count toward eligibility. */
+	meaningfulActionCount: number
 	graphsFocusCount: number
 	graphsPeriodChangesThisSession: number
 }
@@ -20,6 +24,7 @@ let memory: AdSessionMemoryState = {
 	lastInterstitialAt: null,
 	interstitialShownThisSession: false,
 	openedFromMedicationNotification: false,
+	meaningfulActionCount: 0,
 	graphsFocusCount: 0,
 	graphsPeriodChangesThisSession: 0,
 }
@@ -33,6 +38,7 @@ export function resetAdSessionMemoryForTests(): void {
 		lastInterstitialAt: null,
 		interstitialShownThisSession: false,
 		openedFromMedicationNotification: false,
+		meaningfulActionCount: 0,
 		graphsFocusCount: 0,
 		graphsPeriodChangesThisSession: 0,
 	}
@@ -49,6 +55,7 @@ export function overrideAdSessionStateForTests(input: {
 	lastInterstitialAt?: string | null
 	interstitialShownThisSession?: boolean
 	openedFromMedicationNotification?: boolean
+	meaningfulActionCount?: number
 }): void {
 	memory = {
 		...memory,
@@ -80,12 +87,20 @@ export function markOpenedFromMedicationNotification(): void {
 	memory.openedFromMedicationNotification = true
 }
 
+/** Records a safe meaningful action (tab period change, graphs revisit, etc.). */
+export function recordMeaningfulAdAction(): number {
+	memory.meaningfulActionCount += 1
+	return memory.meaningfulActionCount
+}
+
 export function recordGraphsFocus(): void {
 	memory.graphsFocusCount += 1
+	recordMeaningfulAdAction()
 }
 
 export function recordGraphsPeriodChange(): number {
 	memory.graphsPeriodChangesThisSession += 1
+	recordMeaningfulAdAction()
 	return memory.graphsPeriodChangesThisSession
 }
 
@@ -112,7 +127,11 @@ export type InterstitialEligibilityResult = {
 	reason?: string
 }
 
-/** Central interstitial policy — all triggers must consult this gate. */
+/**
+ * Central interstitial policy — all triggers must consult this gate.
+ * Rules: first measurement done, 5 meaningful actions, 5 min cooldown,
+ * max 1 per session; never on sensitive / modal / input / notification flows.
+ */
 export function evaluateInterstitialEligibility(
 	input: InterstitialEligibilityInput,
 ): InterstitialEligibilityResult {
@@ -122,8 +141,8 @@ export function evaluateInterstitialEligibility(
 	if (memory.openedFromMedicationNotification) {
 		return { eligible: false, reason: 'notification_open' }
 	}
-	if (memory.sessionCount < MIN_SESSIONS_FOR_INTERSTITIAL) {
-		return { eligible: false, reason: 'session_count' }
+	if (memory.meaningfulActionCount < MIN_MEANINGFUL_ACTIONS) {
+		return { eligible: false, reason: 'meaningful_actions' }
 	}
 	if (memory.interstitialShownThisSession) {
 		return { eligible: false, reason: 'already_shown_session' }
@@ -151,18 +170,13 @@ export function evaluateInterstitialEligibility(
 }
 
 /**
- * Graphs interstitial trigger:
- * - not on first Graphs visit in the session;
- * - at least one period change in the session;
- * - policy eligibility must pass.
+ * Graphs interstitial trigger after a meaningful period change when policy passes.
+ * Period change itself already increments meaningfulActionCount.
  */
 export function shouldTriggerGraphsInterstitial(
 	policy: InterstitialEligibilityResult,
 ): boolean {
 	if (!policy.eligible) {
-		return false
-	}
-	if (memory.graphsFocusCount < 2) {
 		return false
 	}
 	if (memory.graphsPeriodChangesThisSession < 1) {
@@ -173,5 +187,7 @@ export function shouldTriggerGraphsInterstitial(
 
 export const adPolicyConstants = {
 	INTERSTITIAL_COOLDOWN_MS,
-	MIN_SESSIONS_FOR_INTERSTITIAL,
+	MIN_MEANINGFUL_ACTIONS,
+	/** @deprecated Prefer MIN_MEANINGFUL_ACTIONS — kept for older tests/docs. */
+	MIN_SESSIONS_FOR_INTERSTITIAL: MIN_MEANINGFUL_ACTIONS,
 } as const

@@ -6,6 +6,7 @@ import {
 	overrideAdSessionStateForTests,
 	recordGraphsFocus,
 	recordGraphsPeriodChange,
+	recordMeaningfulAdAction,
 	resetAdSessionMemoryForTests,
 	shouldTriggerGraphsInterstitial,
 } from '@/ads/ad-policy'
@@ -20,8 +21,8 @@ describe('ad policy', () => {
 		resetAdSessionMemoryForTests()
 	})
 
-	it('blocks interstitial before session 4', () => {
-		overrideAdSessionStateForTests({ sessionCount: 3 })
+	it('blocks interstitial before enough meaningful actions', () => {
+		overrideAdSessionStateForTests({ meaningfulActionCount: 4 })
 		const result = evaluateInterstitialEligibility({
 			hasCompletedFirstMeasurement: true,
 			hasBlockingModal: false,
@@ -30,13 +31,15 @@ describe('ad policy', () => {
 			interstitialReady: true,
 		})
 		expect(result.eligible).toBe(false)
-		expect(result.reason).toBe('session_count')
+		expect(result.reason).toBe('meaningful_actions')
 	})
 
-	it('allows interstitial when session gate and cooldown pass', () => {
+	it('allows interstitial when action gate and cooldown pass', () => {
 		overrideAdSessionStateForTests({
-			sessionCount: adPolicyConstants.MIN_SESSIONS_FOR_INTERSTITIAL,
-			lastInterstitialAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+			meaningfulActionCount: adPolicyConstants.MIN_MEANINGFUL_ACTIONS,
+			lastInterstitialAt: new Date(
+				Date.now() - adPolicyConstants.INTERSTITIAL_COOLDOWN_MS - 1_000,
+			).toISOString(),
 		})
 		const result = evaluateInterstitialEligibility({
 			hasCompletedFirstMeasurement: true,
@@ -50,7 +53,7 @@ describe('ad policy', () => {
 
 	it('blocks second interstitial in the same session', () => {
 		overrideAdSessionStateForTests({
-			sessionCount: 5,
+			meaningfulActionCount: 5,
 			interstitialShownThisSession: true,
 		})
 		const result = evaluateInterstitialEligibility({
@@ -63,9 +66,9 @@ describe('ad policy', () => {
 		expect(result.reason).toBe('already_shown_session')
 	})
 
-	it('blocks interstitial within 24h cooldown', () => {
+	it('blocks interstitial within 5 minute cooldown', () => {
 		overrideAdSessionStateForTests({
-			sessionCount: 5,
+			meaningfulActionCount: 5,
 			lastInterstitialAt: new Date().toISOString(),
 		})
 		const result = evaluateInterstitialEligibility({
@@ -80,7 +83,7 @@ describe('ad policy', () => {
 	})
 
 	it('blocks interstitial after medication notification open', () => {
-		overrideAdSessionStateForTests({ sessionCount: 5 })
+		overrideAdSessionStateForTests({ meaningfulActionCount: 5 })
 		markOpenedFromMedicationNotification()
 		const result = evaluateInterstitialEligibility({
 			hasCompletedFirstMeasurement: true,
@@ -92,8 +95,8 @@ describe('ad policy', () => {
 		expect(result.reason).toBe('notification_open')
 	})
 
-	it('requires repeated graphs focus before period-change trigger', () => {
-		overrideAdSessionStateForTests({ sessionCount: 5 })
+	it('requires a period change before graphs interstitial trigger', () => {
+		overrideAdSessionStateForTests({ meaningfulActionCount: 5 })
 		const policy = evaluateInterstitialEligibility({
 			hasCompletedFirstMeasurement: true,
 			hasBlockingModal: false,
@@ -102,11 +105,19 @@ describe('ad policy', () => {
 			interstitialReady: true,
 		})
 		recordGraphsFocus()
-		recordGraphsPeriodChange()
 		expect(shouldTriggerGraphsInterstitial(policy)).toBe(false)
 
-		recordGraphsFocus()
+		recordGraphsPeriodChange()
 		expect(shouldTriggerGraphsInterstitial(policy)).toBe(true)
+	})
+
+	it('counts recordMeaningfulAdAction toward the gate', () => {
+		for (let i = 0; i < adPolicyConstants.MIN_MEANINGFUL_ACTIONS; i += 1) {
+			recordMeaningfulAdAction()
+		}
+		expect(getAdSessionMemoryState().meaningfulActionCount).toBe(
+			adPolicyConstants.MIN_MEANINGFUL_ACTIONS,
+		)
 	})
 
 	it('maps banner placements to production ids in production runtime', () => {
@@ -122,6 +133,10 @@ describe('ad policy', () => {
 		expect(resolveInterstitialAdUnitId('production')).toBe(
 			yandexAdsProduction.interstitial,
 		)
+		expect(yandexAdsProduction.diaryBanner).toBe('R-M-20056373-1')
+		expect(yandexAdsProduction.graphsBanner).toBe('R-M-20056373-2')
+		expect(yandexAdsProduction.healthBanner).toBe('R-M-20056373-3')
+		expect(yandexAdsProduction.interstitial).toBe('R-M-20056373-4')
 	})
 
 	it('uses demo ids in development runtime', () => {

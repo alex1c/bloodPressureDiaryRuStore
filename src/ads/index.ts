@@ -44,6 +44,7 @@ export {
 	overrideAdSessionStateForTests,
 	recordGraphsFocus,
 	recordGraphsPeriodChange,
+	recordMeaningfulAdAction,
 	resetAdSessionMemoryForTests,
 	shouldTriggerGraphsInterstitial,
 } from './ad-policy'

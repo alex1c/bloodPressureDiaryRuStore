@@ -17,21 +17,30 @@ import type { SqlExecutor } from '@/storage/sql-executor'
 jest.mock('@/services/medication-notifications', () => ({
 	buildReminderContent: ({
 		medicationName,
+		scheduleHm,
 		dosageText,
 	}: {
 		medicationName: string
-		dosageText: string
+		scheduleHm?: string
+		dosageText?: string
 	}) => ({
-		title: 'Лекарство по расписанию',
-		body: dosageText
-			? `${medicationName} — ${dosageText}`
-			: medicationName,
+		title: 'Напоминание о лекарстве',
+		body: scheduleHm
+			? `${medicationName} — запланированный приём в ${scheduleHm}`
+			: dosageText
+				? `${medicationName} — ${dosageText}`
+				: medicationName,
+	}),
+	buildMeasurementReminderContent: () => ({
+		title: 'Пора измерить давление',
+		body: 'Если сейчас удобно, запишите новое измерение в дневник.',
 	}),
 	configureNotificationHandler: jest.fn(),
 	ensureAndroidChannel: jest.fn(async () => {}),
 	getNotificationPermissionState: jest.fn(async () => 'granted'),
 	requestNotificationPermission: jest.fn(async () => 'granted'),
 	scheduleDailyReminderNotification: jest.fn(async () => 'notif-1'),
+	scheduleReminderNotification: jest.fn(async () => 'notif-1'),
 	cancelPlatformNotification: jest.fn(async () => {}),
 	cancelAllScheduledNotifications: jest.fn(async () => {}),
 }))

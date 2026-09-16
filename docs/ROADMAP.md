@@ -81,10 +81,10 @@ Status: **Implemented** (release integration gate)
 
 * AppMetrica API key: `233587e7-4552-4959-a6f4-5f06eb451319`
 * Yandex Mobile Ads (Дневник давления):
-  * Diary banner `R-M-19857656-1`
-  * Graphs banner `R-M-19857656-2`
-  * Health banner `R-M-19857656-3`
-  * Interstitial `R-M-19857656-4` (graphs period-change trigger only; session ≥4; 24h cooldown)
+  * Diary banner `R-M-20056373-1`
+  * Graphs banner `R-M-20056373-2`
+  * Health banner `R-M-20056373-3`
+  * Interstitial `R-M-20056373-4` (graphs period-change; ≥5 meaningful actions; 5 min cooldown; max 1/session)
 * Privacy: **health values are never sent as analytics event parameters**
 * Dev/debug uses Yandex demo ad units; production IDs only in release builds
 * `npm run validate:release-config` guards tracked IDs before release prep

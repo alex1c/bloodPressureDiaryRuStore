@@ -42,10 +42,10 @@ Status: Accepted
 Production identifiers (Дневник давления / Yandex Advertising Network):
 
 * AppMetrica: `233587e7-4552-4959-a6f4-5f06eb451319`
-* Diary banner: `R-M-19857656-1`
-* Graphs banner: `R-M-19857656-2`
-* Health banner: `R-M-19857656-3`
-* Interstitial: `R-M-19857656-4`
+* Diary banner: `R-M-20056373-1`
+* Graphs banner: `R-M-20056373-2`
+* Health banner: `R-M-20056373-3`
+* Interstitial: `R-M-20056373-4`
 
 Decision:
 
