@@ -117,15 +117,15 @@ if (!appConfigJs.includes("androidPackage: 'com.calculatorplatform.bpdiary'")) {
 }
 ok('package ID = com.calculatorplatform.bpdiary')
 
-if (!appConfigJs.includes("versionName: '1.0.1'")) {
+if (!appConfigJs.includes("versionName: '1.0.2'")) {
 	fail('versionName mismatch')
 }
-ok('version = 1.0.1')
+ok('version = 1.0.2')
 
-if (!appConfigJs.includes('versionCode: 2')) {
+if (!appConfigJs.includes('versionCode: 3')) {
 	fail('versionCode mismatch')
 }
-ok('versionCode = 2')
+ok('versionCode = 3')
 
 const iconFiles = [
 	'assets/icon_gpt.png',

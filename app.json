@@ -2,7 +2,7 @@
   "expo": {
     "name": "Дневник давления",
     "slug": "bp-diary",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "com.calculatorplatform.bpdiary",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#E8F0F5",
         "foregroundImage": "./assets/android-icon-foreground.png",

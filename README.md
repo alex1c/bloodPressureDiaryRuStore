@@ -3,7 +3,7 @@
 Android-first React Native / Expo diary for RuStore.
 
 **Package:** `com.calculatorplatform.bpdiary`  
-**Version:** `1.0.0` (versionCode `1`)  
+**Version:** `1.0.2` (versionCode `3`)
 **Phase:** 10 — production release prep
 
 ## Stack
