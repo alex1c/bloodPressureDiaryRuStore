@@ -66,5 +66,6 @@ Privacy: [https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html](https
 | Graphs banner | R-M-20056373-2 |
 | Health banner | R-M-20056373-3 |
 | Interstitial | R-M-20056373-4 |
+| Medications banner | R-M-20056373-5 |
 
 AppMetrica: `233587e7-4552-4959-a6f4-5f06eb451319`

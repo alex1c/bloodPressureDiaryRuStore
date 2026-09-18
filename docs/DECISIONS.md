@@ -46,6 +46,7 @@ Production identifiers (Дневник давления / Yandex Advertising Net
 * Graphs banner: `R-M-20056373-2`
 * Health banner: `R-M-20056373-3`
 * Interstitial: `R-M-20056373-4`
+* Medications banner: `R-M-20056373-5` (always on main medications tab; independent of first BP measurement)
 
 Decision:
 

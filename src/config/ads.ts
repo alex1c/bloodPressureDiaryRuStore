@@ -7,6 +7,8 @@ export const yandexAdsProduction = {
 	graphsBanner: 'R-M-20056373-2',
 	healthBanner: 'R-M-20056373-3',
 	interstitial: 'R-M-20056373-4',
+	/** Main Medications tab — shown even before first BP measurement. */
+	medicationsBanner: 'R-M-20056373-5',
 } as const
 
 /** Official Yandex demo ad units for development and automated smoke. */
@@ -24,7 +26,7 @@ export const YANDEX_DEMO_AD_ID_MARKERS = [
 
 export type BannerPlacement = keyof Pick<
 	typeof yandexAdsProduction,
-	'diaryBanner' | 'graphsBanner' | 'healthBanner'
+	'diaryBanner' | 'graphsBanner' | 'healthBanner' | 'medicationsBanner'
 >
 
 export type AdRuntimeVariant = 'production' | 'development'

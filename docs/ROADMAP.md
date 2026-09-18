@@ -85,6 +85,7 @@ Status: **Implemented** (release integration gate)
   * Graphs banner `R-M-20056373-2`
   * Health banner `R-M-20056373-3`
   * Interstitial `R-M-20056373-4` (graphs period-change; ≥5 meaningful actions; 5 min cooldown; max 1/session)
+  * Medications banner `R-M-20056373-5` (main tab; not gated by first measurement)
 * Privacy: **health values are never sent as analytics event parameters**
 * Dev/debug uses Yandex demo ad units; production IDs only in release builds
 * `npm run validate:release-config` guards tracked IDs before release prep

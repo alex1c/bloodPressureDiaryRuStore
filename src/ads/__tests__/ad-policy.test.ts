@@ -130,6 +130,9 @@ describe('ad policy', () => {
 		expect(resolveBannerAdUnitId('healthBanner', 'production')).toBe(
 			yandexAdsProduction.healthBanner,
 		)
+		expect(resolveBannerAdUnitId('medicationsBanner', 'production')).toBe(
+			yandexAdsProduction.medicationsBanner,
+		)
 		expect(resolveInterstitialAdUnitId('production')).toBe(
 			yandexAdsProduction.interstitial,
 		)
@@ -137,10 +140,14 @@ describe('ad policy', () => {
 		expect(yandexAdsProduction.graphsBanner).toBe('R-M-20056373-2')
 		expect(yandexAdsProduction.healthBanner).toBe('R-M-20056373-3')
 		expect(yandexAdsProduction.interstitial).toBe('R-M-20056373-4')
+		expect(yandexAdsProduction.medicationsBanner).toBe('R-M-20056373-5')
 	})
 
 	it('uses demo ids in development runtime', () => {
 		expect(resolveBannerAdUnitId('diaryBanner', 'development')).toBe(
+			'demo-banner-yandex',
+		)
+		expect(resolveBannerAdUnitId('medicationsBanner', 'development')).toBe(
 			'demo-banner-yandex',
 		)
 		expect(resolveInterstitialAdUnitId('development')).toBe(

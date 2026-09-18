@@ -86,6 +86,7 @@ const adIds = {
 	graphsBanner: 'R-M-20056373-2',
 	healthBanner: 'R-M-20056373-3',
 	interstitial: 'R-M-20056373-4',
+	medicationsBanner: 'R-M-20056373-5',
 }
 
 for (const [name, expected] of Object.entries(adIds)) {
@@ -93,10 +94,10 @@ for (const [name, expected] of Object.entries(adIds)) {
 		fail(`Yandex ad id missing or changed: ${name}`)
 	}
 }
-ok('All 4 Yandex production block IDs present')
+ok('All 5 Yandex production block IDs present')
 
 const unique = new Set(Object.values(adIds))
-if (unique.size !== 4) {
+if (unique.size !== 5) {
 	fail('Yandex block IDs must be distinct')
 }
 ok('Yandex block IDs distinct')

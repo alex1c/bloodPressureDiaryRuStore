@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AdBanner } from '@/ads/ad-banner'
 import { analytics } from '@/analytics'
 import {
 	formatIntakeTakenClock,
@@ -18,6 +19,9 @@ import type { PlannedDose } from '@/domain/medications/schedule'
 import { useMedications } from '@/hooks/use-medications'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
+
+/** Reserved height for the sticky medications banner slot + spacing. */
+const MEDICATIONS_BANNER_SLOT = 60
 
 /**
  * Medications tab — today's doses first, then active medication list.
@@ -74,9 +78,15 @@ export function MedicationsScreen() {
 
 	return (
 		<View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
+			{/*
+			 * Sticky bottom banner: always visible in short medication-notification
+			 * sessions. Not gated by hasCompletedFirstMeasurement — medicines-first
+			 * users still monetize. Forms/modals are separate routes without this slot.
+			 */}
 			<ScrollView
 				contentContainerStyle={{
-					paddingBottom: insets.bottom + spacing.xl,
+					paddingBottom:
+						insets.bottom + spacing.xl + MEDICATIONS_BANNER_SLOT,
 				}}
 			>
 				<View style={styles.header}>
@@ -171,6 +181,16 @@ export function MedicationsScreen() {
 					</>
 				) : null}
 			</ScrollView>
+
+			{/* Always-on for this tab: medication flow must not depend on BP data. */}
+			<View
+				style={[
+					styles.adSlot,
+					{ paddingBottom: Math.max(insets.bottom, spacing.sm) },
+				]}
+			>
+				<AdBanner placement="medicationsBanner" visible />
+			</View>
 		</View>
 	)
 }
@@ -394,5 +414,11 @@ const styles = StyleSheet.create({
 		paddingHorizontal: spacing.lg,
 		fontSize: typography.secondary,
 		color: colors.textMuted,
+	},
+	adSlot: {
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopColor: colors.border,
+		backgroundColor: colors.background,
+		paddingTop: spacing.xs,
 	},
 })
