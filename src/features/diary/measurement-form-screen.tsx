@@ -23,6 +23,8 @@ import {
 	onMeasurementCreatedForPrompt,
 } from '@/domain/reminders/measurement-reminder-prompt'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
+import type { MessageKey } from '@/i18n/dictionaries'
 import { filterMeasurementReminders } from '@/services/measurement-reminders'
 import {
 	readReminderPromptState,
@@ -32,7 +34,7 @@ import { colors, spacing, typography } from '@/theme'
 import { IntegerField, PrimaryButton } from './components/form-controls'
 import { TagChips } from './components/tag-chips'
 import {
-	measurementFormErrorMessage,
+	measurementFormErrorKey,
 	parseMeasurementForm,
 	type MeasurementFormDraft,
 } from './input/parse-measurement-form'
@@ -77,6 +79,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 	const router = useRouter()
 	const params = useLocalSearchParams<{ id?: string }>()
 	const { repos, profile, refreshToday, refreshAll } = useDiary()
+	const { t } = useI18n()
 
 	const diastolicRef = useRef<TextInput>(null)
 	const pulseRef = useRef<TextInput>(null)
@@ -90,7 +93,8 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 	const [softAccepted, setSoftAccepted] = useState(false)
 	const [saving, setSaving] = useState(false)
 
-	const title = mode === 'create' ? 'Новое измерение' : 'Измерение'
+	const title =
+		mode === 'create' ? t('measurement.newTitle') : t('measurement.editTitle')
 
 	useEffect(() => {
 		if (mode !== 'edit' || !repos || !params.id) {
@@ -103,7 +107,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				return
 			}
 			if (!row) {
-				setError('Запись не найдена')
+				setError(t('measurement.notFound'))
 				setLoaded(true)
 				return
 			}
@@ -113,7 +117,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 		return () => {
 			cancelled = true
 		}
-	}, [mode, repos, params.id])
+	}, [mode, repos, params.id, t])
 
 	const canSave = useMemo(
 		() => Boolean(repos && profile && loaded && !saving),
@@ -132,7 +136,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 			const has = prev.tags.includes(tag)
 			return {
 				...prev,
-				tags: has ? prev.tags.filter((t) => t !== tag) : [...prev.tags, tag],
+				tags: has ? prev.tags.filter((x) => x !== tag) : [...prev.tags, tag],
 			}
 		})
 	}
@@ -148,12 +152,12 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 		}
 		const parsed = parseMeasurementForm(draft)
 		if (!parsed.ok) {
-			setError(measurementFormErrorMessage(parsed.code))
+			setError(t(measurementFormErrorKey(parsed.code)))
 			return
 		}
 
-		if (parsed.softCheckMessage && !softAccepted) {
-			setSoftHint(parsed.softCheckMessage)
+		if (parsed.hasSoftCheck && !softAccepted) {
+			setSoftHint(t('measurement.softHint'))
 			setSoftAccepted(true)
 			return
 		}
@@ -204,6 +208,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					profileId: profile.id,
 					isFirstMeasurement: createdFirstMeasurement,
 					router,
+					t,
 				})
 				return
 			}
@@ -211,7 +216,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 			router.back()
 		} catch (err) {
 			setError(
-				err instanceof Error ? err.message : 'Не удалось сохранить измерение',
+				err instanceof Error ? err.message : t('measurement.saveFailed'),
 			)
 		} finally {
 			setSaving(false)
@@ -222,10 +227,10 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 		if (!repos || !params.id) {
 			return
 		}
-		Alert.alert('Удалить измерение?', undefined, [
-			{ text: 'Отмена', style: 'cancel' },
+		Alert.alert(t('measurement.deleteConfirmTitle'), undefined, [
+			{ text: t('common.cancel'), style: 'cancel' },
 			{
-				text: 'Удалить',
+				text: t('common.delete'),
 				style: 'destructive',
 				onPress: () => {
 					void (async () => {
@@ -247,7 +252,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 				options={{
 					headerShown: true,
 					title,
-					headerBackTitle: 'Назад',
+					headerBackTitle: t('common.back'),
 					headerTintColor: colors.primary,
 					headerStyle: { backgroundColor: colors.background },
 					headerShadowVisible: false,
@@ -270,25 +275,29 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					}}
 				>
 					{!loaded ? (
-						<Text style={styles.muted}>Загрузка…</Text>
+						<Text style={styles.muted}>{t('common.loading')}</Text>
 					) : (
 						<>
 							<IntegerField
-								label="Верхнее"
+								label={t('measurement.systolic')}
 								value={draft.systolicText}
-								onChangeText={(systolicText) => patchDraft({ systolicText })}
+								onChangeText={(systolicText) =>
+									patchDraft({ systolicText })
+								}
 								onSubmitEditing={() => diastolicRef.current?.focus()}
 								autoFocus={mode === 'create'}
 							/>
 							<IntegerField
-								label="Нижнее"
+								label={t('measurement.diastolic')}
 								value={draft.diastolicText}
-								onChangeText={(diastolicText) => patchDraft({ diastolicText })}
+								onChangeText={(diastolicText) =>
+									patchDraft({ diastolicText })
+								}
 								inputRef={diastolicRef}
 								onSubmitEditing={() => pulseRef.current?.focus()}
 							/>
 							<IntegerField
-								label="Пульс"
+								label={t('measurement.pulse')}
 								value={draft.pulseText}
 								onChangeText={(pulseText) => patchDraft({ pulseText })}
 								inputRef={pulseRef}
@@ -300,18 +309,22 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 
 							<View style={styles.datetimeRow}>
 								<View style={styles.datetimeHalf}>
-									<Text style={styles.fieldLabel}>Дата</Text>
+									<Text style={styles.fieldLabel}>
+										{t('measurement.date')}
+									</Text>
 									<TextInput
 										value={draft.dayKey}
 										onChangeText={(dayKey) => patchDraft({ dayKey })}
 										autoCapitalize="none"
 										autoCorrect={false}
 										style={styles.datetimeInput}
-										accessibilityLabel="Дата"
+										accessibilityLabel={t('measurement.date')}
 									/>
 								</View>
 								<View style={styles.datetimeHalf}>
-									<Text style={styles.fieldLabel}>Время</Text>
+									<Text style={styles.fieldLabel}>
+										{t('measurement.time')}
+									</Text>
 									<TextInput
 										value={draft.timeHm}
 										onChangeText={(timeHm) => patchDraft({ timeHm })}
@@ -319,17 +332,17 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 										autoCapitalize="none"
 										autoCorrect={false}
 										style={styles.datetimeInput}
-										accessibilityLabel="Время"
+										accessibilityLabel={t('measurement.time')}
 									/>
 								</View>
 							</View>
 							<Text style={styles.hint}>
-								Дата и время подставляются автоматически. Можно изменить.
+								{t('common.datetimeAutoHint')}
 							</Text>
 
 							<TagChips selected={draft.tags} onToggle={handleToggleTag} />
 
-							<Text style={styles.fieldLabel}>Заметка</Text>
+							<Text style={styles.fieldLabel}>{t('measurement.note')}</Text>
 							<TextInput
 								ref={noteRef}
 								value={draft.note}
@@ -337,9 +350,9 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 								multiline
 								scrollEnabled
 								style={styles.note}
-								placeholder="Необязательно"
+								placeholder={t('measurement.notePlaceholder')}
 								placeholderTextColor={colors.textMuted}
-								accessibilityLabel="Заметка"
+								accessibilityLabel={t('measurement.note')}
 								onFocus={() => {
 									// Keep note + actions reachable above the keyboard.
 									setTimeout(() => {
@@ -354,7 +367,7 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 							{mode === 'edit' ? (
 								<View style={styles.deleteWrap}>
 									<PrimaryButton
-										label="Удалить измерение"
+										label={t('measurement.delete')}
 										onPress={handleDelete}
 										danger
 									/>
@@ -368,10 +381,10 @@ export function MeasurementFormScreen({ mode }: MeasurementFormScreenProps) {
 					<PrimaryButton
 						label={
 							saving
-								? 'Сохранение…'
+								? t('common.saving')
 								: softHint && softAccepted
-									? 'Сохранить всё равно'
-									: 'Сохранить'
+									? t('common.saveAnyway')
+									: t('measurement.save')
 						}
 						onPress={() => {
 							void handleSave()
@@ -467,8 +480,9 @@ async function maybeOfferMeasurementReminder(input: {
 	profileId: string
 	isFirstMeasurement: boolean
 	router: ReturnType<typeof useRouter>
+	t: (key: MessageKey) => string
 }): Promise<void> {
-	const { repos, profileId, isFirstMeasurement, router } = input
+	const { repos, profileId, isFirstMeasurement, router, t } = input
 	const promptState = await readReminderPromptState()
 	const reminders = await repos.reminders.listByProfile(profileId)
 	const hasActiveMeasurementReminder = filterMeasurementReminders(
@@ -503,11 +517,11 @@ async function maybeOfferMeasurementReminder(input: {
 
 	await new Promise<void>((resolve) => {
 		Alert.alert(
-			'Измеряете давление регулярно?',
-			'Можем напоминать об измерении в удобное для вас время.',
+			t('measurement.softPromptTitle'),
+			t('measurement.softPromptBody'),
 			[
 				{
-					text: 'Не сейчас',
+					text: t('measurement.softPromptNo'),
 					style: 'cancel',
 					onPress: () => {
 						void (async () => {
@@ -526,7 +540,7 @@ async function maybeOfferMeasurementReminder(input: {
 					},
 				},
 				{
-					text: 'Настроить напоминание',
+					text: t('measurement.softPromptYes'),
 					onPress: () => {
 						router.replace(REMINDERS_ROUTE as Href)
 						resolve()

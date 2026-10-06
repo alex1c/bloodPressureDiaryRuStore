@@ -133,4 +133,12 @@ export const analytics = {
 	trackBackupRestoreFailed() {
 		report('backup_restore_failed')
 	},
+
+	/** Language preference changed — locale codes only, never health content. */
+	trackLocaleChanged(input: { locale: string; preference: string }) {
+		report('locale_changed', {
+			locale: input.locale,
+			preference: input.preference,
+		})
+	},
 } as const

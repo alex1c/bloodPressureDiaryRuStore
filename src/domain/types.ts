@@ -149,8 +149,11 @@ export interface Reminder {
 
 export interface AppSettings {
 	activeProfileId: EntityId | null
-	/** Locale preference; default ru. */
-	locale: 'ru' | 'en'
+	/**
+	 * Locale preference: follow system or an explicit language.
+	 * Legacy backups may still contain `ru` | `en` only.
+	 */
+	locale: 'system' | 'ru' | 'en' | 'es' | 'de'
 	/** First measurement completed — gates later ad policy. */
 	hasCompletedFirstMeasurement: boolean
 }

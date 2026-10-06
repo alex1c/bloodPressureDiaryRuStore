@@ -695,7 +695,8 @@ function parseSettings(
 ): AppSettings | null {
 	if (
 		!(item.activeProfileId === null || isString(item.activeProfileId)) ||
-		(item.locale !== 'ru' && item.locale !== 'en') ||
+		!isString(item.locale) ||
+		!isLocalePreferenceValue(item.locale) ||
 		!isBoolean(item.hasCompletedFirstMeasurement)
 	) {
 		return null
@@ -711,4 +712,17 @@ function parseSettings(
 		locale: item.locale,
 		hasCompletedFirstMeasurement: item.hasCompletedFirstMeasurement,
 	}
+}
+
+/** Accepts legacy ru/en and new system/es/de preference values. */
+function isLocalePreferenceValue(
+	value: string,
+): value is AppSettings['locale'] {
+	return (
+		value === 'system' ||
+		value === 'ru' ||
+		value === 'en' ||
+		value === 'es' ||
+		value === 'de'
+	)
 }

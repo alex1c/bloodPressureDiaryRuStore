@@ -118,7 +118,7 @@ describe('parseMeasurementForm', () => {
 			expect(result.note).toBe('after coffee')
 			expect(result.tags).toEqual(['coffee'])
 			expect(result.periodOfDay).toBe('morning')
-			expect(result.softCheckMessage).toBeNull()
+			expect(result.hasSoftCheck).toBe(false)
 		}
 	})
 
@@ -132,7 +132,7 @@ describe('parseMeasurementForm', () => {
 		})
 		expect(result.ok).toBe(true)
 		if (result.ok) {
-			expect(result.softCheckMessage).toBe('Проверьте введённое значение.')
+			expect(result.hasSoftCheck).toBe(true)
 		}
 	})
 })

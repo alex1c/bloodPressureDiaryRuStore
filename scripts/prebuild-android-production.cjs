@@ -41,6 +41,13 @@ function ensureProductionVariant() {
 		console.error('Set APP_VARIANT=production before running this script.')
 		process.exit(1)
 	}
+	const store = (process.env.APP_STORE ?? '').trim().toLowerCase()
+	if (store !== 'rustore' && store !== 'googleplay') {
+		console.error(
+			'Set APP_STORE=rustore or APP_STORE=googleplay before production prebuild.',
+		)
+		process.exit(1)
+	}
 }
 
 function applyDevClientExclude() {

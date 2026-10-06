@@ -1,3 +1,4 @@
+import type { MessageKey } from '@/i18n/dictionaries'
 import type { MeasurementTag, PeriodOfDay } from './types'
 
 /** Preset tags shown in the measurement form (order is UI order). */
@@ -10,7 +11,10 @@ export const MEASUREMENT_TAGS: readonly MeasurementTag[] = [
 	'physical_activity',
 ] as const
 
-/** Russian labels for preset tags — presentation helper, not medical copy. */
+/**
+ * @deprecated Prefer getMeasurementTagLabel(tag, t). Kept for PDF/report
+ * builders that still assume Russian presentation.
+ */
 export const MEASUREMENT_TAG_LABELS_RU: Record<MeasurementTag, string> = {
 	normal: 'Нормально',
 	headache: 'Головная боль',
@@ -18,6 +22,23 @@ export const MEASUREMENT_TAG_LABELS_RU: Record<MeasurementTag, string> = {
 	stress: 'Стресс',
 	coffee: 'Кофе',
 	physical_activity: 'После нагрузки',
+}
+
+const TAG_MESSAGE_KEYS: Record<MeasurementTag, MessageKey> = {
+	normal: 'tag.normal',
+	headache: 'tag.headache',
+	lack_of_sleep: 'tag.lack_of_sleep',
+	stress: 'tag.stress',
+	coffee: 'tag.coffee',
+	physical_activity: 'tag.physical_activity',
+}
+
+/** Localized tag chip / list label via the active translator. */
+export function getMeasurementTagLabel(
+	tag: MeasurementTag,
+	t: (key: MessageKey) => string,
+): string {
+	return t(TAG_MESSAGE_KEYS[tag])
 }
 
 export function isMeasurementTag(value: string): value is MeasurementTag {

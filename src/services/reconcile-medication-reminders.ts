@@ -12,6 +12,11 @@ import {
 	getNotificationPermissionState,
 	scheduleReminderNotification,
 } from '@/services/medication-notifications'
+import {
+	createTranslator,
+	normalizeLocalePreference,
+	resolveLocaleFromPreference,
+} from '@/i18n'
 
 /**
  * Syncs Reminder rows for one medication to match its schedule + remind flag.
@@ -47,6 +52,12 @@ export async function syncMedicationReminders(input: {
 		}
 	}
 
+	const settings = await repos.settings.get()
+	const locale = resolveLocaleFromPreference(
+		normalizeLocalePreference(settings.locale),
+	)
+	const t = createTranslator(locale)
+
 	const kept: Reminder[] = []
 
 	for (const reminder of existing) {
@@ -65,6 +76,7 @@ export async function syncMedicationReminders(input: {
 			scheduleHm: key,
 			profileName,
 			includeProfileName,
+			t,
 		})
 		const updated = await repos.reminders.update(reminder.id, {
 			title: content.title,
@@ -87,6 +99,7 @@ export async function syncMedicationReminders(input: {
 			scheduleHm: key,
 			profileName,
 			includeProfileName,
+			t,
 		})
 		const created = await repos.reminders.create({
 			profileId: medication.profileId,

@@ -17,19 +17,29 @@ import type { Reminder } from '@/domain/types'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
+import { useI18n } from '@/i18n'
+import type { MessageKey } from '@/i18n/dictionaries'
 import {
 	deleteMeasurementReminder,
 	filterMeasurementReminders,
 	formatReminderHm,
-	formatWeekdaysRu,
 	setMeasurementReminderEnabled,
 	upsertMeasurementReminder,
-	WEEKDAY_LABELS_RU,
 } from '@/services/measurement-reminders'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 /** Display order Mon→Sun for weekday chips. */
 const WEEKDAY_UI_ORDER = [1, 2, 3, 4, 5, 6, 0] as const
+
+const WEEKDAY_KEYS: Record<number, MessageKey> = {
+	0: 'weekday.0',
+	1: 'weekday.1',
+	2: 'weekday.2',
+	3: 'weekday.3',
+	4: 'weekday.4',
+	5: 'weekday.5',
+	6: 'weekday.6',
+}
 
 type EditorState = {
 	id: string | null
@@ -44,6 +54,7 @@ type EditorState = {
  */
 export function RemindersScreen() {
 	const insets = useSafeAreaInsets()
+	const { t } = useI18n()
 	const { ready, error, repos, profile } = useDiary()
 	const {
 		medications,
@@ -77,6 +88,17 @@ export function RemindersScreen() {
 		[medications],
 	)
 
+	function formatWeekdays(weekdays: number[]): string {
+		if (
+			[0, 1, 2, 3, 4, 5, 6].every((d) => weekdays.includes(d))
+		) {
+			return t('reminders.everyDay')
+		}
+		return WEEKDAY_UI_ORDER.filter((d) => weekdays.includes(d))
+			.map((d) => t(WEEKDAY_KEYS[d]!))
+			.join(', ')
+	}
+
 	function openCreateEditor(defaults?: { hour: number; minute: number }) {
 		const hour = defaults?.hour ?? 8
 		const minute = defaults?.minute ?? 0
@@ -108,11 +130,11 @@ export function RemindersScreen() {
 		}
 		const parsed = parseScheduleHm(editor.timeHm)
 		if (!parsed) {
-			setLocalError('Введите время в формате ЧЧ:ММ')
+			setLocalError(t('common.timeFormatError'))
 			return
 		}
 		if (editor.weekdays.length === 0) {
-			setLocalError('Выберите хотя бы один день недели')
+			setLocalError(t('reminders.weekdaysRequired'))
 			return
 		}
 
@@ -134,7 +156,7 @@ export function RemindersScreen() {
 			setLocalError(
 				err instanceof Error
 					? err.message
-					: 'Не удалось сохранить напоминание',
+					: t('reminders.saveFailed'),
 			)
 		} finally {
 			setBusy(false)
@@ -163,10 +185,10 @@ export function RemindersScreen() {
 	}
 
 	function handleDeleteMeasurement(reminder: Reminder) {
-		Alert.alert('Удалить напоминание?', undefined, [
-			{ text: 'Отмена', style: 'cancel' },
+		Alert.alert(t('reminders.deleteConfirmTitle'), undefined, [
+			{ text: t('common.cancel'), style: 'cancel' },
 			{
-				text: 'Удалить',
+				text: t('common.delete'),
 				style: 'destructive',
 				onPress: () => {
 					void (async () => {
@@ -284,8 +306,8 @@ export function RemindersScreen() {
 			<Stack.Screen
 				options={{
 					headerShown: true,
-					title: 'Напоминания',
-					headerBackTitle: 'Назад',
+					title: t('reminders.title'),
+					headerBackTitle: t('common.back'),
 				}}
 			/>
 			<ScrollView
@@ -298,21 +320,23 @@ export function RemindersScreen() {
 				]}
 				keyboardShouldPersistTaps="handled"
 			>
-				<Text style={styles.sectionTitle}>Измерения давления</Text>
-				<Text style={styles.sectionHint}>
-					Локальные уведомления в выбранные дни и время.
+				<Text style={styles.sectionTitle}>
+					{t('reminders.measurementTitle')}
 				</Text>
+				<Text style={styles.sectionHint}>{t('reminders.sectionHint')}</Text>
 
 				{measurementReminders.length === 0 ? (
 					<Text style={styles.emptyText}>
-						Пока нет напоминаний об измерении.
+						{t('reminders.emptyMeasurement')}
 					</Text>
 				) : (
 					measurementReminders.map((reminder) => (
 						<View key={reminder.id} style={styles.rowCard}>
 							<Pressable
 								accessibilityRole="button"
-								accessibilityLabel={`Изменить напоминание ${formatReminderHm(reminder)}`}
+								accessibilityLabel={t('reminders.editA11y', {
+									time: formatReminderHm(reminder),
+								})}
 								onPress={() => openEditEditor(reminder)}
 								style={styles.rowMain}
 							>
@@ -320,7 +344,7 @@ export function RemindersScreen() {
 									{formatReminderHm(reminder)}
 								</Text>
 								<Text style={styles.rowDays}>
-									{formatWeekdaysRu(reminder.weekdays)}
+									{formatWeekdays(reminder.weekdays)}
 								</Text>
 							</Pressable>
 							<Switch
@@ -336,11 +360,11 @@ export function RemindersScreen() {
 								thumbColor={
 									reminder.enabled ? colors.primary : '#f4f4f4'
 								}
-								accessibilityLabel="Включить напоминание"
+								accessibilityLabel={t('reminders.enableA11y')}
 							/>
 							<Pressable
 								accessibilityRole="button"
-								accessibilityLabel="Удалить напоминание"
+								accessibilityLabel={t('reminders.deleteA11y')}
 								onPress={() => handleDeleteMeasurement(reminder)}
 								style={styles.deleteHit}
 							>
@@ -353,7 +377,7 @@ export function RemindersScreen() {
 				<View style={styles.actionsRow}>
 					<Pressable
 						accessibilityRole="button"
-						accessibilityLabel="Добавить напоминание"
+						accessibilityLabel={t('reminders.add')}
 						onPress={() => openCreateEditor()}
 						disabled={busy}
 						style={({ pressed }) => [
@@ -362,11 +386,13 @@ export function RemindersScreen() {
 							busy && styles.disabled,
 						]}
 					>
-						<Text style={styles.outlineButtonText}>Добавить</Text>
+						<Text style={styles.outlineButtonText}>
+							{t('health.addEntry')}
+						</Text>
 					</Pressable>
 					<Pressable
 						accessibilityRole="button"
-						accessibilityLabel="Добавить утро и вечер"
+						accessibilityLabel={t('reminders.addMorningEveningA11y')}
 						onPress={() => void handleAddMorningEvening()}
 						disabled={busy}
 						style={({ pressed }) => [
@@ -375,16 +401,20 @@ export function RemindersScreen() {
 							busy && styles.disabled,
 						]}
 					>
-						<Text style={styles.outlineButtonText}>Утро и вечер</Text>
+						<Text style={styles.outlineButtonText}>
+							{t('reminders.addMorningEvening')}
+						</Text>
 					</Pressable>
 				</View>
 
 				{editor ? (
 					<View style={styles.editorCard}>
 						<Text style={styles.editorTitle}>
-							{editor.id ? 'Изменить' : 'Новое напоминание'}
+							{editor.id
+								? t('reminders.editTitle')
+								: t('reminders.newTitle')}
 						</Text>
-						<Text style={styles.fieldLabel}>Время</Text>
+						<Text style={styles.fieldLabel}>{t('reminders.timeLabel')}</Text>
 						<TextInput
 							value={editor.timeHm}
 							onChangeText={(timeHm) =>
@@ -396,12 +426,15 @@ export function RemindersScreen() {
 							placeholderTextColor={colors.textMuted}
 							keyboardType="numbers-and-punctuation"
 							style={styles.input}
-							accessibilityLabel="Время напоминания"
+							accessibilityLabel={t('reminders.timeA11y')}
 						/>
-						<Text style={styles.fieldLabel}>Дни недели</Text>
+						<Text style={styles.fieldLabel}>
+							{t('reminders.weekdaysLabel')}
+						</Text>
 						<View style={styles.weekdayRow}>
 							{WEEKDAY_UI_ORDER.map((day) => {
 								const selected = editor.weekdays.includes(day)
+								const label = t(WEEKDAY_KEYS[day]!)
 								return (
 									<Pressable
 										key={day}
@@ -412,7 +445,7 @@ export function RemindersScreen() {
 										]}
 										accessibilityRole="button"
 										accessibilityState={{ selected }}
-										accessibilityLabel={WEEKDAY_LABELS_RU[day]}
+										accessibilityLabel={label}
 									>
 										<Text
 											style={[
@@ -421,14 +454,14 @@ export function RemindersScreen() {
 													styles.weekdayChipTextSelected,
 											]}
 										>
-											{WEEKDAY_LABELS_RU[day]}
+											{label}
 										</Text>
 									</Pressable>
 								)
 							})}
 						</View>
 						<View style={styles.switchRow}>
-							<Text style={styles.switchTitle}>Включено</Text>
+							<Text style={styles.switchTitle}>{t('reminders.enabled')}</Text>
 							<Switch
 								value={editor.enabled}
 								onValueChange={(enabled) =>
@@ -436,7 +469,7 @@ export function RemindersScreen() {
 										prev ? { ...prev, enabled } : prev,
 									)
 								}
-								accessibilityLabel="Включено"
+								accessibilityLabel={t('reminders.enabled')}
 							/>
 						</View>
 						{localError ? (
@@ -453,11 +486,13 @@ export function RemindersScreen() {
 									pressed && styles.pressed,
 								]}
 							>
-								<Text style={styles.secondaryBtnText}>Отмена</Text>
+								<Text style={styles.secondaryBtnText}>
+									{t('common.cancel')}
+								</Text>
 							</Pressable>
 							<View style={styles.editorSave}>
 								<PrimaryButton
-									label={busy ? 'Сохранение…' : 'Сохранить'}
+									label={busy ? t('common.saving') : t('common.save')}
 									onPress={() => void handleSaveEditor()}
 									disabled={busy}
 								/>
@@ -468,17 +503,15 @@ export function RemindersScreen() {
 
 				{permission === 'denied' ? (
 					<Text style={styles.permHint}>
-						Системные уведомления отключены. Расписание сохранится.
+						{t('reminders.permissionHint')}
 					</Text>
 				) : null}
 
 				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
-					Лекарства
+					{t('meds.title')}
 				</Text>
 				{activeMeds.length === 0 ? (
-					<Text style={styles.emptyText}>
-						Нет активных лекарств для напоминаний.
-					</Text>
+					<Text style={styles.emptyText}>{t('reminders.emptyMeds')}</Text>
 				) : (
 					activeMeds.map((med) => {
 						const remindOn = reminders.some(
@@ -490,7 +523,7 @@ export function RemindersScreen() {
 									<Text style={styles.rowTime}>{med.name}</Text>
 									<Text style={styles.rowDays}>
 										{med.schedule
-											.map((t) => formatReminderHm(t))
+											.map((slot) => formatReminderHm(slot))
 											.join(', ')}
 									</Text>
 								</View>
@@ -510,7 +543,9 @@ export function RemindersScreen() {
 									thumbColor={
 										remindOn ? colors.primary : '#f4f4f4'
 									}
-									accessibilityLabel={`Напоминать о ${med.name}`}
+									accessibilityLabel={t('reminders.medToggleA11y', {
+										name: med.name,
+									})}
 								/>
 							</View>
 						)
@@ -553,67 +588,67 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: spacing.sm,
-		minHeight: touchTargetMin,
-		borderRadius: 10,
-		borderWidth: 1,
-		borderColor: colors.border,
-		backgroundColor: colors.surface,
-		paddingHorizontal: spacing.md,
 		paddingVertical: spacing.sm,
+		paddingHorizontal: spacing.md,
 		marginBottom: spacing.sm,
+		borderRadius: 12,
+		backgroundColor: colors.surface,
+		borderWidth: StyleSheet.hairlineWidth,
+		borderColor: colors.border,
 	},
 	rowMain: {
 		flex: 1,
 	},
 	rowTime: {
 		fontSize: typography.body,
-		fontWeight: '600',
+		fontWeight: '700',
 		color: colors.text,
 	},
 	rowDays: {
 		marginTop: 2,
-		fontSize: 13,
+		fontSize: typography.secondary,
 		color: colors.textMuted,
 	},
 	deleteHit: {
-		minWidth: 36,
-		minHeight: touchTargetMin,
+		minWidth: touchTargetMin - 8,
+		minHeight: touchTargetMin - 8,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	deleteText: {
-		fontSize: 24,
+		fontSize: 22,
 		color: colors.danger,
-		lineHeight: 28,
+		fontWeight: '600',
 	},
 	actionsRow: {
 		flexDirection: 'row',
+		flexWrap: 'wrap',
 		gap: spacing.sm,
 		marginTop: spacing.sm,
 		marginBottom: spacing.md,
 	},
 	outlineButton: {
-		flex: 1,
 		minHeight: touchTargetMin,
-		alignItems: 'center',
-		justifyContent: 'center',
+		paddingHorizontal: spacing.md,
 		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: colors.border,
 		backgroundColor: colors.surface,
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	outlineButtonText: {
-		fontSize: typography.body,
-		fontWeight: '600',
+		fontSize: typography.secondary,
+		fontWeight: '700',
 		color: colors.primary,
 	},
 	editorCard: {
-		marginBottom: spacing.lg,
 		padding: spacing.md,
 		borderRadius: 12,
 		backgroundColor: colors.surface,
 		borderWidth: 1,
 		borderColor: colors.border,
+		marginBottom: spacing.md,
 	},
 	editorTitle: {
 		fontSize: typography.section,
@@ -643,22 +678,26 @@ const styles = StyleSheet.create({
 		gap: spacing.xs,
 	},
 	weekdayChip: {
-		minWidth: 40,
-		minHeight: 40,
-		borderRadius: 10,
+		minHeight: touchTargetMin - 8,
+		minWidth: touchTargetMin - 8,
+		paddingHorizontal: spacing.sm,
+		borderRadius: 999,
+		borderWidth: 1,
+		borderColor: colors.border,
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: colors.chip,
 	},
 	weekdayChipSelected: {
 		backgroundColor: colors.chipSelected,
+		borderColor: colors.primary,
 	},
 	weekdayChipText: {
 		fontSize: typography.secondary,
-		color: colors.textMuted,
-		fontWeight: '600',
+		color: colors.text,
 	},
 	weekdayChipTextSelected: {
+		fontWeight: '700',
 		color: colors.primary,
 	},
 	switchRow: {
@@ -673,31 +712,27 @@ const styles = StyleSheet.create({
 		color: colors.text,
 	},
 	editorActions: {
-		flexDirection: 'row',
-		gap: spacing.sm,
 		marginTop: spacing.md,
+		flexDirection: 'row',
 		alignItems: 'center',
+		gap: spacing.sm,
 	},
 	secondaryBtn: {
 		minHeight: touchTargetMin,
 		paddingHorizontal: spacing.md,
-		alignItems: 'center',
 		justifyContent: 'center',
-		borderRadius: 10,
-		borderWidth: 1,
-		borderColor: colors.border,
 	},
 	secondaryBtnText: {
-		fontSize: typography.body,
-		color: colors.text,
+		color: colors.textMuted,
+		fontWeight: '600',
 	},
 	editorSave: {
 		flex: 1,
 	},
 	permHint: {
+		marginTop: spacing.sm,
 		fontSize: typography.secondary,
 		color: colors.textMuted,
-		marginBottom: spacing.md,
 	},
 	pressed: {
 		opacity: 0.85,

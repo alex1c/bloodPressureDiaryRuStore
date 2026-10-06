@@ -757,16 +757,31 @@ async function getSettings(db: SqlExecutor): Promise<AppSettings> {
 	if (!row) {
 		return {
 			activeProfileId: null,
-			locale: 'ru',
+			locale: 'system',
 			hasCompletedFirstMeasurement: false,
 		}
 	}
 
 	return {
 		activeProfileId: row.active_profile_id,
-		locale: row.locale === 'en' ? 'en' : 'ru',
+		locale: normalizeStoredLocale(row.locale),
 		hasCompletedFirstMeasurement: row.has_completed_first_measurement === 1,
 	}
+}
+
+/** Accepts legacy ru/en plus system/es/de without dropping user data. */
+function normalizeStoredLocale(raw: string): AppSettings['locale'] {
+	if (
+		raw === 'system' ||
+		raw === 'ru' ||
+		raw === 'en' ||
+		raw === 'es' ||
+		raw === 'de'
+	) {
+		return raw
+	}
+	// Unknown legacy values fall back to system (safe default).
+	return 'system'
 }
 
 function mapProfile(row: {
@@ -927,7 +942,7 @@ export async function ensureDefaultSettings(db: SqlExecutor): Promise<void> {
 	if (!row) {
 		await db.run(
 			`INSERT INTO settings (id, active_profile_id, locale, has_completed_first_measurement)
-			 VALUES (1, NULL, 'ru', 0)`,
+			 VALUES (1, NULL, 'system', 0)`,
 		)
 	}
 }

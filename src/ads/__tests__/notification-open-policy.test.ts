@@ -17,6 +17,14 @@ jest.mock('expo-router', () => ({
 jest.mock('@/hooks/use-diary', () => ({
 	useDiary: () => ({ switchProfile: () => new Promise(() => {}) }),
 }))
+jest.mock('@/i18n', () => ({
+	useI18n: () => ({
+		t: (key: string) => key,
+		locale: 'ru',
+		preference: 'system',
+		setLocalePreference: async () => {},
+	}),
+}))
 jest.mock('expo-notifications', () => ({
 	addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
 	getLastNotificationResponseAsync: jest.fn(async () => null),

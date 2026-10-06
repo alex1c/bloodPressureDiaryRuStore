@@ -18,14 +18,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { formatLocalTime } from '@/domain/dates/local-day'
 import {
 	ALL_METRIC_KINDS,
-	METRIC_LABELS_RU,
 	dayHeadingForKey,
-	formatMetricWithUnit,
+	formatMetricWithUnitT,
+	getMetricLabel,
 	groupMetricsByLocalDay,
 } from '@/domain/health/metric-catalog'
 import type { HealthMetricKind } from '@/domain/types'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
 
 function isHealthMetricKind(value: string): value is HealthMetricKind {
@@ -41,6 +42,7 @@ export function MetricHistoryScreen() {
 	const router = useRouter()
 	const params = useLocalSearchParams<{ kind?: string }>()
 	const { ready, healthMetrics, refreshHealth } = useDiary()
+	const { t, locale } = useI18n()
 
 	const kind =
 		typeof params.kind === 'string' && isHealthMetricKind(params.kind)
@@ -61,7 +63,7 @@ export function MetricHistoryScreen() {
 		return groupMetricsByLocalDay(ofKind)
 	}, [healthMetrics, kind])
 
-	const title = kind ? METRIC_LABELS_RU[kind] : 'Показатель'
+	const title = kind ? getMetricLabel(kind, t) : t('health.metric.generic')
 
 	if (!kind) {
 		return (
@@ -69,15 +71,15 @@ export function MetricHistoryScreen() {
 				<Stack.Screen
 					options={{
 						headerShown: true,
-						title: 'Показатель',
-						headerBackTitle: 'Назад',
+						title: t('health.metric.generic'),
+						headerBackTitle: t('common.back'),
 						headerTintColor: colors.primary,
 						headerStyle: { backgroundColor: colors.background },
 						headerShadowVisible: false,
 					}}
 				/>
 				<View style={styles.centered}>
-					<Text style={styles.muted}>Неизвестный показатель</Text>
+					<Text style={styles.muted}>{t('health.metric.unknown')}</Text>
 				</View>
 			</>
 		)
@@ -90,7 +92,7 @@ export function MetricHistoryScreen() {
 					options={{
 						headerShown: true,
 						title,
-						headerBackTitle: 'Назад',
+						headerBackTitle: t('common.back'),
 						headerTintColor: colors.primary,
 						headerStyle: { backgroundColor: colors.background },
 						headerShadowVisible: false,
@@ -109,7 +111,7 @@ export function MetricHistoryScreen() {
 				options={{
 					headerShown: true,
 					title,
-					headerBackTitle: 'Назад',
+					headerBackTitle: t('common.back'),
 					headerTintColor: colors.primary,
 					headerStyle: { backgroundColor: colors.background },
 					headerShadowVisible: false,
@@ -124,7 +126,7 @@ export function MetricHistoryScreen() {
 				>
 					<View style={styles.ctaPad}>
 						<PrimaryButton
-							label="Добавить"
+							label={t('health.addEntry')}
 							onPress={() =>
 								router.push(`/health/${kind}/new` as Href)
 							}
@@ -133,22 +135,25 @@ export function MetricHistoryScreen() {
 
 					{groups.length === 0 ? (
 						<View style={styles.empty}>
-							<Text style={styles.emptyTitle}>Записей пока нет</Text>
+							<Text style={styles.emptyTitle}>{t('health.noHistory')}</Text>
 							<Text style={styles.emptyBody}>
-								Добавьте первое значение.
+								{t('health.emptyHistoryBody')}
 							</Text>
 						</View>
 					) : (
 						groups.map((group) => (
 							<View key={group.dayKey}>
 								<Text style={styles.dayHeading}>
-									{dayHeadingForKey(group.dayKey)}
+									{dayHeadingForKey(group.dayKey, new Date(), {
+										locale,
+										todayLabel: t('common.today'),
+									})}
 								</Text>
 								{group.items.map((item) => (
 									<Pressable
 										key={item.id}
 										accessibilityRole="button"
-										accessibilityLabel={`${formatMetricWithUnit(kind, item.value)}, ${formatLocalTime(item.measuredAt)}`}
+										accessibilityLabel={`${formatMetricWithUnitT(kind, item.value, t)}, ${formatLocalTime(item.measuredAt)}`}
 										onPress={() =>
 											router.push(
 												`/health/entry/${item.id}` as Href,
@@ -164,7 +169,7 @@ export function MetricHistoryScreen() {
 										</Text>
 										<View style={styles.rowBody}>
 											<Text style={styles.rowValue}>
-												{formatMetricWithUnit(kind, item.value)}
+												{formatMetricWithUnitT(kind, item.value, t)}
 											</Text>
 											{item.note ? (
 												<Text

@@ -1,16 +1,22 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
+import { resolveStoreId } from './src/config/store'
 
 /**
  * Expo app config — Continuous Native Generation entry.
  *
- * Production / RuStore:
+ * Production:
  *   APP_VARIANT=production
+ *   APP_STORE=rustore|googleplay
  *   npm run prebuild:android:production
  *
  * Package ID is fixed in docs/DECISIONS.md: com.calculatorplatform.bpdiary
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
 	const isProduction = process.env.APP_VARIANT === 'production'
+	const storeId = resolveStoreId(process.env.APP_STORE, {
+		requireExplicit: isProduction,
+		developmentDefault: 'rustore',
+	})
 
 	const plugins: NonNullable<ExpoConfig['plugins']> = [
 		'./plugins/with-worklets-packaging',
@@ -73,6 +79,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		plugins,
 		extra: {
 			appVariant: isProduction ? 'production' : 'development',
+			storeId,
 			foundationVersion: '1.0.2',
 		},
 	}

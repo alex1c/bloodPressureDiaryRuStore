@@ -40,14 +40,15 @@ export type MeasurementFormParseResult =
 			periodOfDay: PeriodOfDay
 			tags: MeasurementTag[]
 			note: string | null
-			/** Neutral double-check hint — not a medical warning. */
-			softCheckMessage: string | null
+			/** True when values are outside soft ranges — UI shows t('measurement.softHint'). */
+			hasSoftCheck: boolean
 	  }
 	| { ok: false; code: MeasurementFormFieldError }
 
 /**
  * Parses measurement form draft strings on submit.
  * Keeps editable drafts as strings until this point.
+ * Error / soft-hint copy is resolved in the UI via i18n keys.
  */
 export function parseMeasurementForm(
 	draft: MeasurementFormDraft,
@@ -90,16 +91,10 @@ export function parseMeasurementForm(
 	const noteTrimmed = draft.note.trim()
 	const note = noteTrimmed.length === 0 ? null : noteTrimmed
 
-	const softParts: string[] = []
-	if (isOutsideSoftBpRange('systolic', systolic.value)) {
-		softParts.push('верхнее')
-	}
-	if (isOutsideSoftBpRange('diastolic', diastolic.value)) {
-		softParts.push('нижнее')
-	}
-	if (isOutsideSoftBpRange('pulse', pulse.value)) {
-		softParts.push('пульс')
-	}
+	const hasSoftCheck =
+		isOutsideSoftBpRange('systolic', systolic.value) ||
+		isOutsideSoftBpRange('diastolic', diastolic.value) ||
+		isOutsideSoftBpRange('pulse', pulse.value)
 
 	return {
 		ok: true,
@@ -110,11 +105,50 @@ export function parseMeasurementForm(
 		periodOfDay: derivePeriodOfDay(new Date(measuredAt)),
 		tags,
 		note,
-		softCheckMessage:
-			softParts.length > 0 ? 'Проверьте введённое значение.' : null,
+		hasSoftCheck,
 	}
 }
 
+/** Maps parse error codes to message catalog keys (translate in the UI). */
+export function measurementFormErrorKey(
+	code: MeasurementFormFieldError,
+):
+	| 'measurement.error.emptySystolic'
+	| 'measurement.error.emptyDiastolic'
+	| 'measurement.error.emptyPulse'
+	| 'measurement.error.invalidSystolic'
+	| 'measurement.error.invalidDiastolic'
+	| 'measurement.error.invalidPulse'
+	| 'measurement.error.invalidDatetime'
+	| 'measurement.error.systolicNotAbove' {
+	switch (code) {
+		case 'EMPTY_SYSTOLIC':
+			return 'measurement.error.emptySystolic'
+		case 'EMPTY_DIASTOLIC':
+			return 'measurement.error.emptyDiastolic'
+		case 'EMPTY_PULSE':
+			return 'measurement.error.emptyPulse'
+		case 'INVALID_SYSTOLIC':
+			return 'measurement.error.invalidSystolic'
+		case 'INVALID_DIASTOLIC':
+			return 'measurement.error.invalidDiastolic'
+		case 'INVALID_PULSE':
+			return 'measurement.error.invalidPulse'
+		case 'INVALID_DATETIME':
+			return 'measurement.error.invalidDatetime'
+		case 'SYSTOLIC_NOT_ABOVE_DIASTOLIC':
+			return 'measurement.error.systolicNotAbove'
+		default: {
+			const _exhaustive: never = code
+			return _exhaustive
+		}
+	}
+}
+
+/**
+ * @deprecated Prefer measurementFormErrorKey + t() in UI.
+ * Kept for older tests that assert Russian copy.
+ */
 export function measurementFormErrorMessage(
 	code: MeasurementFormFieldError,
 ): string {

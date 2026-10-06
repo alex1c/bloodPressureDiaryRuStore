@@ -3,6 +3,7 @@ import {
 	roundStat,
 	type MeasurementStats,
 } from '@/domain/statistics/measurement-stats'
+import { useI18n } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
 
 type StatsSummaryProps = {
@@ -33,57 +34,71 @@ export function StatsSummary({
 	morning,
 	evening,
 }: StatsSummaryProps) {
+	const { t } = useI18n()
+
 	if (stats.count === 0) {
 		return (
 			<View style={styles.block}>
-				<Text style={styles.title}>Нет измерений за период</Text>
-				<Text style={styles.body}>
-					Добавьте измерения, чтобы увидеть средние значения.
-				</Text>
+				<Text style={styles.title}>{t('graphs.statsEmptyTitle')}</Text>
+				<Text style={styles.body}>{t('graphs.statsEmptyBody')}</Text>
 			</View>
 		)
 	}
 
 	return (
 		<View style={styles.block}>
-			<Text style={styles.caption}>Среднее за {periodLabel}</Text>
+			<Text style={styles.caption}>
+				{t('graphs.statsAvgFor', { period: periodLabel })}
+			</Text>
 			<Text style={styles.hero}>
 				{formatBp(stats.avgSystolic, stats.avgDiastolic)}
 			</Text>
-			<Text style={styles.pulse}>Пульс {formatPulse(stats.avgPulse)}</Text>
-			<Text style={styles.range}>
-				Диапазон {formatBp(stats.minSystolic, stats.minDiastolic)} —{' '}
-				{formatBp(stats.maxSystolic, stats.maxDiastolic)}
+			<Text style={styles.pulse}>
+				{t('diary.pulseLabel', {
+					pulse: formatPulse(stats.avgPulse),
+				})}
 			</Text>
-			<Text style={styles.meta}>{stats.count} записей</Text>
+			<Text style={styles.range}>
+				{t('graphs.statsRange', {
+					min: formatBp(stats.minSystolic, stats.minDiastolic),
+					max: formatBp(stats.maxSystolic, stats.maxDiastolic),
+				})}
+			</Text>
+			<Text style={styles.meta}>
+				{t('graphs.statsCount', { count: stats.count })}
+			</Text>
 
 			<View style={styles.split}>
 				<View style={styles.splitCol}>
-					<Text style={styles.splitTitle}>Утро</Text>
+					<Text style={styles.splitTitle}>{t('graphs.stats.morning')}</Text>
 					{morning.count === 0 ? (
-						<Text style={styles.splitEmpty}>Нет данных</Text>
+						<Text style={styles.splitEmpty}>{t('common.noData')}</Text>
 					) : (
 						<>
 							<Text style={styles.splitBp}>
 								{formatBp(morning.avgSystolic, morning.avgDiastolic)}
 							</Text>
 							<Text style={styles.splitPulse}>
-								Пульс {formatPulse(morning.avgPulse)}
+								{t('diary.pulseLabel', {
+									pulse: formatPulse(morning.avgPulse),
+								})}
 							</Text>
 						</>
 					)}
 				</View>
 				<View style={styles.splitCol}>
-					<Text style={styles.splitTitle}>Вечер</Text>
+					<Text style={styles.splitTitle}>{t('graphs.stats.evening')}</Text>
 					{evening.count === 0 ? (
-						<Text style={styles.splitEmpty}>Нет данных</Text>
+						<Text style={styles.splitEmpty}>{t('common.noData')}</Text>
 					) : (
 						<>
 							<Text style={styles.splitBp}>
 								{formatBp(evening.avgSystolic, evening.avgDiastolic)}
 							</Text>
 							<Text style={styles.splitPulse}>
-								Пульс {formatPulse(evening.avgPulse)}
+								{t('diary.pulseLabel', {
+									pulse: formatPulse(evening.avgPulse),
+								})}
 							</Text>
 						</>
 					)}

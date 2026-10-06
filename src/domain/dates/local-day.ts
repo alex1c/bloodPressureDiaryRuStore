@@ -3,6 +3,8 @@
  * Storage keeps ISO UTC; "today" and list grouping use the device local day.
  */
 
+import { formatLongDate } from '@/i18n/format'
+
 /** Formats a Date as local YYYY-MM-DD. */
 export function formatLocalDayKey(date: Date): string {
 	const y = date.getFullYear()
@@ -51,19 +53,19 @@ export function getLocalDayBounds(reference: Date = new Date()): {
 }
 
 /** True when the ISO timestamp falls on the same local calendar day as reference. */
-export function isIsoOnLocalDay(iso: string, reference: Date = new Date()): boolean {
+export function isIsoOnLocalDay(
+	iso: string,
+	reference: Date = new Date(),
+): boolean {
 	return localDayKeyFromIso(iso) === formatLocalDayKey(reference)
 }
 
 /**
- * Russian long date for diary headers, e.g. «26 августа».
- * Kept simple — no dependency on Intl locale data edge cases beyond ru-RU.
+ * @deprecated Prefer formatLongDate(date, locale) from @/i18n.
+ * Kept for gradual migration of call sites.
  */
 export function formatRussianLongDate(date: Date): string {
-	return date.toLocaleDateString('ru-RU', {
-		day: 'numeric',
-		month: 'long',
-	})
+	return formatLongDate(date, 'ru')
 }
 
 /** Local HH:mm for diary rows. */

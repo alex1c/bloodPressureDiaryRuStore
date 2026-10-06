@@ -1,22 +1,58 @@
 /**
  * Production release metadata shared by Settings, validation, and docs.
- * Privacy URL assumes GitHub Pages for this repository (see docs/DECISIONS.md).
+ * Store-specific URLs come from `getActiveStoreConfig()` / STORE_CONFIGS.
  */
-export const releaseConfig = {
-	/** RuStore / in-app display name for v1.0.0 */
+import { getActiveStoreConfig } from './active-store'
+
+/** Static identity shared across stores (display name, icon paths). */
+export const releaseIdentity = {
+	/** In-app / storefront display name for v1.x */
 	appDisplayName: 'Дневник давления',
-	supportEmail: 'rustore-alex1c@yandex.ru',
-	/**
-	 * GitHub Pages privacy page (`docs/privacy.html`).
-	 * Repository remote was not configured at Phase 10 prep — URL matches repo folder.
-	 */
-	privacyPolicyUrl:
-		'https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html',
 	/** Master artwork used for launcher + store icon derivatives. */
 	iconMasterAsset: 'assets/icon_gpt.png',
 	standardIconAsset: 'assets/icon.png',
 	storeIconPath: 'release-artifacts/icon-512.png',
 	effectivePrivacyDate: '2026-09-02',
+} as const
+
+/**
+ * Live release metadata — support/privacy/store URLs follow the active store.
+ * Kept as a getter object so tests can override the active store.
+ */
+export const releaseConfig = {
+	get appDisplayName() {
+		return releaseIdentity.appDisplayName
+	},
+	get supportEmail() {
+		return getActiveStoreConfig().supportEmail
+	},
+	get privacyPolicyUrl() {
+		return getActiveStoreConfig().privacyPolicyUrl
+	},
+	get iconMasterAsset() {
+		return releaseIdentity.iconMasterAsset
+	},
+	get standardIconAsset() {
+		return releaseIdentity.standardIconAsset
+	},
+	get storeIconPath() {
+		return releaseIdentity.storeIconPath
+	},
+	get effectivePrivacyDate() {
+		return releaseIdentity.effectivePrivacyDate
+	},
+	get appUrl() {
+		return getActiveStoreConfig().appUrl
+	},
+	get pdfAppUrl() {
+		return getActiveStoreConfig().pdfAppUrl
+	},
+	get storeId() {
+		return getActiveStoreConfig().storeId
+	},
+	get storeName() {
+		return getActiveStoreConfig().storeName
+	},
 } as const
 
 /** Opens developer contact in the system mail client. */

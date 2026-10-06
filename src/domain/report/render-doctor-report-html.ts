@@ -1,132 +1,53 @@
 import type { ChartPoint } from '@/domain/statistics/measurement-stats'
+import { getActiveStoreConfig } from '@/config/active-store'
+import { getStoreConfig, type StoreId } from '@/config/store'
+import type { AppLocale } from '@/i18n/locale'
+import { createTranslator } from '@/i18n/translate'
+import type { MessageKey } from '@/i18n/dictionaries'
 import type { DoctorReportData } from './build-doctor-report'
 
-const DISCLAIMER_RU =
-	'Отчёт сформирован на основе данных, введённых пользователем. Приложение не является медицинским прибором и не заменяет консультацию врача.'
-
-/** Public RuStore catalog URL for the published package (never invent). */
-export const RUSTORE_APP_URL =
-	'https://www.rustore.ru/catalog/app/com.calculatorplatform.bpdiary'
-
-const PDF_FOOTER_LINE_RU =
-	'Отчёт сформирован бесплатным приложением „Дневник давления“'
-
-const PDF_FOOTER_LINK_LABEL_RU = 'Скачать в RuStore'
-
-/** Escapes text for safe insertion into HTML templates. */
-export function escapeHtml(value: string): string {
-	return value
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;')
-}
-
-function bpPair(
-	sys: number | null | undefined,
-	dia: number | null | undefined,
-): string {
-	if (sys == null || dia == null) {
-		return '—'
-	}
-	return `${sys} / ${dia}`
-}
-
-/**
- * Inline SVG BP chart for PDF (systolic + diastolic, chronological).
- * Keeps labels sparse so 90-day reports stay readable.
- */
-export function buildBpChartSvg(points: ChartPoint[]): string {
-	if (points.length === 0) {
-		return ''
-	}
-
-	const width = 520
-	const height = 180
-	const padL = 36
-	const padR = 12
-	const padT = 12
-	const padB = 28
-	const plotW = width - padL - padR
-	const plotH = height - padT - padB
-
-	const sys = points.map((p) => p.systolic)
-	const dia = points.map((p) => p.diastolic)
-	const minY = Math.min(...sys, ...dia) - 10
-	const maxY = Math.max(...sys, ...dia) + 10
-	const spanY = Math.max(1, maxY - minY)
-
-	const xAt = (i: number) =>
-		padL + (points.length === 1 ? plotW / 2 : (i * plotW) / (points.length - 1))
-	const yAt = (v: number) => padT + plotH - ((v - minY) / spanY) * plotH
-
-	const sysPath = points
-		.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xAt(i).toFixed(1)} ${yAt(p.systolic).toFixed(1)}`)
-		.join(' ')
-	const diaPath = points
-		.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xAt(i).toFixed(1)} ${yAt(p.diastolic).toFixed(1)}`)
-		.join(' ')
-
-	const labelIndexes =
-		points.length <= 6
-			? points.map((_, i) => i)
-			: [0, Math.floor((points.length - 1) / 2), points.length - 1]
-
-	const xLabels = labelIndexes
-		.map((i) => {
-			const d = new Date(points[i]!.measuredAt)
-			const label = `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`
-			return `<text x="${xAt(i).toFixed(1)}" y="${height - 8}" text-anchor="middle" font-size="9" fill="#555">${escapeHtml(label)}</text>`
-		})
-		.join('')
-
-	const yTicks = [minY + spanY * 0.25, minY + spanY * 0.5, minY + spanY * 0.75].map(
-		(v) => {
-			const y = yAt(v)
-			return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${width - padR}" y2="${y.toFixed(1)}" stroke="#e5e5e5" stroke-width="1" />
-				<text x="${padL - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#666">${Math.round(v)}</text>`
-		},
-	)
-
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-		<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />
-		${yTicks.join('\n')}
-		<path d="${sysPath}" fill="none" stroke="#1a1a1a" stroke-width="1.6" />
-		<path d="${diaPath}" fill="none" stroke="#666" stroke-width="1.4" stroke-dasharray="4 3" />
-		${xLabels}
-		<text x="${padL}" y="10" font-size="9" fill="#333">Верхнее — сплошная; нижнее — пунктир</text>
-	</svg>`
+export type DoctorReportRenderOptions = {
+	locale: AppLocale
+	storeId?: StoreId
 }
 
 /**
  * Renders a printable HTML document from a frozen DoctorReportData snapshot.
+ * Locale drives copy; store drives the download footer URL/label.
  */
-export function renderDoctorReportHtml(data: DoctorReportData): string {
+export function renderDoctorReportHtml(
+	data: DoctorReportData,
+	options: DoctorReportRenderOptions = { locale: 'ru' },
+): string {
+	const locale = options.locale
+	const t = createTranslator(locale)
+	const store = options.storeId
+		? getStoreConfig(options.storeId)
+		: getActiveStoreConfig()
+
 	const profile = escapeHtml(data.profileName)
-	const period = escapeHtml(data.periodLabelRu)
 	const chart =
 		data.chartPoints.length > 0
-			? `<div class="chart">${buildBpChartSvg(data.chartPoints)}</div>`
+			? `<div class="chart">${buildBpChartSvg(data.chartPoints, t)}</div>`
 			: ''
 
 	const bpSection =
 		data.bp.count === 0
-			? `<p class="muted">За выбранный период нет измерений давления.</p>`
+			? `<p class="muted">${escapeHtml(t('report.pdf.noBp'))}</p>`
 			: `<table class="summary">
-					<tr><td>Измерений</td><td>${data.bp.count}</td></tr>
-					<tr><td>Среднее давление</td><td>${bpPair(data.bp.avgSystolic, data.bp.avgDiastolic)}</td></tr>
-					<tr><td>Средний пульс</td><td>${data.bp.avgPulse ?? '—'}</td></tr>
-					<tr><td>Мин. давление</td><td>${bpPair(data.bp.minSystolic, data.bp.minDiastolic)}</td></tr>
-					<tr><td>Макс. давление</td><td>${bpPair(data.bp.maxSystolic, data.bp.maxDiastolic)}</td></tr>
+					<tr><td>${escapeHtml(t('report.pdf.count'))}</td><td>${data.bp.count}</td></tr>
+					<tr><td>${escapeHtml(t('report.pdf.avgBp'))}</td><td>${bpPair(data.bp.avgSystolic, data.bp.avgDiastolic)}</td></tr>
+					<tr><td>${escapeHtml(t('report.pdf.avgPulse'))}</td><td>${data.bp.avgPulse ?? '—'}</td></tr>
+					<tr><td>${escapeHtml(t('report.pdf.minBp'))}</td><td>${bpPair(data.bp.minSystolic, data.bp.minDiastolic)}</td></tr>
+					<tr><td>${escapeHtml(t('report.pdf.maxBp'))}</td><td>${bpPair(data.bp.maxSystolic, data.bp.maxDiastolic)}</td></tr>
 					${
 						data.bp.morning
-							? `<tr><td>Утро (среднее)</td><td>${bpPair(data.bp.morning.avgSystolic, data.bp.morning.avgDiastolic)}</td></tr>`
+							? `<tr><td>${escapeHtml(t('report.pdf.morningAvg'))}</td><td>${bpPair(data.bp.morning.avgSystolic, data.bp.morning.avgDiastolic)}</td></tr>`
 							: ''
 					}
 					${
 						data.bp.evening
-							? `<tr><td>Вечер (среднее)</td><td>${bpPair(data.bp.evening.avgSystolic, data.bp.evening.avgDiastolic)}</td></tr>`
+							? `<tr><td>${escapeHtml(t('report.pdf.eveningAvg'))}</td><td>${bpPair(data.bp.evening.avgSystolic, data.bp.evening.avgDiastolic)}</td></tr>`
 							: ''
 					}
 				</table>`
@@ -134,7 +55,9 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	const measurementRows = data.measurements
 		.map((m) => {
 			const tags = m.tagsLabel ? escapeHtml(m.tagsLabel) : '—'
-			const note = m.noteShort ? escapeHtml(m.noteShort) : ''
+			const note = m.noteShort
+				? escapeHtml(t('report.pdf.note', { note: m.noteShort }))
+				: ''
 			return `<tr>
 				<td>${escapeHtml(m.dayLabel)}</td>
 				<td>${escapeHtml(m.timeLabel)}</td>
@@ -143,7 +66,7 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 				<td>${tags}</td>
 			</tr>${
 				note
-					? `<tr class="note-row"><td colspan="5">Заметка: ${note}</td></tr>`
+					? `<tr class="note-row"><td colspan="5">${note}</td></tr>`
 					: ''
 			}`
 		})
@@ -152,15 +75,15 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	const measurementsSection =
 		data.measurements.length === 0
 			? ''
-			: `<h2>Измерения</h2>
+			: `<h2>${escapeHtml(t('report.pdf.measurements'))}</h2>
 				<table class="data">
 					<thead>
 						<tr>
-							<th>Дата</th>
-							<th>Время</th>
-							<th>Давление</th>
-							<th>Пульс</th>
-							<th>Контекст</th>
+							<th>${escapeHtml(t('report.pdf.col.date'))}</th>
+							<th>${escapeHtml(t('report.pdf.col.time'))}</th>
+							<th>${escapeHtml(t('report.pdf.col.bp'))}</th>
+							<th>${escapeHtml(t('report.pdf.col.pulse'))}</th>
+							<th>${escapeHtml(t('report.pdf.col.context'))}</th>
 						</tr>
 					</thead>
 					<tbody>${measurementRows}</tbody>
@@ -169,13 +92,13 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	const medSection =
 		data.medications.length === 0
 			? ''
-			: `<h2>Лекарства</h2>
+			: `<h2>${escapeHtml(t('report.pdf.medications'))}</h2>
 				${data.medications
 					.map(
 						(m) => `<div class="med">
 							<div class="med-title">${escapeHtml(m.name)}${m.dosageText ? ` — ${escapeHtml(m.dosageText)}` : ''}</div>
-							<div class="med-meta">Расписание: ${escapeHtml(m.scheduleLabel || '—')}</div>
-							<div class="med-meta">Отмечено приёмов за период: ${m.takenCountInPeriod}</div>
+							<div class="med-meta">${escapeHtml(t('report.pdf.schedule', { schedule: m.scheduleLabel || '—' }))}</div>
+							<div class="med-meta">${escapeHtml(t('report.pdf.takenCount', { count: m.takenCountInPeriod }))}</div>
 						</div>`,
 					)
 					.join('')}`
@@ -183,15 +106,15 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	const healthSection =
 		data.health.length === 0
 			? ''
-			: `<h2>Дополнительные показатели</h2>
+			: `<h2>${escapeHtml(t('report.pdf.health'))}</h2>
 				${data.health
 					.map(
 						(h) => `<div class="health">
-							<div class="health-title">${escapeHtml(h.labelRu)}</div>
-							<div>Последнее: ${escapeHtml(h.latestValueFormatted)} ${escapeHtml(h.unit)}</div>
+							<div class="health-title">${escapeHtml(h.label)}</div>
+							<div>${escapeHtml(t('report.pdf.latest', { value: h.latestValueFormatted, unit: h.unit }))}</div>
 							${
 								h.periodDeltaFormatted
-									? `<div>Изменение за период: ${escapeHtml(h.periodDeltaFormatted)}</div>`
+									? `<div>${escapeHtml(t('report.pdf.periodChange', { value: h.periodDeltaFormatted }))}</div>`
 									: ''
 							}
 						</div>`,
@@ -201,21 +124,33 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	const tagsSection =
 		data.tagStats.length === 0
 			? ''
-			: `<h2>Отмеченный контекст</h2>
+			: `<h2>${escapeHtml(t('report.pdf.tags'))}</h2>
 				<ul class="tags">
 					${data.tagStats
 						.map(
-							(t) =>
-								`<li>${escapeHtml(t.labelRu)} — ${t.count} ${pluralRecords(t.count)} — среднее ${bpPair(t.avgSystolic, t.avgDiastolic)}</li>`,
+							(tag) =>
+								`<li>${escapeHtml(
+									t('report.pdf.tagLine', {
+										label: tag.label,
+										count: tag.count,
+										records: pluralRecords(tag.count, t),
+										bp: bpPair(tag.avgSystolic, tag.avgDiastolic),
+									}),
+								)}</li>`,
 						)
 						.join('')}
 				</ul>`
 
+	const downloadKey: MessageKey =
+		store.storeId === 'googleplay'
+			? 'report.pdf.download.googleplay'
+			: 'report.pdf.download.rustore'
+
 	return `<!DOCTYPE html>
-<html lang="ru">
+<html lang="${locale}">
 <head>
 	<meta charset="utf-8" />
-	<title>Дневник давления — ${profile}</title>
+	<title>${escapeHtml(t('report.pdf.appTitle'))} — ${profile}</title>
 	<style>
 		@page { size: A4 portrait; margin: 14mm 12mm 16mm 12mm; }
 		* { box-sizing: border-box; }
@@ -274,7 +209,7 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 			color: #555;
 			page-break-inside: avoid;
 		}
-		.rustore-footer {
+		.store-footer {
 			margin-top: 16px;
 			padding-top: 10px;
 			border-top: 1px solid #bbb;
@@ -282,11 +217,11 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 			color: #444;
 			page-break-inside: avoid;
 		}
-		.rustore-footer a {
+		.store-footer a {
 			color: #1a5fb4;
 			text-decoration: underline;
 		}
-		.rustore-footer .url {
+		.store-footer .url {
 			display: block;
 			margin-top: 4px;
 			font-size: 8pt;
@@ -296,11 +231,11 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	</style>
 </head>
 <body>
-	<h1>Дневник давления</h1>
-	<p class="meta">Профиль: ${profile}</p>
-	<p class="meta">Период: ${period}</p>
+	<h1>${escapeHtml(t('report.pdf.appTitle'))}</h1>
+	<p class="meta">${escapeHtml(t('report.pdf.profile', { name: data.profileName }))}</p>
+	<p class="meta">${escapeHtml(t('report.pdf.period', { period: data.periodLabel }))}</p>
 
-	<h2>Давление и пульс</h2>
+	<h2>${escapeHtml(t('report.pdf.bpSection'))}</h2>
 	${bpSection}
 	${chart}
 
@@ -309,33 +244,151 @@ export function renderDoctorReportHtml(data: DoctorReportData): string {
 	${healthSection}
 	${tagsSection}
 
-	<p class="disclaimer">${escapeHtml(DISCLAIMER_RU)}</p>
-	${buildRustorePdfFooterHtml()}
+	<p class="disclaimer">${escapeHtml(t('report.disclaimer'))}</p>
+	${buildStorePdfFooterHtml({
+		appUrl: store.pdfAppUrl,
+		footerLine: t('report.pdf.footerLine'),
+		downloadLabel: t(downloadKey),
+	})}
 </body>
 </html>`
 }
 
+/** Escapes text for safe insertion into HTML templates. */
+export function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;')
+}
+
+function bpPair(
+	sys: number | null | undefined,
+	dia: number | null | undefined,
+): string {
+	if (sys == null || dia == null) {
+		return '—'
+	}
+	return `${sys} / ${dia}`
+}
+
 /**
- * RuStore distribution footer with a real HTML hyperlink annotation.
+ * Inline SVG BP chart for PDF (systolic + diastolic, chronological).
+ * Keeps labels sparse so 90-day reports stay readable.
+ */
+export function buildBpChartSvg(
+	points: ChartPoint[],
+	t: (key: MessageKey) => string = createTranslator('ru'),
+): string {
+	if (points.length === 0) {
+		return ''
+	}
+
+	const width = 520
+	const height = 180
+	const padL = 36
+	const padR = 12
+	const padT = 12
+	const padB = 28
+	const plotW = width - padL - padR
+	const plotH = height - padT - padB
+
+	const sys = points.map((p) => p.systolic)
+	const dia = points.map((p) => p.diastolic)
+	const minY = Math.min(...sys, ...dia) - 10
+	const maxY = Math.max(...sys, ...dia) + 10
+	const spanY = Math.max(1, maxY - minY)
+
+	const xAt = (i: number) =>
+		padL + (points.length === 1 ? plotW / 2 : (i * plotW) / (points.length - 1))
+	const yAt = (v: number) => padT + plotH - ((v - minY) / spanY) * plotH
+
+	const sysPath = points
+		.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xAt(i).toFixed(1)} ${yAt(p.systolic).toFixed(1)}`)
+		.join(' ')
+	const diaPath = points
+		.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xAt(i).toFixed(1)} ${yAt(p.diastolic).toFixed(1)}`)
+		.join(' ')
+
+	const labelIndexes =
+		points.length <= 6
+			? points.map((_, i) => i)
+			: [0, Math.floor((points.length - 1) / 2), points.length - 1]
+
+	const xLabels = labelIndexes
+		.map((i) => {
+			const d = new Date(points[i]!.measuredAt)
+			const label = `${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`
+			return `<text x="${xAt(i).toFixed(1)}" y="${height - 8}" text-anchor="middle" font-size="9" fill="#555">${escapeHtml(label)}</text>`
+		})
+		.join('')
+
+	const yTicks = [minY + spanY * 0.25, minY + spanY * 0.5, minY + spanY * 0.75].map(
+		(v) => {
+			const y = yAt(v)
+			return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${width - padR}" y2="${y.toFixed(1)}" stroke="#e5e5e5" stroke-width="1" />
+				<text x="${padL - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#666">${Math.round(v)}</text>`
+		},
+	)
+
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+		<rect x="0" y="0" width="${width}" height="${height}" fill="#fff" />
+		${yTicks.join('\n')}
+		<path d="${sysPath}" fill="none" stroke="#1a1a1a" stroke-width="1.6" />
+		<path d="${diaPath}" fill="none" stroke="#666" stroke-width="1.4" stroke-dasharray="4 3" />
+		${xLabels}
+		<text x="${padL}" y="10" font-size="9" fill="#333">${escapeHtml(t('report.pdf.chartLegend'))}</text>
+	</svg>`
+}
+
+/**
+ * Store distribution footer with a real HTML hyperlink annotation.
  * expo-print preserves &lt;a href&gt; as a clickable PDF link.
  */
-export function buildRustorePdfFooterHtml(): string {
-	const url = escapeHtml(RUSTORE_APP_URL)
-	return `<div class="rustore-footer">
-		<div>${escapeHtml(PDF_FOOTER_LINE_RU)}</div>
-		<div><a href="${url}">${escapeHtml(PDF_FOOTER_LINK_LABEL_RU)}</a></div>
+export function buildStorePdfFooterHtml(input: {
+	appUrl: string
+	footerLine: string
+	downloadLabel: string
+}): string {
+	const url = escapeHtml(input.appUrl)
+	return `<div class="store-footer">
+		<div>${escapeHtml(input.footerLine)}</div>
+		<div><a href="${url}">${escapeHtml(input.downloadLabel)}</a></div>
 		<span class="url">${url}</span>
 	</div>`
 }
 
-function pluralRecords(count: number): string {
+/**
+ * @deprecated Prefer buildStorePdfFooterHtml with active store config.
+ * Kept so older RuStore-only tests keep compiling during migration.
+ */
+export function buildRustorePdfFooterHtml(): string {
+	const store = getActiveStoreConfig()
+	const t = createTranslator('ru')
+	return buildStorePdfFooterHtml({
+		appUrl: store.pdfAppUrl,
+		footerLine: t('report.pdf.footerLine'),
+		downloadLabel: t('report.pdf.download.rustore'),
+	})
+}
+
+/** @deprecated Use getActiveStoreConfig().pdfAppUrl */
+export const RUSTORE_APP_URL =
+	'https://www.rustore.ru/catalog/app/com.calculatorplatform.bpdiary'
+
+function pluralRecords(
+	count: number,
+	t: (key: MessageKey) => string,
+): string {
 	const mod10 = count % 10
 	const mod100 = count % 100
 	if (mod10 === 1 && mod100 !== 11) {
-		return 'запись'
+		return t('report.pdf.records.one')
 	}
 	if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-		return 'записи'
+		return t('report.pdf.records.few')
 	}
-	return 'записей'
+	return t('report.pdf.records.many')
 }

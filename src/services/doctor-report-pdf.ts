@@ -8,7 +8,10 @@ import {
 } from 'expo-file-system/legacy'
 import type { DoctorReportData } from '@/domain/report/build-doctor-report'
 import { buildDoctorReportFileName } from '@/domain/report/build-doctor-report'
-import { renderDoctorReportHtml } from '@/domain/report/render-doctor-report-html'
+import {
+	renderDoctorReportHtml,
+	type DoctorReportRenderOptions,
+} from '@/domain/report/render-doctor-report-html'
 
 export type GeneratedDoctorPdf = {
 	uri: string
@@ -24,9 +27,10 @@ const PDF_RENDER_TIMEOUT_MS = 60_000
  */
 export async function generateDoctorPdf(
 	data: DoctorReportData,
+	options?: DoctorReportRenderOptions,
 ): Promise<GeneratedDoctorPdf> {
 	const fileName = buildDoctorReportFileName(data)
-	const html = renderDoctorReportHtml(data)
+	const html = renderDoctorReportHtml(data, options ?? { locale: 'ru' })
 	let renderTimeout: ReturnType<typeof setTimeout> | undefined
 	let printed: Awaited<ReturnType<typeof Print.printToFileAsync>>
 	try {
@@ -66,14 +70,17 @@ export async function generateDoctorPdf(
 }
 
 /** Opens the Android Share Sheet for an already-generated PDF. */
-export async function shareDoctorPdf(pdf: GeneratedDoctorPdf): Promise<void> {
+export async function shareDoctorPdf(
+	pdf: GeneratedDoctorPdf,
+	dialogTitle = 'Share report',
+): Promise<void> {
 	const available = await Sharing.isAvailableAsync()
 	if (!available) {
 		throw new Error('Sharing is not available on this device')
 	}
 	await Sharing.shareAsync(pdf.uri, {
 		mimeType: 'application/pdf',
-		dialogTitle: 'Поделиться отчётом',
+		dialogTitle,
 		UTI: 'com.adobe.pdf',
 	})
 }

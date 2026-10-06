@@ -10,8 +10,9 @@ import {
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-	AdBanner,
-} from '@/ads/ad-banner'
+	ScreenWithBottomBanner,
+	scrollBottomInsetForBanner,
+} from '@/ads/screen-with-bottom-banner'
 import {
 	getAdService,
 	recordGraphsFocus,
@@ -30,6 +31,7 @@ import {
 } from '@/domain/statistics/measurement-stats'
 import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
 import { BpLineChart } from './components/bp-line-chart'
 import {
@@ -39,22 +41,17 @@ import {
 import { PeriodSelector } from './components/period-selector'
 import { StatsSummary } from './components/stats-summary'
 
-const PERIOD_LABELS: Record<string, string> = {
-	'7': '7 дней',
-	'30': '30 дней',
-	'90': '90 дней',
-	all: 'всё время',
-}
-
 const CHART_MAX_POINTS = 120
 
 /**
  * Graphs + history for the active profile only.
  * Descriptive stats — no medical classification.
+ * Banner pinned to the bottom of the usable area.
  */
 export function GraphsScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const { t } = useI18n()
 	const { ready, error, profile, profileMeasurements, refreshAll } = useDiary()
 	const { canShowAds, hasCompletedFirstMeasurement } = useAdPolicy()
 	const [period, setPeriod] = useState<StatsPeriodDays>(7)
@@ -150,62 +147,80 @@ export function GraphsScreen() {
 		)
 	}
 
-	const periodLabel = PERIOD_LABELS[String(period)] ?? 'период'
+	const periodLabel =
+		period === 'all'
+			? t('graphs.period.all')
+			: period === 7
+				? t('graphs.period.7')
+				: period === 30
+					? t('graphs.period.30')
+					: period === 90
+						? t('graphs.period.90')
+						: t('graphs.periodFallback')
 
 	return (
 		<View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
-			<ScrollView
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+			<ScreenWithBottomBanner
+				placement="graphsBanner"
+				visible={canShowAds}
 			>
-				<View style={styles.headerRow}>
-					<Text style={styles.title}>Графики</Text>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel="Отчёт врачу"
-						onPress={() => router.push('/report' as Href)}
-						style={({ pressed }) => [
-							styles.reportLink,
-							pressed && styles.reportLinkPressed,
-						]}
-					>
-						<Text style={styles.reportLinkText}>Отчёт врачу</Text>
-					</Pressable>
-				</View>
-				<PeriodSelector value={period} onChange={handlePeriodChange} />
-
-				<StatsSummary
-					periodLabel={periodLabel}
-					stats={stats}
-					morning={morning}
-					evening={evening}
-				/>
-
-				{chartPoints.length === 0 ? (
-					<View style={styles.chartEmpty}>
-						<Text style={styles.chartEmptyTitle}>
-							Недостаточно данных для графика
-						</Text>
-						<Text style={styles.chartEmptyBody}>
-							Добавьте несколько измерений.
-						</Text>
+				<ScrollView
+					keyboardShouldPersistTaps="handled"
+					contentContainerStyle={{
+						paddingBottom: scrollBottomInsetForBanner({
+							bannerVisible: canShowAds,
+						}),
+					}}
+				>
+					<View style={styles.headerRow}>
+						<Text style={styles.title}>{t('graphs.title')}</Text>
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t('graphs.doctorReport')}
+							onPress={() => router.push('/report' as Href)}
+							style={({ pressed }) => [
+								styles.reportLink,
+								pressed && styles.reportLinkPressed,
+							]}
+						>
+							<Text style={styles.reportLinkText}>
+								{t('graphs.doctorReport')}
+							</Text>
+						</Pressable>
 					</View>
-				) : chartPoints.length === 1 ? (
-					<>
-						<Text style={styles.chartNote}>
-							Одна точка на графике — добавьте ещё измерения, чтобы увидеть
-							динамику.
-						</Text>
-						<BpLineChart points={chartPoints} periodDays={period} />
-					</>
-				) : (
-					<BpLineChart points={chartPoints} periodDays={period} />
-				)}
+					<PeriodSelector value={period} onChange={handlePeriodChange} />
 
-				<TagStatsSection items={tagItems} />
-				<HistorySection groups={historyGroups} />
-				<AdBanner placement="graphsBanner" visible={canShowAds} />
-			</ScrollView>
+					<StatsSummary
+						periodLabel={periodLabel}
+						stats={stats}
+						morning={morning}
+						evening={evening}
+					/>
+
+					{chartPoints.length === 0 ? (
+						<View style={styles.chartEmpty}>
+							<Text style={styles.chartEmptyTitle}>
+								{t('graphs.chartEmptyTitle')}
+							</Text>
+							<Text style={styles.chartEmptyBody}>
+								{t('graphs.chartEmptyBody')}
+							</Text>
+						</View>
+					) : chartPoints.length === 1 ? (
+						<>
+							<Text style={styles.chartNote}>
+								{t('graphs.chartOnePoint')}
+							</Text>
+							<BpLineChart points={chartPoints} periodDays={period} />
+						</>
+					) : (
+						<BpLineChart points={chartPoints} periodDays={period} />
+					)}
+
+					<TagStatsSection items={tagItems} />
+					<HistorySection groups={historyGroups} />
+				</ScrollView>
+			</ScreenWithBottomBanner>
 		</View>
 	)
 }
@@ -249,27 +264,30 @@ const styles = StyleSheet.create({
 	},
 	error: {
 		fontSize: typography.body,
-		color: colors.textMuted,
+		color: colors.danger,
 		textAlign: 'center',
 	},
 	chartEmpty: {
-		paddingHorizontal: spacing.lg,
-		paddingVertical: spacing.lg,
+		marginHorizontal: spacing.lg,
+		marginVertical: spacing.lg,
+		padding: spacing.lg,
+		borderRadius: 12,
+		backgroundColor: colors.surface,
 	},
 	chartEmptyTitle: {
-		fontSize: typography.section,
+		fontSize: typography.body,
 		fontWeight: '600',
 		color: colors.text,
 	},
 	chartEmptyBody: {
-		marginTop: spacing.sm,
-		fontSize: typography.body,
+		marginTop: spacing.xs,
+		fontSize: typography.secondary,
 		color: colors.textMuted,
 	},
 	chartNote: {
-		paddingHorizontal: spacing.lg,
+		marginHorizontal: spacing.lg,
+		marginBottom: spacing.sm,
 		fontSize: typography.secondary,
 		color: colors.textMuted,
-		marginBottom: spacing.xs,
 	},
 })

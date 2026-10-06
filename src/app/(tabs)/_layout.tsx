@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
 import { markOpenedFromMedicationNotification } from '@/ads'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, typography } from '@/theme'
 
 type NotificationNavPayload = {
@@ -48,6 +49,7 @@ function openFromNotificationData(
 export default function TabsLayout() {
 	const router = useRouter()
 	const { switchProfile } = useDiary()
+	const { t } = useI18n()
 
 	// Open diary or medications when the user taps a local reminder notification.
 	useEffect(() => {
@@ -96,8 +98,8 @@ export default function TabsLayout() {
 			<Tabs.Screen
 				name="index"
 				options={{
-					title: 'Дневник',
-					tabBarLabel: 'Дневник',
+					title: t('tabs.diary'),
+					tabBarLabel: t('tabs.diary'),
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="heart-outline" size={size} color={color} />
 					),
@@ -106,8 +108,8 @@ export default function TabsLayout() {
 			<Tabs.Screen
 				name="graphs"
 				options={{
-					title: 'Графики',
-					tabBarLabel: 'Графики',
+					title: t('tabs.graphs'),
+					tabBarLabel: t('tabs.graphs'),
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons
 							name="stats-chart-outline"
@@ -120,8 +122,8 @@ export default function TabsLayout() {
 			<Tabs.Screen
 				name="medications"
 				options={{
-					title: 'Лекарства',
-					tabBarLabel: 'Лекарства',
+					title: t('tabs.medications'),
+					tabBarLabel: t('tabs.medications'),
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="medical-outline" size={size} color={color} />
 					),
@@ -130,8 +132,8 @@ export default function TabsLayout() {
 			<Tabs.Screen
 				name="health"
 				options={{
-					title: 'Здоровье',
-					tabBarLabel: 'Здоровье',
+					title: t('tabs.health'),
+					tabBarLabel: t('tabs.health'),
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons name="fitness-outline" size={size} color={color} />
 					),

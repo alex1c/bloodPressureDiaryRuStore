@@ -12,6 +12,7 @@ import {
 import { Stack, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
+import { getActiveStoreId } from '@/config/active-store'
 import { formatLocalDayKey } from '@/domain/dates/local-day'
 import {
 	DEFAULT_REPORT_PERIOD_DAYS,
@@ -22,6 +23,7 @@ import {
 } from '@/domain/report/build-doctor-report'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import {
 	generateDoctorPdf,
 	shareDoctorPdf,
@@ -29,18 +31,12 @@ import {
 } from '@/services/doctor-report-pdf'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
-const PRESETS: { days: ReportPeriodPreset; label: string }[] = [
-	{ days: 7, label: '7 дней' },
-	{ days: 14, label: '14 дней' },
-	{ days: 30, label: '30 дней' },
-	{ days: 90, label: '90 дней' },
-]
-
 /**
  * Doctor report setup: period + preview + PDF generate/share for active profile.
  */
 export function DoctorReportScreen() {
 	const insets = useSafeAreaInsets()
+	const { t, locale } = useI18n()
 	const { ready, error, repos, profile, refreshAll } = useDiary()
 
 	const [presetDays, setPresetDays] = useState<ReportPeriodPreset | 'custom'>(
@@ -58,6 +54,17 @@ export function DoctorReportScreen() {
 	const [sharing, setSharing] = useState(false)
 	const [pdf, setPdf] = useState<GeneratedDoctorPdf | null>(null)
 	const [actionError, setActionError] = useState<string | null>(null)
+
+	const presets = useMemo(
+		() =>
+			[
+				{ days: 7 as const, label: t('report.period.7') },
+				{ days: 14 as const, label: t('report.period.14') },
+				{ days: 30 as const, label: t('report.period.30') },
+				{ days: 90 as const, label: t('report.period.90') },
+			] as const,
+		[t],
+	)
 
 	const selection: ReportPeriodSelection = useMemo(() => {
 		if (presetDays === 'custom') {
@@ -82,6 +89,7 @@ export function DoctorReportScreen() {
 				repos,
 				profileId: profile.id,
 				selection,
+				locale,
 			})
 			setPreview(data)
 		} catch (err) {
@@ -89,12 +97,12 @@ export function DoctorReportScreen() {
 			setActionError(
 				err instanceof Error
 					? err.message
-					: 'Не удалось подготовить отчёт',
+					: t('report.prepareFailed'),
 			)
 		} finally {
 			setPreviewLoading(false)
 		}
-	}, [repos, profile, selection])
+	}, [repos, profile, selection, locale, t])
 
 	useFocusEffect(
 		useCallback(() => {
@@ -120,24 +128,28 @@ export function DoctorReportScreen() {
 				repos,
 				profileId: frozenProfileId,
 				selection,
+				locale,
 			})
 			if (!snapshot.hasAnyData) {
-				setActionError('За выбранный период нет данных для отчёта.')
+				setActionError(t('report.previewEmpty'))
 				setPdf(null)
 				return
 			}
-			const generated = await generateDoctorPdf(snapshot)
+			const generated = await generateDoctorPdf(snapshot, {
+				locale,
+				storeId: getActiveStoreId(),
+			})
 			setPdf(generated)
 			setPreview(snapshot)
 			analytics.trackDoctorReportPdfCreated({
-				reportPeriod: snapshot.periodLabelRu,
+				reportPeriod: snapshot.periodLabel,
 				hasMeasurements: snapshot.measurements.length > 0,
 			})
 		} catch (err) {
 			if (__DEV__) {
 				console.warn('Doctor PDF generation failed', err)
 			}
-			setActionError('Не удалось создать отчёт. Попробуйте ещё раз.')
+			setActionError(t('report.createFailed'))
 			setPdf(null)
 		} finally {
 			setGenerating(false)
@@ -154,7 +166,7 @@ export function DoctorReportScreen() {
 			await shareDoctorPdf(pdf)
 			if (preview) {
 				analytics.trackDoctorReportShared({
-					reportPeriod: preview.periodLabelRu,
+					reportPeriod: preview.periodLabel,
 					hasMeasurements: preview.measurements.length > 0,
 				})
 			}
@@ -163,8 +175,8 @@ export function DoctorReportScreen() {
 				console.warn('Doctor PDF share failed', err)
 			}
 			Alert.alert(
-				'Не удалось поделиться',
-				'Попробуйте ещё раз или выберите другое приложение.',
+				t('report.shareFailedTitle'),
+				t('report.shareFailedBody'),
 			)
 		} finally {
 			setSharing(false)
@@ -183,7 +195,7 @@ export function DoctorReportScreen() {
 		return (
 			<View style={[styles.centered, { paddingHorizontal: spacing.lg }]}>
 				<Text style={styles.errorText}>
-					{error ?? 'Профиль не выбран'}
+					{error ?? t('report.noProfile')}
 				</Text>
 			</View>
 		)
@@ -196,8 +208,8 @@ export function DoctorReportScreen() {
 			<Stack.Screen
 				options={{
 					headerShown: true,
-					title: 'Отчёт врачу',
-					headerBackTitle: 'Назад',
+					title: t('report.title'),
+					headerBackTitle: t('common.back'),
 					headerTintColor: colors.primary,
 					headerStyle: { backgroundColor: colors.background },
 					headerShadowVisible: false,
@@ -213,12 +225,12 @@ export function DoctorReportScreen() {
 				keyboardShouldPersistTaps="handled"
 			>
 				<Text style={styles.profileLine}>
-					Профиль: {profile.name}
+					{t('report.profileLine', { name: profile.name })}
 				</Text>
 
-				<Text style={styles.sectionLabel}>Период</Text>
+				<Text style={styles.sectionLabel}>{t('report.period')}</Text>
 				<View style={styles.chips}>
-					{PRESETS.map((p) => {
+					{presets.map((p) => {
 						const selected = presetDays === p.days
 						return (
 							<Pressable
@@ -257,7 +269,7 @@ export function DoctorReportScreen() {
 								presetDays === 'custom' && styles.chipTextSelected,
 							]}
 						>
-							Свой период
+							{t('report.customPeriod')}
 						</Text>
 					</Pressable>
 				</View>
@@ -265,29 +277,29 @@ export function DoctorReportScreen() {
 				{presetDays === 'custom' ? (
 					<View style={styles.customRow}>
 						<View style={styles.customHalf}>
-							<Text style={styles.fieldLabel}>С</Text>
+							<Text style={styles.fieldLabel}>{t('report.from')}</Text>
 							<TextInput
 								value={customFrom}
 								onChangeText={setCustomFrom}
 								autoCapitalize="none"
 								autoCorrect={false}
-								placeholder="ГГГГ-ММ-ДД"
+								placeholder={t('report.datePlaceholder')}
 								placeholderTextColor={colors.textMuted}
 								style={styles.dateInput}
-								accessibilityLabel="Дата начала"
+								accessibilityLabel={t('report.fromA11y')}
 							/>
 						</View>
 						<View style={styles.customHalf}>
-							<Text style={styles.fieldLabel}>По</Text>
+							<Text style={styles.fieldLabel}>{t('report.to')}</Text>
 							<TextInput
 								value={customTo}
 								onChangeText={setCustomTo}
 								autoCapitalize="none"
 								autoCorrect={false}
-								placeholder="ГГГГ-ММ-ДД"
+								placeholder={t('report.datePlaceholder')}
 								placeholderTextColor={colors.textMuted}
 								style={styles.dateInput}
-								accessibilityLabel="Дата окончания"
+								accessibilityLabel={t('report.toA11y')}
 							/>
 						</View>
 					</View>
@@ -298,65 +310,79 @@ export function DoctorReportScreen() {
 					style={styles.refreshPreview}
 					accessibilityRole="button"
 				>
-					<Text style={styles.refreshPreviewText}>Обновить сводку</Text>
+					<Text style={styles.refreshPreviewText}>
+						{t('report.refreshPreview')}
+					</Text>
 				</Pressable>
 
-				<Text style={styles.sectionLabel}>Сводка</Text>
+				<Text style={styles.sectionLabel}>{t('report.summary')}</Text>
 				{previewLoading ? (
 					<ActivityIndicator color={colors.primary} />
 				) : preview ? (
 					<View style={styles.previewCard}>
 						<Text style={styles.previewTitle}>
-							Отчёт за {preview.periodLabelRu}
+							{t('report.forPeriod', { period: preview.periodLabel })}
 						</Text>
 						{preview.bp.count === 0 ? (
 							<Text style={styles.previewMuted}>
-								За выбранный период нет измерений давления.
+								{t('report.pdf.noBp')}
 							</Text>
 						) : (
 							<>
 								<Text style={styles.previewLine}>
-									Измерений давления: {preview.bp.count}
+									{t('report.bpCount', { count: preview.bp.count })}
 								</Text>
 								<Text style={styles.previewStrong}>
-									Среднее давление{' '}
-									{preview.bp.avgSystolic} / {preview.bp.avgDiastolic}
+									{t('report.avgBpLine', {
+										sys: preview.bp.avgSystolic ?? '—',
+										dia: preview.bp.avgDiastolic ?? '—',
+									})}
 								</Text>
 								<Text style={styles.previewLine}>
-									Средний пульс {preview.bp.avgPulse}
+									{t('report.avgPulseLine', {
+										pulse: preview.bp.avgPulse ?? '—',
+									})}
 								</Text>
 								{preview.bp.morning ? (
 									<Text style={styles.previewLine}>
-										Утро {preview.bp.morning.avgSystolic} /{' '}
-										{preview.bp.morning.avgDiastolic}
+										{t('graphs.stats.morning')}:{' '}
+										{String(preview.bp.morning.avgSystolic ?? '—')} /{' '}
+										{String(preview.bp.morning.avgDiastolic ?? '—')}
 									</Text>
 								) : null}
 								{preview.bp.evening ? (
 									<Text style={styles.previewLine}>
-										Вечер {preview.bp.evening.avgSystolic} /{' '}
-										{preview.bp.evening.avgDiastolic}
+										{t('graphs.stats.evening')}:{' '}
+										{String(preview.bp.evening.avgSystolic ?? '—')} /{' '}
+										{String(preview.bp.evening.avgDiastolic ?? '—')}
 									</Text>
 								) : null}
 							</>
 						)}
 						{preview.medications.length > 0 ? (
 							<Text style={styles.previewMeta}>
-								Лекарств в списке: {preview.medications.length}
+								{t('report.medsCount', {
+									count: preview.medications.length,
+								})}
 							</Text>
 						) : null}
 						{preview.health.length > 0 ? (
 							<Text style={styles.previewMeta}>
-								Доп. показателей: {preview.health.length}
+								{t('report.healthCount', {
+									count: preview.health.length,
+								})}
 							</Text>
 						) : null}
 						{!preview.hasAnyData ? (
 							<Text style={styles.previewMuted}>
-								Нет данных для PDF за этот период.
+								{t('report.noPdfData')}
 							</Text>
 						) : null}
 					</View>
 				) : (
-					<Text style={styles.previewMuted}>Сводка недоступна</Text>
+					<Text style={styles.previewMuted}>
+						{t('report.summaryUnavailable')}
+					</Text>
 				)}
 
 				{actionError ? (
@@ -365,7 +391,9 @@ export function DoctorReportScreen() {
 
 				<View style={styles.actions}>
 					<PrimaryButton
-						label={generating ? 'Создание…' : 'Создать PDF'}
+						label={
+							generating ? t('report.creating') : t('report.createPdf')
+						}
 						onPress={() => {
 							void handleGenerate()
 						}}
@@ -374,10 +402,12 @@ export function DoctorReportScreen() {
 					{pdf ? (
 						<View style={styles.sharePad}>
 							<Text style={styles.pdfReady}>
-								PDF готов: {pdf.fileName}
+								{t('report.pdfReady', { name: pdf.fileName })}
 							</Text>
 							<PrimaryButton
-								label={sharing ? 'Открытие…' : 'Поделиться'}
+								label={
+									sharing ? t('report.sharing') : t('report.share')
+								}
 								onPress={() => {
 									void handleShare()
 								}}

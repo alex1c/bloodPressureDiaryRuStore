@@ -17,6 +17,7 @@ describe('release metadata', () => {
 		expect(releaseConfig.supportEmail).toBe('rustore-alex1c@yandex.ru')
 		expect(releaseConfig.privacyPolicyUrl).toContain('privacy.html')
 		expect(releaseConfig.appDisplayName).toBe('Дневник давления')
+		expect(releaseConfig.appUrl).toContain('com.calculatorplatform.bpdiary')
 	})
 })
 

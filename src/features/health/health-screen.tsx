@@ -10,16 +10,19 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AdBanner } from '@/ads/ad-banner'
+import {
+	ScreenWithBottomBanner,
+	scrollBottomInsetForBanner,
+} from '@/ads/screen-with-bottom-banner'
 import { localDayKeyFromIso } from '@/domain/dates/local-day'
 import {
 	ALL_METRIC_KINDS,
-	METRIC_LABELS_RU,
-	METRIC_UNITS,
 	computePeriodDelta,
 	computePreviousDelta,
 	dayHeadingForKey,
-	formatMetricWithUnit,
+	formatMetricWithUnitT,
+	getMetricLabel,
+	getMetricUnit,
 	normalizeEnabledKinds,
 } from '@/domain/health/metric-catalog'
 import type { HealthMetric, HealthMetricKind } from '@/domain/types'
@@ -27,6 +30,7 @@ import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { ProfileSelector } from '@/features/profiles/profile-selector'
 import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 /**
@@ -36,6 +40,7 @@ import { colors, spacing, touchTargetMin, typography } from '@/theme'
 export function HealthScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const { t } = useI18n()
 	const {
 		ready,
 		error,
@@ -99,37 +104,40 @@ export function HealthScreen() {
 					},
 				]}
 			>
-				<Text style={styles.errorTitle}>Не удалось открыть раздел</Text>
+				<Text style={styles.errorTitle}>{t('health.openFailed')}</Text>
 				<Text style={styles.errorBody}>{error}</Text>
 			</View>
 		)
 	}
 
 	const hasKinds = enabledMetricKinds.length > 0
+	const bannerVisible = canShowAds && !pickerOpen
 
 	return (
-		<View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
+		<ScreenWithBottomBanner
+			placement="healthBanner"
+			visible={bannerVisible}
+			style={{ paddingTop: insets.top + spacing.md }}
+		>
 			<ScrollView
 				contentContainerStyle={{
-					paddingBottom: insets.bottom + spacing.xl,
+					paddingBottom: scrollBottomInsetForBanner({
+						bannerVisible,
+					}),
 				}}
 				keyboardShouldPersistTaps="handled"
 			>
 				<View style={styles.header}>
-					<Text style={styles.appTitle}>Здоровье</Text>
+					<Text style={styles.appTitle}>{t('health.title')}</Text>
 					<ProfileSelector />
 				</View>
 
 				{!hasKinds ? (
 					<View style={styles.empty}>
-						<Text style={styles.emptyTitle}>
-							Дополнительные показатели
-						</Text>
-						<Text style={styles.emptyBody}>
-							Можно вести вес, сахар, сатурацию и температуру.
-						</Text>
+						<Text style={styles.emptyTitle}>{t('health.emptyTitle')}</Text>
+						<Text style={styles.emptyBody}>{t('health.emptyBody')}</Text>
 						<PrimaryButton
-							label="Выбрать показатели"
+							label={t('health.chooseMetrics')}
 							onPress={openPicker}
 						/>
 					</View>
@@ -141,27 +149,22 @@ export function HealthScreen() {
 								kind={kind}
 								metrics={healthMetrics}
 								onOpenHistory={() =>
-									router.push(
-										`/health/${kind}` as Href,
-									)
+									router.push(`/health/${kind}` as Href)
 								}
 								onAdd={() =>
-									router.push(
-										`/health/${kind}/new` as Href,
-									)
+									router.push(`/health/${kind}/new` as Href)
 								}
 							/>
 						))}
 
 						<View style={styles.ctaPad}>
 							<PrimaryButton
-								label="Что отслеживать"
+								label={t('health.whatToTrack')}
 								onPress={openPicker}
 							/>
 						</View>
 					</>
 				)}
-				<AdBanner placement="healthBanner" visible={canShowAds && !pickerOpen} />
 			</ScrollView>
 
 			<Modal
@@ -188,19 +191,17 @@ export function HealthScreen() {
 						{ paddingBottom: insets.bottom + spacing.md },
 					]}
 				>
-					<Text style={styles.sheetTitle}>Что отслеживать</Text>
-					<Text style={styles.sheetHint}>
-						Давление и пульс всегда в дневнике. Здесь — дополнительные
-						показатели.
-					</Text>
+					<Text style={styles.sheetTitle}>{t('health.whatToTrack')}</Text>
+					<Text style={styles.sheetHint}>{t('health.pickerHint')}</Text>
 					{ALL_METRIC_KINDS.map((kind) => {
 						const on = draftKinds.includes(kind)
+						const label = getMetricLabel(kind, t)
 						return (
 							<Pressable
 								key={kind}
 								accessibilityRole="button"
 								accessibilityState={{ selected: on }}
-								accessibilityLabel={METRIC_LABELS_RU[kind]}
+								accessibilityLabel={label}
 								onPress={() => toggleDraftKind(kind)}
 								style={[styles.kindRow, on && styles.kindRowOn]}
 							>
@@ -210,10 +211,10 @@ export function HealthScreen() {
 										on && styles.kindLabelOn,
 									]}
 								>
-									{METRIC_LABELS_RU[kind]}
+									{label}
 								</Text>
 								<Text style={styles.kindUnit}>
-									{METRIC_UNITS[kind]}
+									{getMetricUnit(kind, t)}
 									{on ? ' ✓' : ''}
 								</Text>
 							</Pressable>
@@ -221,7 +222,7 @@ export function HealthScreen() {
 					})}
 					<View style={styles.sheetCta}>
 						<PrimaryButton
-							label={savingKinds ? 'Сохранение…' : 'Готово'}
+							label={savingKinds ? t('common.saving') : t('common.done')}
 							onPress={() => {
 								void savePicker()
 							}}
@@ -230,7 +231,7 @@ export function HealthScreen() {
 					</View>
 				</View>
 			</Modal>
-		</View>
+		</ScreenWithBottomBanner>
 	)
 }
 
@@ -247,32 +248,41 @@ function MetricSummaryCard({
 	onOpenHistory,
 	onAdd,
 }: MetricSummaryCardProps) {
+	const { t, locale } = useI18n()
 	const ofKind = metrics.filter((m) => m.kind === kind)
 	const latest = ofKind[0] ?? null
-	const periodDelta = computePeriodDelta(kind, ofKind, 30)
-	const previousDelta = computePreviousDelta(kind, ofKind)
+	const unit = getMetricUnit(kind, t)
+	const periodDelta = computePeriodDelta(kind, ofKind, 30, new Date(), {
+		unitLabel: unit,
+		periodSuffix: t('health.deltaDaysSuffix', { days: 30 }),
+	})
+	const previousDelta = computePreviousDelta(kind, ofKind, unit)
 	const delta = periodDelta ?? previousDelta
+	const label = getMetricLabel(kind, t)
 
 	const dateLabel = latest
-		? dayHeadingForKey(localDayKeyFromIso(latest.measuredAt))
+		? dayHeadingForKey(localDayKeyFromIso(latest.measuredAt), new Date(), {
+				locale,
+				todayLabel: t('common.today'),
+			})
 		: null
 
 	return (
 		<View style={styles.card}>
 			<Pressable
 				accessibilityRole="button"
-				accessibilityLabel={`${METRIC_LABELS_RU[kind]}, история`}
+				accessibilityLabel={`${label}, ${t('health.history')}`}
 				onPress={onOpenHistory}
 				style={({ pressed }) => [
 					styles.cardMain,
 					pressed && styles.cardPressed,
 				]}
 			>
-				<Text style={styles.cardTitle}>{METRIC_LABELS_RU[kind]}</Text>
+				<Text style={styles.cardTitle}>{label}</Text>
 				{latest ? (
 					<>
 						<Text style={styles.cardValue}>
-							{formatMetricWithUnit(kind, latest.value)}
+							{formatMetricWithUnitT(kind, latest.value, t)}
 						</Text>
 						<Text style={styles.cardMeta}>{dateLabel}</Text>
 						{delta && delta.direction !== 'same' ? (
@@ -280,29 +290,25 @@ function MetricSummaryCard({
 						) : null}
 					</>
 				) : (
-					<Text style={styles.cardEmpty}>Записей пока нет</Text>
+					<Text style={styles.cardEmpty}>{t('health.noHistory')}</Text>
 				)}
 			</Pressable>
 			<Pressable
 				accessibilityRole="button"
-				accessibilityLabel={`Добавить ${METRIC_LABELS_RU[kind]}`}
+				accessibilityLabel={`${t('health.addEntry')} ${label}`}
 				onPress={onAdd}
 				style={({ pressed }) => [
 					styles.cardAdd,
 					pressed && styles.cardPressed,
 				]}
 			>
-				<Text style={styles.cardAddText}>+ Добавить</Text>
+				<Text style={styles.cardAddText}>{t('health.addPlus')}</Text>
 			</Pressable>
 		</View>
 	)
 }
 
 const styles = StyleSheet.create({
-	root: {
-		flex: 1,
-		backgroundColor: colors.background,
-	},
 	centered: {
 		flex: 1,
 		alignItems: 'center',

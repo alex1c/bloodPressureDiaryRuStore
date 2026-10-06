@@ -23,10 +23,15 @@ import {
 	restoreDiaryBackup,
 } from '@/domain/backup/restore-diary-backup'
 import { validateDiaryBackup } from '@/domain/backup/validate-backup'
-import { formatRussianLongDate } from '@/domain/dates/local-day'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
+import {
+	formatDateTime,
+	LOCALE_PREFERENCES,
+	useI18n,
+	type LocalePreference,
+} from '@/i18n'
 import {
 	exportDiaryBackupFile,
 	readBackupJsonFromUri,
@@ -36,13 +41,14 @@ import { reconcileAllProfileNotifications } from '@/services/reconcile-medicatio
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 /**
- * Compact settings screen: backup export/share and restore with preview.
+ * Compact settings screen: language, backup export/share and restore with preview.
  */
 export function SettingsScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
 	const { ready, error, repos, reloadAfterRestore } = useDiary()
 	const { refreshMedications } = useMedications()
+	const { t, locale, preference, setLocalePreference } = useI18n()
 
 	const [exporting, setExporting] = useState(false)
 	const [picking, setPicking] = useState(false)
@@ -81,7 +87,7 @@ export function SettingsScreen() {
 			if (__DEV__) {
 				console.warn('Backup export failed', err)
 			}
-			setActionError('Не удалось создать резервную копию.')
+			setActionError(t('settings.exportFailed'))
 		} finally {
 			setExporting(false)
 		}
@@ -107,7 +113,7 @@ export function SettingsScreen() {
 			if (__DEV__) {
 				console.warn('Backup pick failed', err)
 			}
-			setActionError('Не удалось прочитать файл.')
+			setActionError(t('settings.readFailed'))
 		} finally {
 			setPicking(false)
 		}
@@ -125,20 +131,22 @@ export function SettingsScreen() {
 			if (__DEV__) {
 				console.warn('Privacy link failed', err)
 			}
-			setActionError('Не удалось открыть политику конфиденциальности.')
+			setActionError(t('settings.privacyFailed'))
 		}
 	}
 
 	async function handleContactDeveloper() {
 		try {
 			await Linking.openURL(
-				buildSupportMailtoUrl(`${appConfig.displayName} — обратная связь`),
+				buildSupportMailtoUrl(
+					t('settings.contactSubject', { app: appConfig.displayName }),
+				),
 			)
 		} catch (err) {
 			if (__DEV__) {
 				console.warn('Mailto failed', err)
 			}
-			setActionError('Не удалось открыть почтовое приложение.')
+			setActionError(t('settings.mailFailed'))
 		}
 	}
 
@@ -147,12 +155,12 @@ export function SettingsScreen() {
 			return
 		}
 		Alert.alert(
-			'Восстановить резервную копию?',
-			'Текущие записи будут заменены. Это действие нельзя отменить.',
+			t('settings.restoreConfirmTitle'),
+			t('settings.restoreConfirmBody'),
 			[
-				{ text: 'Отмена', style: 'cancel' },
+				{ text: t('common.cancel'), style: 'cancel' },
 				{
-					text: 'Восстановить',
+					text: t('settings.restoreAction'),
 					style: 'destructive',
 					onPress: () => {
 						void performRestore(pendingRestoreRaw)
@@ -184,17 +192,24 @@ export function SettingsScreen() {
 			await reloadAfterRestore()
 			await refreshMedications()
 			setPendingRestoreRaw(null)
-			setSuccessMessage('Данные восстановлены')
+			setSuccessMessage(t('settings.restoreSuccess'))
 			analytics.trackBackupRestoreSuccess()
 		} catch (err) {
 			analytics.trackBackupRestoreFailed()
 			if (__DEV__) {
 				console.warn('Restore failed', err)
 			}
-			setActionError('Не удалось восстановить данные. Попробуйте снова.')
+			setActionError(t('settings.restoreFailed'))
 		} finally {
 			setRestoring(false)
 		}
+	}
+
+	async function handleLocaleSelect(next: LocalePreference) {
+		if (next === preference) {
+			return
+		}
+		await setLocalePreference(next)
 	}
 
 	if (!ready) {
@@ -218,8 +233,8 @@ export function SettingsScreen() {
 			<Stack.Screen
 				options={{
 					headerShown: true,
-					title: 'Настройки',
-					headerBackTitle: 'Назад',
+					title: t('settings.title'),
+					headerBackTitle: t('common.back'),
 				}}
 			/>
 			<ScrollView
@@ -231,27 +246,66 @@ export function SettingsScreen() {
 					},
 				]}
 			>
-				<Text style={styles.sectionTitle}>Напоминания</Text>
+				<Text style={styles.sectionTitle}>{t('settings.language')}</Text>
+				{LOCALE_PREFERENCES.map((pref) => {
+					const selected = preference === pref
+					const labelKey =
+						pref === 'system'
+							? 'settings.language.system'
+							: (`settings.language.${pref}` as const)
+					return (
+						<Pressable
+							key={pref}
+							accessibilityRole="radio"
+							accessibilityState={{ selected }}
+							accessibilityLabel={t(labelKey)}
+							onPress={() => {
+								void handleLocaleSelect(pref)
+							}}
+							style={({ pressed }) => [
+								styles.langRow,
+								selected && styles.langRowSelected,
+								pressed && styles.pressed,
+							]}
+						>
+							<Text
+								style={[
+									styles.langRowText,
+									selected && styles.langRowTextSelected,
+								]}
+							>
+								{t(labelKey)}
+							</Text>
+							{selected ? (
+								<Text style={styles.langCheck}>✓</Text>
+							) : null}
+						</Pressable>
+					)
+				})}
+
+				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
+					{t('settings.reminders')}
+				</Text>
 
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Напоминания"
+					accessibilityLabel={t('settings.reminders')}
 					onPress={() => router.push(REMINDERS_ROUTE as Href)}
 					style={({ pressed }) => [
 						styles.linkRow,
 						pressed && styles.pressed,
 					]}
 				>
-					<Text style={styles.linkRowText}>Напоминания</Text>
+					<Text style={styles.linkRowText}>{t('settings.reminders')}</Text>
 				</Pressable>
 
 				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
-					Данные
+					{t('settings.data')}
 				</Text>
 
 				<PrimaryButton
 					label={
-						exporting ? 'Создание…' : 'Создать резервную копию'
+						exporting ? t('settings.exporting') : t('settings.exportBackup')
 					}
 					onPress={() => void handleExportBackup()}
 					disabled={exporting || restoring}
@@ -259,7 +313,7 @@ export function SettingsScreen() {
 
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Восстановить данные"
+					accessibilityLabel={t('settings.restore')}
 					onPress={() => void handlePickRestoreFile()}
 					disabled={exporting || picking || restoring}
 					style={({ pressed }) => [
@@ -269,7 +323,7 @@ export function SettingsScreen() {
 					]}
 				>
 					<Text style={styles.outlineButtonText}>
-						{picking ? 'Выбор файла…' : 'Восстановить данные'}
+						{picking ? t('settings.picking') : t('settings.restore')}
 					</Text>
 				</Pressable>
 
@@ -281,39 +335,38 @@ export function SettingsScreen() {
 
 				{previewSummary ? (
 					<View style={styles.previewCard}>
-						<Text style={styles.previewTitle}>Резервная копия</Text>
+						<Text style={styles.previewTitle}>
+							{t('settings.backupPreview')}
+						</Text>
 						<PreviewRow
-							label="Создана"
-							value={formatPreviewDate(previewSummary.createdAt)}
+							label={t('settings.backup.created')}
+							value={formatPreviewDate(previewSummary.createdAt, locale)}
 						/>
 						<PreviewRow
-							label="Версия приложения"
+							label={t('settings.backup.appVersion')}
 							value={previewSummary.appVersion}
 						/>
 						<PreviewRow
-							label="Профили"
+							label={t('settings.backup.profiles')}
 							value={String(previewSummary.profileCount)}
 						/>
 						<PreviewRow
-							label="Измерения давления"
+							label={t('settings.backup.measurements')}
 							value={String(previewSummary.measurementCount)}
 						/>
 						<PreviewRow
-							label="Лекарства"
+							label={t('settings.backup.medications')}
 							value={String(previewSummary.medicationCount)}
 						/>
 						<PreviewRow
-							label="Записи приёма"
+							label={t('settings.backup.intakes')}
 							value={String(previewSummary.intakeCount)}
 						/>
 						<PreviewRow
-							label="Показатели здоровья"
+							label={t('settings.backup.health')}
 							value={String(previewSummary.healthMetricCount)}
 						/>
-						<Text style={styles.warning}>
-							Текущие данные приложения будут заменены данными из
-							резервной копии.
-						</Text>
+						<Text style={styles.warning}>{t('settings.backup.warning')}</Text>
 						<View style={styles.previewActions}>
 							<Pressable
 								accessibilityRole="button"
@@ -323,7 +376,9 @@ export function SettingsScreen() {
 									pressed && styles.pressed,
 								]}
 							>
-								<Text style={styles.secondaryBtnText}>Отмена</Text>
+								<Text style={styles.secondaryBtnText}>
+									{t('common.cancel')}
+								</Text>
 							</Pressable>
 							<Pressable
 								accessibilityRole="button"
@@ -336,7 +391,9 @@ export function SettingsScreen() {
 								]}
 							>
 								<Text style={styles.destructiveBtnText}>
-									{restoring ? 'Восстановление…' : 'Восстановить'}
+									{restoring
+										? t('settings.restoring')
+										: t('settings.restoreAction')}
 								</Text>
 							</Pressable>
 						</View>
@@ -351,36 +408,36 @@ export function SettingsScreen() {
 				) : null}
 
 				<Text style={[styles.sectionTitle, styles.sectionSpaced]}>
-					О приложении
+					{t('settings.about')}
 				</Text>
 
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Политика конфиденциальности"
+					accessibilityLabel={t('settings.privacy')}
 					onPress={() => void handleOpenPrivacyPolicy()}
 					style={({ pressed }) => [
 						styles.linkRow,
 						pressed && styles.pressed,
 					]}
 				>
-					<Text style={styles.linkRowText}>Политика конфиденциальности</Text>
+					<Text style={styles.linkRowText}>{t('settings.privacy')}</Text>
 				</Pressable>
 
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Связаться с разработчиком"
+					accessibilityLabel={t('settings.contact')}
 					onPress={() => void handleContactDeveloper()}
 					style={({ pressed }) => [
 						styles.linkRow,
 						pressed && styles.pressed,
 					]}
 				>
-					<Text style={styles.linkRowText}>Связаться с разработчиком</Text>
+					<Text style={styles.linkRowText}>{t('settings.contact')}</Text>
 				</Pressable>
 
 				<View style={styles.versionBlock}>
 					<Text style={styles.versionLabel}>
-						Версия {appConfig.versionName}
+						{t('common.version', { version: appConfig.versionName })}
 					</Text>
 				</View>
 			</ScrollView>
@@ -397,15 +454,15 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
 	)
 }
 
-function formatPreviewDate(iso: string): string {
+function formatPreviewDate(
+	iso: string,
+	locale: ReturnType<typeof useI18n>['locale'],
+): string {
 	const d = new Date(iso)
 	if (Number.isNaN(d.getTime())) {
 		return iso
 	}
-	const date = formatRussianLongDate(d)
-	const h = String(d.getHours()).padStart(2, '0')
-	const m = String(d.getMinutes()).padStart(2, '0')
-	return `${date}, ${h}:${m}`
+	return formatDateTime(d, locale)
 }
 
 const styles = StyleSheet.create({
@@ -426,6 +483,35 @@ const styles = StyleSheet.create({
 	sectionSpaced: {
 		marginTop: spacing.xl,
 	},
+	langRow: {
+		minHeight: touchTargetMin,
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: colors.border,
+		backgroundColor: colors.surface,
+		paddingHorizontal: spacing.md,
+		marginBottom: spacing.sm,
+	},
+	langRowSelected: {
+		borderColor: colors.primary,
+		backgroundColor: colors.chipSelected,
+	},
+	langRowText: {
+		fontSize: typography.body,
+		color: colors.text,
+	},
+	langRowTextSelected: {
+		fontWeight: '700',
+		color: colors.primary,
+	},
+	langCheck: {
+		fontSize: typography.body,
+		fontWeight: '700',
+		color: colors.primary,
+	},
 	linkRow: {
 		minHeight: touchTargetMin,
 		justifyContent: 'center',
@@ -440,9 +526,6 @@ const styles = StyleSheet.create({
 		fontSize: typography.body,
 		fontWeight: '600',
 		color: colors.primary,
-	},
-	gap: {
-		height: spacing.sm,
 	},
 	outlineButton: {
 		minHeight: touchTargetMin,

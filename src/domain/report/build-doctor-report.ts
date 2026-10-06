@@ -28,6 +28,9 @@ import {
 	type MeasurementStats,
 } from '@/domain/statistics/measurement-stats'
 import type { DiaryRepositories } from '@/storage/repositories/types'
+import type { AppLocale } from '@/i18n/locale'
+import { createTranslator } from '@/i18n/translate'
+import { toIntlLocale } from '@/i18n/locale'
 
 /** Preset report windows (local days, inclusive of today). */
 export type ReportPeriodPreset = 7 | 14 | 30 | 90
@@ -54,7 +57,7 @@ export type DoctorReportBpSummary = {
 
 export type DoctorReportTagStat = {
 	tag: string
-	labelRu: string
+	label: string
 	count: number
 	avgSystolic: number | null
 	avgDiastolic: number | null
@@ -70,7 +73,7 @@ export type DoctorReportMedicationRow = {
 
 export type DoctorReportHealthRow = {
 	kind: HealthMetricKind
-	labelRu: string
+	label: string
 	unit: string
 	latestValueFormatted: string
 	latestMeasuredAt: string
@@ -95,7 +98,7 @@ export type DoctorReportMeasurementRow = {
 export type DoctorReportData = {
 	profileId: string
 	profileName: string
-	periodLabelRu: string
+	periodLabel: string
 	fromDayKey: string
 	toDayKey: string
 	range: DateRange
@@ -188,24 +191,28 @@ export function resolveReportRange(
 	return getInclusiveLocalDayRange(selection.fromDayKey, selection.toDayKey)
 }
 
-/** Russian period heading, e.g. «17–31 августа 2026». */
-export function formatReportPeriodLabelRu(range: DateRange): string {
+/** Locale-aware period heading, e.g. «17–31 августа 2026» / «17–31 August 2026». */
+export function formatReportPeriodLabel(
+	range: DateRange,
+	locale: AppLocale = 'ru',
+): string {
+	const intl = toIntlLocale(locale)
 	const from = new Date(range.from)
 	const to = new Date(range.to)
 	const sameYear = from.getFullYear() === to.getFullYear()
 	const sameMonth = sameYear && from.getMonth() === to.getMonth()
 
 	if (sameMonth) {
-		const month = to.toLocaleDateString('ru-RU', { month: 'long' })
+		const month = to.toLocaleDateString(intl, { month: 'long' })
 		return `${from.getDate()}–${to.getDate()} ${month} ${to.getFullYear()}`
 	}
 
-	const fromPart = from.toLocaleDateString('ru-RU', {
+	const fromPart = from.toLocaleDateString(intl, {
 		day: 'numeric',
 		month: 'long',
 		...(sameYear ? {} : { year: 'numeric' }),
 	})
-	const toPart = to.toLocaleDateString('ru-RU', {
+	const toPart = to.toLocaleDateString(intl, {
 		day: 'numeric',
 		month: 'long',
 		year: 'numeric',
@@ -213,9 +220,14 @@ export function formatReportPeriodLabelRu(range: DateRange): string {
 	return `${fromPart} – ${toPart}`
 }
 
-function dayLabelRu(iso: string): string {
+/** @deprecated Prefer formatReportPeriodLabel(range, locale). */
+export function formatReportPeriodLabelRu(range: DateRange): string {
+	return formatReportPeriodLabel(range, 'ru')
+}
+
+function dayLabel(iso: string, locale: AppLocale): string {
 	const date = new Date(iso)
-	return date.toLocaleDateString('ru-RU', {
+	return date.toLocaleDateString(toIntlLocale(locale), {
 		day: 'numeric',
 		month: 'short',
 	})
@@ -237,19 +249,33 @@ function truncateNote(note: string | null): string | null {
 
 function mapMeasurementRows(
 	measurements: Measurement[],
+	locale: AppLocale,
 ): DoctorReportMeasurementRow[] {
+	const t = createTranslator(locale)
+	const tagKey = {
+		normal: 'tag.normal',
+		headache: 'tag.headache',
+		lack_of_sleep: 'tag.lack_of_sleep',
+		stress: 'tag.stress',
+		coffee: 'tag.coffee',
+		physical_activity: 'tag.physical_activity',
+	} as const
+
 	// Chronological ascending — preferred for clinician reading.
 	return [...measurements]
 		.sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))
 		.map((m) => ({
 			measuredAt: m.measuredAt,
-			dayLabel: dayLabelRu(m.measuredAt),
+			dayLabel: dayLabel(m.measuredAt, locale),
 			timeLabel: formatLocalTime(m.measuredAt),
 			systolic: m.systolic,
 			diastolic: m.diastolic,
 			pulse: m.pulse,
 			tagsLabel: m.tags
-				.map((t) => MEASUREMENT_TAG_LABELS_RU[t] ?? t)
+				.map((tag) => {
+					const key = tagKey[tag]
+					return key ? t(key) : (MEASUREMENT_TAG_LABELS_RU[tag] ?? tag)
+				})
 				.join(', '),
 			noteShort: truncateNote(m.note),
 		}))
@@ -260,7 +286,22 @@ function buildHealthRows(
 	metricsNewestFirst: HealthMetric[],
 	range: DateRange,
 	now: Date,
+	locale: AppLocale,
 ): DoctorReportHealthRow[] {
+	const t = createTranslator(locale)
+	const labelKey = {
+		weight: 'health.metric.weight',
+		glucose: 'health.metric.glucose',
+		spo2: 'health.metric.spo2',
+		temperature: 'health.metric.temperature',
+	} as const
+	const unitKey = {
+		weight: 'units.kg',
+		glucose: 'units.mmolL',
+		spo2: 'units.spo2',
+		temperature: 'units.celsius',
+	} as const
+
 	const rows: DoctorReportHealthRow[] = []
 	for (const kind of enabledKinds) {
 		const ofKind = metricsNewestFirst.filter((m) => m.kind === kind)
@@ -287,8 +328,8 @@ function buildHealthRows(
 
 		rows.push({
 			kind,
-			labelRu: METRIC_LABELS_RU[kind],
-			unit: METRIC_UNITS[kind],
+			label: t(labelKey[kind]) || METRIC_LABELS_RU[kind],
+			unit: t(unitKey[kind]) || METRIC_UNITS[kind],
 			latestValueFormatted: formatMetricValue(kind, latest.value),
 			latestMeasuredAt: latest.measuredAt,
 			periodDeltaFormatted:
@@ -309,8 +350,11 @@ export async function buildDoctorReportData(input: {
 	profileId: string
 	selection: ReportPeriodSelection
 	reference?: Date
+	locale?: AppLocale
 }): Promise<DoctorReportData> {
 	const reference = input.reference ?? new Date()
+	const locale = input.locale ?? 'ru'
+	const t = createTranslator(locale)
 	const range = resolveReportRange(input.selection, reference)
 	if (!range) {
 		throw new Error('Invalid report period')
@@ -349,10 +393,19 @@ export async function buildDoctorReportData(input: {
 		CHART_MAX_POINTS,
 	)
 
+	const tagKey = {
+		normal: 'tag.normal',
+		headache: 'tag.headache',
+		lack_of_sleep: 'tag.lack_of_sleep',
+		stress: 'tag.stress',
+		coffee: 'tag.coffee',
+		physical_activity: 'tag.physical_activity',
+	} as const
+
 	const tagStats: DoctorReportTagStat[] = groupByTag(measurements).map(
 		(g) => ({
 			tag: g.tag,
-			labelRu: MEASUREMENT_TAG_LABELS_RU[g.tag] ?? g.tag,
+			label: t(tagKey[g.tag]) || MEASUREMENT_TAG_LABELS_RU[g.tag] || g.tag,
 			count: g.stats.count,
 			avgSystolic: roundStat(g.stats.avgSystolic),
 			avgDiastolic: roundStat(g.stats.avgDiastolic),
@@ -382,6 +435,7 @@ export async function buildDoctorReportData(input: {
 		allHealth,
 		range,
 		reference,
+		locale,
 	)
 
 	const hasAnyData =
@@ -392,7 +446,7 @@ export async function buildDoctorReportData(input: {
 	return {
 		profileId: profile.id,
 		profileName: profile.name,
-		periodLabelRu: formatReportPeriodLabelRu(range),
+		periodLabel: formatReportPeriodLabel(range, locale),
 		fromDayKey: formatLocalDayKey(new Date(range.from)),
 		toDayKey: formatLocalDayKey(new Date(range.to)),
 		range,
@@ -420,7 +474,7 @@ export async function buildDoctorReportData(input: {
 			} : null,
 		},
 		chartPoints,
-		measurements: mapMeasurementRows(measurements),
+		measurements: mapMeasurementRows(measurements, locale),
 		tagStats,
 		medications,
 		health,

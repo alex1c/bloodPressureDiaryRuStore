@@ -9,7 +9,10 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AdBanner } from '@/ads/ad-banner'
+import {
+	ScreenWithBottomBanner,
+	scrollBottomInsetForBanner,
+} from '@/ads/screen-with-bottom-banner'
 import { analytics } from '@/analytics'
 import {
 	formatIntakeTakenClock,
@@ -18,17 +21,17 @@ import {
 import type { PlannedDose } from '@/domain/medications/schedule'
 import { useMedications } from '@/hooks/use-medications'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
+import { useI18n } from '@/i18n'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
-
-/** Reserved height for the sticky medications banner slot + spacing. */
-const MEDICATIONS_BANNER_SLOT = 60
 
 /**
  * Medications tab — today's doses first, then active medication list.
+ * Banner is always visible (medicines-first users still monetize).
  */
 export function MedicationsScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const { t } = useI18n()
 	const {
 		medications,
 		todayDoses,
@@ -61,10 +64,10 @@ export function MedicationsScreen() {
 		if (!dose.intake) {
 			return
 		}
-		Alert.alert('Отменить отметку о приёме?', undefined, [
-			{ text: 'Нет', style: 'cancel' },
+		Alert.alert(t('meds.undoConfirmTitle'), undefined, [
+			{ text: t('common.no'), style: 'cancel' },
 			{
-				text: 'Отменить',
+				text: t('meds.undoConfirmAction'),
 				style: 'destructive',
 				onPress: () => {
 					void (async () => {
@@ -77,40 +80,39 @@ export function MedicationsScreen() {
 	}
 
 	return (
-		<View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
-			{/*
-			 * Sticky bottom banner: always visible in short medication-notification
-			 * sessions. Not gated by hasCompletedFirstMeasurement — medicines-first
-			 * users still monetize. Forms/modals are separate routes without this slot.
-			 */}
+		<ScreenWithBottomBanner
+			placement="medicationsBanner"
+			visible
+			style={{ paddingTop: insets.top + spacing.md }}
+		>
 			<ScrollView
 				contentContainerStyle={{
-					paddingBottom:
-						insets.bottom + spacing.xl + MEDICATIONS_BANNER_SLOT,
+					paddingBottom: scrollBottomInsetForBanner({
+						bannerVisible: true,
+					}),
 				}}
 			>
 				<View style={styles.header}>
-					<Text style={styles.title}>Лекарства</Text>
-					<Text style={styles.subtitle}>
-						Расписание и отметки — без медицинских назначений.
-					</Text>
+					<Text style={styles.title}>{t('meds.title')}</Text>
+					<Text style={styles.subtitle}>{t('meds.subtitle')}</Text>
 				</View>
 
 				{permission === 'denied' ? (
 					<View style={styles.banner}>
 						<Text style={styles.bannerText}>
-							Системные уведомления отключены. Расписание сохранено;
-							напоминания на устройстве не показываются.
+							{t('meds.permissionDenied')}
 						</Text>
 					</View>
 				) : null}
 
-				<Text style={styles.section}>Сегодня</Text>
+				<Text style={styles.section}>{t('common.today')}</Text>
 				{todayDoses.length === 0 ? (
 					<View style={styles.emptyBlock}>
-						<Text style={styles.emptyTitle}>На сегодня приёмов нет</Text>
+						<Text style={styles.emptyTitle}>
+							{t('meds.todayEmptyTitle')}
+						</Text>
 						<Text style={styles.emptyBody}>
-							Добавьте лекарство с временем приёма.
+							{t('meds.todayEmptyBody')}
 						</Text>
 					</View>
 				) : (
@@ -129,14 +131,14 @@ export function MedicationsScreen() {
 
 				<View style={styles.ctaPad}>
 					<PrimaryButton
-						label="Добавить лекарство"
+						label={t('meds.add')}
 						onPress={() => router.push('/medication/new')}
 					/>
 				</View>
 
-				<Text style={styles.section}>Мои лекарства</Text>
+				<Text style={styles.section}>{t('meds.myList')}</Text>
 				{active.length === 0 ? (
-					<Text style={styles.muted}>Активных лекарств пока нет.</Text>
+					<Text style={styles.muted}>{t('meds.noneActive')}</Text>
 				) : (
 					active.map((med) => (
 						<Pressable
@@ -157,7 +159,7 @@ export function MedicationsScreen() {
 							) : null}
 							<Text style={styles.medTimes}>
 								{med.schedule
-									.map((t) => formatScheduleHm(t))
+									.map((slot) => formatScheduleHm(slot))
 									.join(' · ')}
 							</Text>
 						</Pressable>
@@ -167,7 +169,7 @@ export function MedicationsScreen() {
 				{inactive.length > 0 ? (
 					<>
 						<Text style={[styles.section, styles.inactiveSection]}>
-							Неактивные
+							{t('meds.inactive')}
 						</Text>
 						{inactive.map((med) => (
 							<Pressable
@@ -181,17 +183,7 @@ export function MedicationsScreen() {
 					</>
 				) : null}
 			</ScrollView>
-
-			{/* Always-on for this tab: medication flow must not depend on BP data. */}
-			<View
-				style={[
-					styles.adSlot,
-					{ paddingBottom: Math.max(insets.bottom, spacing.sm) },
-				]}
-			>
-				<AdBanner placement="medicationsBanner" visible />
-			</View>
-		</View>
+		</ScreenWithBottomBanner>
 	)
 }
 
@@ -206,6 +198,7 @@ function TodayDoseCard({
 	onUndo: () => void
 	onOpen: () => void
 }) {
+	const { t } = useI18n()
 	const timeLabel = formatScheduleHm({
 		hour: dose.hour,
 		minute: dose.minute,
@@ -226,26 +219,28 @@ function TodayDoseCard({
 			{dose.status === 'taken' && dose.intake ? (
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Отменить отметку о приёме"
+					accessibilityLabel={t('meds.undoA11y')}
 					onPress={onUndo}
 					style={styles.takenBtn}
 				>
 					<Text style={styles.takenText}>
-						✓ Принято {formatIntakeTakenClock(dose.intake)}
+						{t('meds.takenAt', {
+							time: formatIntakeTakenClock(dose.intake),
+						})}
 					</Text>
-					<Text style={styles.takenHint}>Нажмите, чтобы отменить</Text>
+					<Text style={styles.takenHint}>{t('meds.undoHint')}</Text>
 				</Pressable>
 			) : (
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel="Принял"
+					accessibilityLabel={t('meds.taken')}
 					onPress={onTaken}
 					style={({ pressed }) => [
 						styles.takeBtn,
 						pressed && styles.takeBtnPressed,
 					]}
 				>
-					<Text style={styles.takeBtnLabel}>Принял</Text>
+					<Text style={styles.takeBtnLabel}>{t('meds.taken')}</Text>
 				</Pressable>
 			)}
 		</View>
@@ -253,10 +248,6 @@ function TodayDoseCard({
 }
 
 const styles = StyleSheet.create({
-	root: {
-		flex: 1,
-		backgroundColor: colors.background,
-	},
 	header: {
 		paddingHorizontal: spacing.lg,
 		marginBottom: spacing.md,
@@ -414,11 +405,5 @@ const styles = StyleSheet.create({
 		paddingHorizontal: spacing.lg,
 		fontSize: typography.secondary,
 		color: colors.textMuted,
-	},
-	adSlot: {
-		borderTopWidth: StyleSheet.hairlineWidth,
-		borderTopColor: colors.border,
-		backgroundColor: colors.background,
-		paddingTop: spacing.xs,
 	},
 })

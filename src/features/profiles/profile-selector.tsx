@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 type ProfileSelectorProps = {
@@ -30,6 +31,7 @@ type EditorMode =
  */
 export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 	const insets = useSafeAreaInsets()
+	const { t } = useI18n()
 	const {
 		profile,
 		profiles,
@@ -67,14 +69,14 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 				setAddDraft('')
 			} catch (err) {
 				Alert.alert(
-					'Не удалось переключить профиль',
-					err instanceof Error ? err.message : 'Попробуйте ещё раз',
+					t('profiles.switchFailed'),
+					err instanceof Error ? err.message : t('common.tryAgain'),
 				)
 			} finally {
 				setBusy(false)
 			}
 		},
-		[close, profile?.id, switchProfile],
+		[close, profile?.id, switchProfile, t],
 	)
 
 	const handleAdd = useCallback(async () => {
@@ -92,13 +94,13 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 			setOpen(false)
 		} catch (err) {
 			Alert.alert(
-				'Не удалось создать профиль',
-				err instanceof Error ? err.message : 'Попробуйте ещё раз',
+				t('profiles.createFailed'),
+				err instanceof Error ? err.message : t('common.tryAgain'),
 			)
 		} finally {
 			setBusy(false)
 		}
-	}, [addDraft, createProfile, switchProfile])
+	}, [addDraft, createProfile, switchProfile, t])
 
 	const handleRenameSave = useCallback(async () => {
 		if (editor.type !== 'rename') {
@@ -114,39 +116,39 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 			setEditor({ type: 'idle' })
 		} catch (err) {
 			Alert.alert(
-				'Не удалось переименовать',
-				err instanceof Error ? err.message : 'Попробуйте ещё раз',
+				t('profiles.renameFailed'),
+				err instanceof Error ? err.message : t('common.tryAgain'),
 			)
 		} finally {
 			setBusy(false)
 		}
-	}, [editor, renameProfile])
+	}, [editor, renameProfile, t])
 
 	const confirmDelete = useCallback(
 		(id: string, name: string) => {
 			if (profiles.length <= 1) {
 				Alert.alert(
-					'Нельзя удалить',
-					'Должен остаться хотя бы один профиль.',
+					t('profiles.deleteBlockedTitle'),
+					t('profiles.deleteBlockedBody'),
 				)
 				return
 			}
 			Alert.alert(
-				`Удалить профиль «${name}»?`,
-				'Будут удалены все записи этого профиля: давление, лекарства, приёмы и показатели здоровья. Это нельзя отменить.',
+				t('profiles.deleteConfirmTitle', { name }),
+				t('profiles.deleteConfirmBody'),
 				[
-					{ text: 'Отмена', style: 'cancel' },
+					{ text: t('common.cancel'), style: 'cancel' },
 					{
-						text: 'Удалить всё',
+						text: t('profiles.deleteConfirmAction'),
 						style: 'destructive',
 						onPress: () => {
 							Alert.alert(
-								'Точно удалить?',
-								`Подтвердите удаление профиля «${name}» и всех его данных.`,
+								t('profiles.deleteConfirm2Title'),
+								t('profiles.deleteConfirm2Body', { name }),
 								[
-									{ text: 'Отмена', style: 'cancel' },
+									{ text: t('common.cancel'), style: 'cancel' },
 									{
-										text: 'Удалить',
+										text: t('common.delete'),
 										style: 'destructive',
 										onPress: () => {
 											void deleteProfile(id)
@@ -156,7 +158,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 												})
 												.catch((err) => {
 													Alert.alert(
-														'Не удалось удалить',
+														t('profiles.deleteFailed'),
 														err instanceof Error
 															? err.message
 															: '',
@@ -171,16 +173,16 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 				],
 			)
 		},
-		[deleteProfile, profiles.length],
+		[deleteProfile, profiles.length, t],
 	)
 
-	const label = profile?.name ?? 'Профиль'
+	const label = profile?.name ?? t('profiles.fallback')
 
 	return (
 		<>
 			<Pressable
 				accessibilityRole="button"
-				accessibilityLabel={`Профиль ${label}`}
+				accessibilityLabel={t('profiles.a11y', { name: label })}
 				onPress={() => setOpen(true)}
 				style={({ pressed }) => [
 					compact ? styles.chip : styles.chipWide,
@@ -209,7 +211,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 						{ paddingBottom: insets.bottom + spacing.md },
 					]}
 				>
-					<Text style={styles.sheetTitle}>Профили</Text>
+					<Text style={styles.sheetTitle}>{t('profiles.title')}</Text>
 					<ScrollView keyboardShouldPersistTaps="handled">
 						{profiles.map((item) => {
 							const selected = item.id === profile?.id
@@ -243,7 +245,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 													<Text
 														style={styles.secondaryBtnText}
 													>
-														Отмена
+														{t('common.cancel')}
 													</Text>
 												</Pressable>
 												<Pressable
@@ -263,7 +265,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 													<Text
 														style={styles.primaryBtnText}
 													>
-														Сохранить
+														{t('common.save')}
 													</Text>
 												</Pressable>
 											</View>
@@ -292,7 +294,10 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 												</Text>
 											</Pressable>
 											<Pressable
-												accessibilityLabel={`Переименовать ${item.name}`}
+												accessibilityLabel={t(
+													'profiles.renameA11y',
+													{ name: item.name },
+												)}
 												onPress={() =>
 													setEditor({
 														type: 'rename',
@@ -303,18 +308,21 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 												style={styles.rowAction}
 											>
 												<Text style={styles.rowActionText}>
-													Имя
+													{t('profiles.renameShort')}
 												</Text>
 											</Pressable>
 											<Pressable
-												accessibilityLabel={`Удалить ${item.name}`}
+												accessibilityLabel={t(
+													'profiles.deleteA11y',
+													{ name: item.name },
+												)}
 												onPress={() =>
 													confirmDelete(item.id, item.name)
 												}
 												style={styles.rowAction}
 											>
 												<Text style={styles.rowActionDanger}>
-													Удал.
+													{t('profiles.deleteShort')}
 												</Text>
 											</Pressable>
 										</View>
@@ -328,7 +336,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 								<TextInput
 									value={addDraft}
 									onChangeText={setAddDraft}
-									placeholder="Например, Мама"
+									placeholder={t('profiles.placeholder')}
 									placeholderTextColor={colors.textMuted}
 									autoFocus
 									style={styles.addInput}
@@ -343,7 +351,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 										style={styles.secondaryBtn}
 									>
 										<Text style={styles.secondaryBtnText}>
-											Отмена
+											{t('common.cancel')}
 										</Text>
 									</Pressable>
 									<Pressable
@@ -356,7 +364,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 										]}
 									>
 										<Text style={styles.primaryBtnText}>
-											Создать
+											{t('profiles.create')}
 										</Text>
 									</Pressable>
 								</View>
@@ -368,7 +376,7 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 								style={styles.addTrigger}
 							>
 								<Text style={styles.addTriggerText}>
-									+ Добавить профиль
+									{t('profiles.addTrigger')}
 								</Text>
 							</Pressable>
 						)}

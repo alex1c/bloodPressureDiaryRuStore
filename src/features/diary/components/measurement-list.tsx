@@ -1,8 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { MEASUREMENT_TAG_LABELS_RU } from '@/domain/catalog'
 import { formatLocalTime } from '@/domain/dates/local-day'
-import type { Measurement } from '@/domain/types'
+import type { Measurement, MeasurementTag } from '@/domain/types'
+import { useI18n } from '@/i18n'
+import type { MessageKey } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
+
+const TAG_KEYS: Record<MeasurementTag, MessageKey> = {
+	normal: 'tag.normal',
+	headache: 'tag.headache',
+	lack_of_sleep: 'tag.lack_of_sleep',
+	stress: 'tag.stress',
+	coffee: 'tag.coffee',
+	physical_activity: 'tag.physical_activity',
+}
 
 type LatestMeasurementProps = {
 	measurement: Measurement
@@ -13,18 +23,21 @@ export function LatestMeasurement({
 	measurement,
 	onPress,
 }: LatestMeasurementProps) {
+	const { t } = useI18n()
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel="Открыть последнее измерение"
+			accessibilityLabel={t('diary.latestA11y')}
 			onPress={onPress}
 			style={styles.latest}
 		>
-			<Text style={styles.caption}>Последнее измерение</Text>
+			<Text style={styles.caption}>{t('diary.latestCaption')}</Text>
 			<Text style={styles.bp}>
 				{measurement.systolic} / {measurement.diastolic}
 			</Text>
-			<Text style={styles.pulse}>Пульс {measurement.pulse}</Text>
+			<Text style={styles.pulse}>
+				{t('diary.pulseLabel', { pulse: measurement.pulse })}
+			</Text>
 			<Text style={styles.time}>{formatLocalTime(measurement.measuredAt)}</Text>
 		</Pressable>
 	)
@@ -36,24 +49,28 @@ type MeasurementRowProps = {
 }
 
 export function MeasurementRow({ measurement, onPress }: MeasurementRowProps) {
+	const { t } = useI18n()
+	const time = formatLocalTime(measurement.measuredAt)
 	const tagLabel =
 		measurement.tags.length > 0
-			? measurement.tags.map((t) => MEASUREMENT_TAG_LABELS_RU[t]).join(' · ')
+			? measurement.tags.map((tag) => t(TAG_KEYS[tag])).join(' · ')
 			: null
 
 	return (
 		<Pressable
 			accessibilityRole="button"
-			accessibilityLabel={`Измерение ${formatLocalTime(measurement.measuredAt)}`}
+			accessibilityLabel={t('diary.rowA11y', { time })}
 			onPress={onPress}
 			style={styles.row}
 		>
-			<Text style={styles.rowTime}>{formatLocalTime(measurement.measuredAt)}</Text>
+			<Text style={styles.rowTime}>{time}</Text>
 			<View style={styles.rowBody}>
 				<Text style={styles.rowBp}>
 					{measurement.systolic} / {measurement.diastolic}
 				</Text>
-				<Text style={styles.rowPulse}>Пульс {measurement.pulse}</Text>
+				<Text style={styles.rowPulse}>
+					{t('diary.pulseLabel', { pulse: measurement.pulse })}
+				</Text>
 				{tagLabel ? <Text style={styles.rowTags}>{tagLabel}</Text> : null}
 			</View>
 		</Pressable>
@@ -78,35 +95,34 @@ const styles = StyleSheet.create({
 		letterSpacing: -0.5,
 	},
 	pulse: {
-		marginTop: spacing.sm,
-		fontSize: typography.section,
-		color: colors.text,
+		marginTop: spacing.xs,
+		fontSize: typography.body,
+		color: colors.textMuted,
 	},
 	time: {
-		marginTop: spacing.xs,
+		marginTop: spacing.sm,
 		fontSize: typography.secondary,
 		color: colors.textMuted,
 	},
 	row: {
 		flexDirection: 'row',
-		paddingVertical: spacing.md,
 		paddingHorizontal: spacing.lg,
-		borderTopWidth: StyleSheet.hairlineWidth,
-		borderTopColor: colors.border,
+		paddingVertical: spacing.md,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomColor: colors.border,
 		gap: spacing.md,
-		alignItems: 'flex-start',
 	},
 	rowTime: {
-		width: 56,
+		width: 52,
 		fontSize: typography.body,
+		fontWeight: '600',
 		color: colors.textMuted,
-		paddingTop: 2,
 	},
 	rowBody: {
 		flex: 1,
 	},
 	rowBp: {
-		fontSize: typography.bpRow,
+		fontSize: typography.body,
 		fontWeight: '700',
 		color: colors.text,
 	},
@@ -116,8 +132,8 @@ const styles = StyleSheet.create({
 		color: colors.textMuted,
 	},
 	rowTags: {
-		marginTop: spacing.xs,
-		fontSize: 14,
-		color: colors.textMuted,
+		marginTop: 4,
+		fontSize: typography.secondary,
+		color: colors.primary,
 	},
 })

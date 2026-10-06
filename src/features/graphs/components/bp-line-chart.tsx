@@ -1,6 +1,7 @@
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg'
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import type { ChartPoint } from '@/domain/statistics/measurement-stats'
+import { useI18n } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
 
 type BpLineChartProps = {
@@ -18,6 +19,7 @@ export function BpLineChart({
 	showPulse = false,
 	periodDays,
 }: BpLineChartProps) {
+	const { t } = useI18n()
 	const { width: windowWidth } = useWindowDimensions()
 	const width = Math.max(280, Math.min(windowWidth - spacing.lg * 2, 420))
 	const height = 200
@@ -65,7 +67,7 @@ export function BpLineChart({
 	const gridRatios = [0, 0.5, 1]
 
 	return (
-		<View style={styles.wrap} accessibilityLabel="График давления">
+		<View style={styles.wrap} accessibilityLabel={t('graphs.chartA11y')}>
 			<Svg width={width} height={height}>
 				{gridRatios.map((ratio) => {
 					const y = padT + ratio * innerH
@@ -166,11 +168,11 @@ export function BpLineChart({
 			<View style={styles.legend}>
 				<View style={styles.legendItem}>
 					<View style={[styles.swatch, { backgroundColor: colors.primary }]} />
-					<Text style={styles.legendText}>Верхнее</Text>
+					<Text style={styles.legendText}>{t('graphs.systolicLegend')}</Text>
 				</View>
 				<View style={styles.legendItem}>
 					<View style={[styles.swatch, { backgroundColor: '#5B8FA8' }]} />
-					<Text style={styles.legendText}>Нижнее</Text>
+					<Text style={styles.legendText}>{t('graphs.diastolicLegend')}</Text>
 				</View>
 			</View>
 		</View>

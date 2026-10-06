@@ -144,7 +144,7 @@ describe('buildDoctorReportData', () => {
 		expect(report.bp.morning?.avgSystolic).toBe(128)
 		expect(report.bp.evening?.avgSystolic).toBe(134)
 		expect(report.measurements.map((m) => m.systolic)).toEqual([128, 134])
-		expect(report.tagStats[0]?.labelRu).toBe('Стресс')
+		expect(report.tagStats[0]?.label).toBe('Стресс')
 		expect(report.tagStats[0]?.count).toBe(2)
 		expect(report.medications).toHaveLength(1)
 		expect(report.medications[0]?.name).toBe('Лозартан')
@@ -279,7 +279,10 @@ describe('filename + HTML renderer', () => {
 			selection: { kind: 'preset', days: 30 },
 			reference: new Date(2026, 7, 31),
 		})
-		const html = renderDoctorReportHtml(report)
+		const html = renderDoctorReportHtml(report, {
+			locale: 'ru',
+			storeId: 'rustore',
+		})
 		expect(html).toContain('charset="utf-8"')
 		expect(html).toContain('Дневник давления')
 		expect(html).toContain('Мама &lt;test&gt;')
@@ -326,7 +329,10 @@ describe('filename + HTML renderer', () => {
 			reference: new Date(2026, 8, 1),
 		})
 		expect(report.measurements.length).toBeGreaterThanOrEqual(200)
-		const html = renderDoctorReportHtml(report)
+		const html = renderDoctorReportHtml(report, {
+			locale: 'ru',
+			storeId: 'rustore',
+		})
 		expect(html.length).toBeGreaterThan(20_000)
 		expect(html).toContain('page-break-inside: avoid')
 		expect((html.match(/<tr>/g) ?? []).length).toBeGreaterThanOrEqual(200)

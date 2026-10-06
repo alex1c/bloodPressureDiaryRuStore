@@ -19,12 +19,12 @@ import {
 } from '@/domain/dates/local-day'
 import {
 	ALL_METRIC_KINDS,
-	METRIC_HINTS_RU,
-	METRIC_LABELS_RU,
-	METRIC_UNITS,
 	formatMetricValue,
+	getMetricHint,
+	getMetricLabel,
 	isOutsideSoftMetricRange,
 	parseMetricValue,
+	METRIC_UNITS,
 } from '@/domain/health/metric-catalog'
 import {
 	filterDecimalInputText,
@@ -33,6 +33,7 @@ import {
 import type { HealthMetric, HealthMetricKind } from '@/domain/types'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
 import { useDiary } from '@/hooks/use-diary'
+import { useI18n } from '@/i18n'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 type Mode = 'create' | 'edit'
@@ -43,8 +44,6 @@ type MetricFormDraft = {
 	timeHm: string
 	note: string
 }
-
-const SOFT_HINT = 'Проверьте введённое значение.'
 
 function isHealthMetricKind(value: string): value is HealthMetricKind {
 	return (ALL_METRIC_KINDS as readonly string[]).includes(value)
@@ -87,6 +86,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 	const router = useRouter()
 	const params = useLocalSearchParams<{ id?: string; kind?: string }>()
 	const { repos, profile, refreshHealth } = useDiary()
+	const { t } = useI18n()
 
 	const kindFromParams =
 		typeof params.kind === 'string' && isHealthMetricKind(params.kind)
@@ -114,7 +114,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 				return
 			}
 			if (!row) {
-				setError('Запись не найдена')
+				setError(t('measurement.notFound'))
 				setLoaded(true)
 				return
 			}
@@ -125,9 +125,9 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 		return () => {
 			cancelled = true
 		}
-	}, [mode, repos, params.id])
+	}, [mode, repos, params.id, t])
 
-	const title = kind ? METRIC_LABELS_RU[kind] : 'Показатель'
+	const title = kind ? getMetricLabel(kind, t) : t('health.metric.generic')
 	const isIntegerKind = kind === 'spo2'
 
 	const canSave = useMemo(
@@ -158,26 +158,27 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 		if (!parsed.ok) {
 			setError(
 				parsed.code === 'EMPTY'
-					? 'Укажите значение'
-					: 'Проверьте значение',
+					? t('health.form.valueRequired')
+					: t('health.form.invalid'),
 			)
 			return
 		}
 
 		const measuredAt = isoFromLocalDateAndTime(draft.dayKey, draft.timeHm)
 		if (!measuredAt) {
-			setError('Проверьте дату и время')
+			setError(t('health.form.invalidDatetime'))
 			return
 		}
 
 		if (isOutsideSoftMetricRange(kind, parsed.value) && !softAccepted) {
-			setSoftHint(SOFT_HINT)
+			setSoftHint(t('health.form.softHint'))
 			setSoftAccepted(true)
 			return
 		}
 
 		const noteTrimmed = draft.note.trim()
 		const note = noteTrimmed.length === 0 ? null : noteTrimmed
+		// Persist canonical storage unit (not localized display unit).
 		const unit = METRIC_UNITS[kind]
 
 		setSaving(true)
@@ -207,7 +208,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 			setError(
 				err instanceof Error
 					? err.message
-					: 'Не удалось сохранить запись',
+					: t('health.form.saveFailed'),
 			)
 		} finally {
 			setSaving(false)
@@ -218,10 +219,10 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 		if (!repos || !params.id) {
 			return
 		}
-		Alert.alert('Удалить запись?', undefined, [
-			{ text: 'Отмена', style: 'cancel' },
+		Alert.alert(t('health.form.deleteConfirmTitle'), undefined, [
+			{ text: t('common.cancel'), style: 'cancel' },
 			{
-				text: 'Удалить',
+				text: t('common.delete'),
 				style: 'destructive',
 				onPress: () => {
 					void (async () => {
@@ -242,15 +243,15 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 				<Stack.Screen
 					options={{
 						headerShown: true,
-						title: 'Показатель',
-						headerBackTitle: 'Назад',
+						title: t('health.metric.generic'),
+						headerBackTitle: t('common.back'),
 						headerTintColor: colors.primary,
 						headerStyle: { backgroundColor: colors.background },
 						headerShadowVisible: false,
 					}}
 				/>
 				<View style={styles.centered}>
-					<Text style={styles.error}>Неизвестный показатель</Text>
+					<Text style={styles.error}>{t('health.metric.unknown')}</Text>
 				</View>
 			</>
 		)
@@ -262,7 +263,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 				options={{
 					headerShown: true,
 					title,
-					headerBackTitle: 'Назад',
+					headerBackTitle: t('common.back'),
 					headerTintColor: colors.primary,
 					headerStyle: { backgroundColor: colors.background },
 					headerShadowVisible: false,
@@ -283,11 +284,13 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 					}}
 				>
 					{!loaded || !kind ? (
-						<Text style={styles.muted}>Загрузка…</Text>
+						<Text style={styles.muted}>{t('common.loading')}</Text>
 					) : (
 						<>
 							<Text style={styles.fieldLabel}>
-								Значение ({METRIC_HINTS_RU[kind]})
+								{t('health.form.valueWithHint', {
+									hint: getMetricHint(kind, t),
+								})}
 							</Text>
 							<TextInput
 								value={draft.valueText}
@@ -302,7 +305,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 								selectTextOnFocus
 								style={styles.valueInput}
 								placeholderTextColor={colors.textMuted}
-								accessibilityLabel="Значение"
+								accessibilityLabel={t('health.form.value')}
 								returnKeyType="done"
 								onSubmitEditing={() => {
 									void handleSave()
@@ -311,7 +314,9 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 
 							<View style={styles.datetimeRow}>
 								<View style={styles.datetimeHalf}>
-									<Text style={styles.fieldLabel}>Дата</Text>
+									<Text style={styles.fieldLabel}>
+										{t('measurement.date')}
+									</Text>
 									<TextInput
 										value={draft.dayKey}
 										onChangeText={(dayKey) =>
@@ -320,11 +325,13 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 										autoCapitalize="none"
 										autoCorrect={false}
 										style={styles.datetimeInput}
-										accessibilityLabel="Дата"
+										accessibilityLabel={t('measurement.date')}
 									/>
 								</View>
 								<View style={styles.datetimeHalf}>
-									<Text style={styles.fieldLabel}>Время</Text>
+									<Text style={styles.fieldLabel}>
+										{t('measurement.time')}
+									</Text>
 									<TextInput
 										value={draft.timeHm}
 										onChangeText={(timeHm) =>
@@ -334,25 +341,24 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 										autoCapitalize="none"
 										autoCorrect={false}
 										style={styles.datetimeInput}
-										accessibilityLabel="Время"
+										accessibilityLabel={t('measurement.time')}
 									/>
 								</View>
 							</View>
 							<Text style={styles.hint}>
-								Дата и время подставляются автоматически. Можно
-								изменить.
+								{t('common.datetimeAutoHint')}
 							</Text>
 
-							<Text style={styles.fieldLabel}>Заметка</Text>
+							<Text style={styles.fieldLabel}>{t('measurement.note')}</Text>
 							<TextInput
 								value={draft.note}
 								onChangeText={(note) => patchDraft({ note })}
 								multiline
 								scrollEnabled
 								style={styles.note}
-								placeholder="Необязательно"
+								placeholder={t('measurement.notePlaceholder')}
 								placeholderTextColor={colors.textMuted}
-								accessibilityLabel="Заметка"
+								accessibilityLabel={t('measurement.note')}
 							/>
 
 							{error ? <Text style={styles.error}>{error}</Text> : null}
@@ -363,7 +369,7 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 							{mode === 'edit' ? (
 								<View style={styles.deleteWrap}>
 									<PrimaryButton
-										label="Удалить запись"
+										label={t('health.form.delete')}
 										onPress={handleDelete}
 										danger
 									/>
@@ -377,10 +383,10 @@ export function MetricFormScreen({ mode, kind: kindProp }: MetricFormScreenProps
 					<PrimaryButton
 						label={
 							saving
-								? 'Сохранение…'
+								? t('common.saving')
 								: softHint && softAccepted
-									? 'Сохранить всё равно'
-									: 'Сохранить'
+									? t('common.saveAnyway')
+									: t('health.form.save')
 						}
 						onPress={() => {
 							void handleSave()

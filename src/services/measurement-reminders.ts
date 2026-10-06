@@ -8,6 +8,11 @@ import {
 	requestNotificationPermission,
 } from '@/services/medication-notifications'
 import { reconcileAllProfileNotifications } from '@/services/reconcile-medication-reminders'
+import {
+	createTranslator,
+	normalizeLocalePreference,
+	resolveLocaleFromPreference,
+} from '@/i18n'
 
 /** Lists measurement reminders (medicationId === null) for a profile. */
 export function filterMeasurementReminders(reminders: Reminder[]): Reminder[] {
@@ -37,9 +42,15 @@ export async function upsertMeasurementReminder(
 	const includeProfileName = profiles.length > 1
 	const profileName =
 		profiles.find((p) => p.id === input.profileId)?.name ?? ''
+	const settings = await input.repos.settings.get()
+	const locale = resolveLocaleFromPreference(
+		normalizeLocalePreference(settings.locale),
+	)
+	const t = createTranslator(locale)
 	const content = buildMeasurementReminderContent({
 		profileName,
 		includeProfileName,
+		t,
 	})
 
 	if (input.enabled) {

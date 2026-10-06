@@ -42,7 +42,7 @@ export function createMemoryDiaryStore(): DiaryRepositories {
 	const reminders = new Map<string, Reminder>()
 	let settings: AppSettings = {
 		activeProfileId: null,
-		locale: 'ru',
+		locale: 'system',
 		hasCompletedFirstMeasurement: false,
 	}
 	const schemaVersion = CURRENT_SCHEMA_VERSION

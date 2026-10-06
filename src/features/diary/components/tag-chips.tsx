@@ -1,9 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import {
-	MEASUREMENT_TAG_LABELS_RU,
+	getMeasurementTagLabel,
 	MEASUREMENT_TAGS,
 } from '@/domain/catalog'
 import type { MeasurementTag } from '@/domain/types'
+import { useI18n } from '@/i18n'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 type TagChipsProps = {
@@ -13,23 +14,25 @@ type TagChipsProps = {
 
 /** Secondary quick tags — optional, multi-select. */
 export function TagChips({ selected, onToggle }: TagChipsProps) {
+	const { t } = useI18n()
 	return (
 		<View style={styles.wrap}>
-			<Text style={styles.caption}>Контекст (необязательно)</Text>
+			<Text style={styles.caption}>{t('measurement.tags')}</Text>
 			<View style={styles.row}>
 				{MEASUREMENT_TAGS.map((tag) => {
 					const isOn = selected.includes(tag)
+					const label = getMeasurementTagLabel(tag, t)
 					return (
 						<Pressable
 							key={tag}
 							accessibilityRole="button"
 							accessibilityState={{ selected: isOn }}
-							accessibilityLabel={MEASUREMENT_TAG_LABELS_RU[tag]}
+							accessibilityLabel={label}
 							onPress={() => onToggle(tag)}
 							style={[styles.chip, isOn && styles.chipOn]}
 						>
 							<Text style={[styles.chipText, isOn && styles.chipTextOn]}>
-								{MEASUREMENT_TAG_LABELS_RU[tag]}
+								{label}
 							</Text>
 						</Pressable>
 					)

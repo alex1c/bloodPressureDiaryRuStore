@@ -17,7 +17,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { analytics } from '@/analytics'
 import {
 	formatLocalTime,
-	formatRussianLongDate,
 	localDayKeyFromIso,
 } from '@/domain/dates/local-day'
 import {
@@ -29,6 +28,8 @@ import type { MedicationScheduleTime } from '@/domain/types'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
 import { PrimaryButton } from '@/features/diary/components/form-controls'
+import { formatLongDate, useI18n } from '@/i18n'
+import type { AppLocale } from '@/i18n/locale'
 import {
 	markMedicationRemindPrompted,
 	shouldOfferMedicationRemindPrompt,
@@ -53,6 +54,7 @@ export function MedicationFormScreen({ mode }: { mode: Mode }) {
 	const params = useLocalSearchParams<{ id?: string }>()
 	const { profile } = useDiary()
 	const { medications, reminders } = useMedications()
+	const { t } = useI18n()
 
 	const existing =
 		mode === 'edit'
@@ -65,7 +67,7 @@ export function MedicationFormScreen({ mode }: { mode: Mode }) {
 				<Stack.Screen
 					options={{
 						headerShown: true,
-						title: 'Лекарство',
+						title: t('meds.form.editTitle'),
 						headerTintColor: colors.primary,
 						headerStyle: { backgroundColor: colors.background },
 						headerShadowVisible: false,
@@ -75,7 +77,7 @@ export function MedicationFormScreen({ mode }: { mode: Mode }) {
 					{!profile || medications.length === 0 ? (
 						<ActivityIndicator color={colors.primary} />
 					) : (
-						<Text style={styles.muted}>Лекарство не найдено</Text>
+						<Text style={styles.muted}>{t('meds.notFound')}</Text>
 					)}
 				</View>
 			</>
@@ -124,6 +126,7 @@ function MedicationFormEditor({
 }) {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const { t, locale } = useI18n()
 	const {
 		intakes,
 		reminders,
@@ -161,7 +164,7 @@ function MedicationFormEditor({
 	function handleAddTime() {
 		const parsed = parseScheduleHm(timeDraft)
 		if (!parsed) {
-			setError('Введите время в формате ЧЧ:ММ')
+			setError(t('meds.form.timeFormatError'))
 			return
 		}
 		setError(null)
@@ -172,7 +175,7 @@ function MedicationFormEditor({
 	function handleRemoveTime(time: MedicationScheduleTime) {
 		setTimes((prev) =>
 			prev.filter(
-				(t) => !(t.hour === time.hour && t.minute === time.minute),
+				(slot) => !(slot.hour === time.hour && slot.minute === time.minute),
 			),
 		)
 	}
@@ -180,12 +183,12 @@ function MedicationFormEditor({
 	async function handleSave() {
 		const trimmed = name.trim()
 		if (!trimmed) {
-			setError('Укажите название лекарства')
+			setError(t('meds.form.nameRequiredFull'))
 			return
 		}
 		const schedule = uniqueScheduleTimes(times)
 		if (schedule.length === 0) {
-			setError('Добавьте хотя бы одно время приёма')
+			setError(t('meds.form.timeRequiredFull'))
 			return
 		}
 		setSaving(true)
@@ -218,16 +221,16 @@ function MedicationFormEditor({
 				await markMedicationRemindPrompted(saved.id)
 				await new Promise<void>((resolve) => {
 					Alert.alert(
-						'Напоминать о приёме?',
+						t('meds.form.remindPromptTitle'),
 						undefined,
 						[
 							{
-								text: 'Не сейчас',
+								text: t('meds.form.remindPromptLater'),
 								style: 'cancel',
 								onPress: () => resolve(),
 							},
 							{
-								text: 'Включить',
+								text: t('meds.form.remindPromptEnable'),
 								onPress: () => {
 									void (async () => {
 										await saveMedication({
@@ -252,9 +255,7 @@ function MedicationFormEditor({
 			router.back()
 		} catch (err) {
 			setError(
-				err instanceof Error
-					? err.message
-					: 'Не удалось сохранить лекарство',
+				err instanceof Error ? err.message : t('meds.form.saveFailed'),
 			)
 		} finally {
 			setSaving(false)
@@ -263,12 +264,12 @@ function MedicationFormEditor({
 
 	function handleDeactivate() {
 		Alert.alert(
-			'Прекратить отслеживание?',
-			'История отметок сохранится. Напоминания будут отключены.',
+			t('meds.form.deactivateConfirmTitle'),
+			t('meds.form.deactivateConfirmBody'),
 			[
-				{ text: 'Отмена', style: 'cancel' },
+				{ text: t('common.cancel'), style: 'cancel' },
 				{
-					text: 'Прекратить',
+					text: t('meds.form.deactivateConfirmAction'),
 					onPress: () => {
 						void (async () => {
 							await deactivateMedication(String(medicationId))
@@ -283,12 +284,12 @@ function MedicationFormEditor({
 
 	function handleDeleteForever() {
 		Alert.alert(
-			'Удалить лекарство и историю?',
-			'Все отметки приёма этого лекарства будут удалены безвозвратно.',
+			t('meds.form.deleteForeverTitle'),
+			t('meds.form.deleteForeverBody'),
 			[
-				{ text: 'Отмена', style: 'cancel' },
+				{ text: t('common.cancel'), style: 'cancel' },
 				{
-					text: 'Удалить',
+					text: t('common.delete'),
 					style: 'destructive',
 					onPress: () => {
 						void (async () => {
@@ -301,7 +302,8 @@ function MedicationFormEditor({
 		)
 	}
 
-	const title = mode === 'create' ? 'Новое лекарство' : 'Лекарство'
+	const title =
+		mode === 'create' ? t('meds.form.newTitle') : t('meds.form.editTitle')
 
 	return (
 		<>
@@ -309,7 +311,7 @@ function MedicationFormEditor({
 				options={{
 					headerShown: true,
 					title,
-					headerBackTitle: 'Назад',
+					headerBackTitle: t('common.back'),
 					headerTintColor: colors.primary,
 					headerStyle: { backgroundColor: colors.background },
 					headerShadowVisible: false,
@@ -326,37 +328,39 @@ function MedicationFormEditor({
 					}}
 					keyboardShouldPersistTaps="handled"
 				>
-					<Text style={styles.label}>Название</Text>
+					<Text style={styles.label}>{t('meds.form.name')}</Text>
 					<TextInput
 						value={name}
 						onChangeText={setName}
-						placeholder="Например, Лозартан"
+						placeholder={t('meds.form.namePlaceholder')}
 						placeholderTextColor={colors.textMuted}
 						style={styles.input}
-						accessibilityLabel="Название лекарства"
+						accessibilityLabel={t('meds.form.nameA11y')}
 					/>
 
-					<Text style={styles.label}>Дозировка (необязательно)</Text>
+					<Text style={styles.label}>{t('meds.form.dosageOptional')}</Text>
 					<TextInput
 						value={dosageText}
 						onChangeText={setDosageText}
-						placeholder="50 мг или 1 таблетка"
+						placeholder={t('meds.form.dosagePlaceholder')}
 						placeholderTextColor={colors.textMuted}
 						style={styles.input}
-						accessibilityLabel="Дозировка"
+						accessibilityLabel={t('meds.form.dosage')}
 					/>
 
-					<Text style={styles.label}>Время приёма (каждый день)</Text>
+					<Text style={styles.label}>{t('meds.form.times')}</Text>
 					<View style={styles.chips}>
-						{times.map((t) => (
+						{times.map((slot) => (
 							<Pressable
-								key={formatScheduleHm(t)}
-								onPress={() => handleRemoveTime(t)}
+								key={formatScheduleHm(slot)}
+								onPress={() => handleRemoveTime(slot)}
 								style={styles.timeChip}
-								accessibilityLabel={`Удалить время ${formatScheduleHm(t)}`}
+								accessibilityLabel={t('meds.form.removeTimeA11y', {
+									time: formatScheduleHm(slot),
+								})}
 							>
 								<Text style={styles.timeChipText}>
-									{formatScheduleHm(t)} ×
+									{formatScheduleHm(slot)} ×
 								</Text>
 							</Pressable>
 						))}
@@ -369,24 +373,22 @@ function MedicationFormEditor({
 							placeholderTextColor={colors.textMuted}
 							keyboardType="numbers-and-punctuation"
 							style={[styles.input, styles.timeInput]}
-							accessibilityLabel="Новое время"
+							accessibilityLabel={t('meds.form.newTimeA11y')}
 						/>
 						<Pressable
 							onPress={handleAddTime}
 							style={styles.addTimeBtn}
 							accessibilityRole="button"
-							accessibilityLabel="Добавить время"
+							accessibilityLabel={t('meds.form.addTime')}
 						>
-							<Text style={styles.addTimeLabel}>Добавить</Text>
+							<Text style={styles.addTimeLabel}>{t('health.addEntry')}</Text>
 						</Pressable>
 					</View>
 
 					<View style={styles.switchRow}>
 						<View style={styles.switchCopy}>
-							<Text style={styles.switchTitle}>Напоминать</Text>
-							<Text style={styles.switchHint}>
-								Локальное уведомление в выбранное время
-							</Text>
+							<Text style={styles.switchTitle}>{t('meds.form.remind')}</Text>
+							<Text style={styles.switchHint}>{t('meds.form.remindHint')}</Text>
 						</View>
 						<Switch
 							value={remindEnabled}
@@ -398,28 +400,28 @@ function MedicationFormEditor({
 							thumbColor={
 								remindEnabled ? colors.primary : '#f4f4f4'
 							}
-							accessibilityLabel="Напоминать"
+							accessibilityLabel={t('meds.form.remind')}
 						/>
 					</View>
 
 					{permission === 'denied' && remindEnabled ? (
 						<Text style={styles.permHint}>
-							Системные уведомления отключены. Расписание сохранится.
+							{t('meds.form.permissionHint')}
 						</Text>
 					) : null}
 
 					{mode === 'edit' ? (
 						<View style={styles.switchRow}>
 							<View style={styles.switchCopy}>
-								<Text style={styles.switchTitle}>Активно</Text>
+								<Text style={styles.switchTitle}>{t('meds.form.active')}</Text>
 								<Text style={styles.switchHint}>
-									Выключено — не показывать в «Сегодня»
+									{t('meds.form.activeHint')}
 								</Text>
 							</View>
 							<Switch
 								value={isActive}
 								onValueChange={setIsActive}
-								accessibilityLabel="Активно"
+								accessibilityLabel={t('meds.form.active')}
 							/>
 						</View>
 					) : null}
@@ -429,28 +431,33 @@ function MedicationFormEditor({
 					{mode === 'edit' && recentIntakes.length > 0 ? (
 						<View style={styles.history}>
 							<Text style={styles.historyTitle}>
-								Недавние отметки
+								{t('meds.form.recentIntakes')}
 							</Text>
-							{groupIntakes(recentIntakes).map((group) => (
-								<View key={group.dayKey} style={styles.histGroup}>
-									<Text style={styles.histDay}>{group.label}</Text>
-									{group.items.map((item) => (
-										<Text key={item.id} style={styles.histRow}>
-											{formatLocalTime(item.takenAt)} — принято
-										</Text>
-									))}
-								</View>
-							))}
+							{groupIntakes(recentIntakes, locale, t('common.today')).map(
+								(group) => (
+									<View key={group.dayKey} style={styles.histGroup}>
+										<Text style={styles.histDay}>{group.label}</Text>
+										{group.items.map((item) => (
+											<Text key={item.id} style={styles.histRow}>
+												{formatLocalTime(item.takenAt)} —{' '}
+												{t('meds.form.takenLabel')}
+											</Text>
+										))}
+									</View>
+								),
+							)}
 						</View>
 					) : null}
 
 					{mode === 'edit' && medicationReminders.length > 0 ? (
 						<Text style={styles.mutedSmall}>
-							Напоминания:{' '}
-							{medicationReminders
-								.filter((r) => r.enabled)
-								.map((r) => formatScheduleHm(r))
-								.join(', ') || 'нет'}
+							{t('meds.form.remindersLabel', {
+								list:
+									medicationReminders
+										.filter((r) => r.enabled)
+										.map((r) => formatScheduleHm(r))
+										.join(', ') || t('meds.form.remindersNone'),
+							})}
 						</Text>
 					) : null}
 
@@ -461,7 +468,7 @@ function MedicationFormEditor({
 								style={styles.secondaryAction}
 							>
 								<Text style={styles.secondaryActionText}>
-									Прекратить отслеживание
+									{t('meds.form.stopTracking')}
 								</Text>
 							</Pressable>
 							<Pressable
@@ -469,7 +476,7 @@ function MedicationFormEditor({
 								style={styles.dangerAction}
 							>
 								<Text style={styles.dangerActionText}>
-									Удалить вместе с историей
+									{t('meds.form.deleteWithHistory')}
 								</Text>
 							</Pressable>
 						</>
@@ -483,7 +490,7 @@ function MedicationFormEditor({
 					]}
 				>
 					<PrimaryButton
-						label={saving ? 'Сохранение…' : 'Сохранить'}
+						label={saving ? t('common.saving') : t('common.save')}
 						onPress={() => void handleSave()}
 						disabled={saving}
 					/>
@@ -495,6 +502,8 @@ function MedicationFormEditor({
 
 function groupIntakes(
 	items: { id: string; takenAt: string }[],
+	locale: AppLocale,
+	todayLabel: string,
 ): { dayKey: string; label: string; items: typeof items }[] {
 	const today = localDayKeyFromIso(new Date().toISOString())
 	const map = new Map<string, typeof items>()
@@ -509,7 +518,7 @@ function groupIntakes(
 		const date = new Date(y!, m! - 1, d!)
 		return {
 			dayKey,
-			label: dayKey === today ? 'Сегодня' : formatRussianLongDate(date),
+			label: dayKey === today ? todayLabel : formatLongDate(date, locale),
 			items: groupItems,
 		}
 	})

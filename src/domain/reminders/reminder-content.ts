@@ -1,10 +1,19 @@
 /**
  * Neutral notification copy for medication and measurement reminders.
- * Kept free of React Native imports so unit tests stay lightweight.
+ * Accepts an optional translator so callers can localize without RN imports.
  */
 
-/** Fixed measurement reminder title/body. */
+import type { MessageKey } from '@/i18n/dictionaries'
+import type { TranslateParams } from '@/i18n/translate'
+import { translate } from '@/i18n/translate'
+
+type TranslateFn = (key: MessageKey, params?: TranslateParams) => string
+
+const defaultT: TranslateFn = (key, params) => translate('ru', key, params)
+
+/** @deprecated Prefer localized buildMeasurementReminderContent via t(). */
 export const MEASUREMENT_REMINDER_TITLE = 'Пора измерить давление'
+/** @deprecated Prefer localized body via t(). */
 export const MEASUREMENT_REMINDER_BODY =
 	'Если сейчас удобно, запишите новое измерение в дневник.'
 
@@ -23,8 +32,10 @@ export function buildReminderContent(input: {
 	profileName?: string | null
 	/** When true, include profile name in the title even for a single profile. */
 	includeProfileName?: boolean
+	t?: TranslateFn
 }): { title: string; body: string } {
-	const baseTitle = 'Напоминание о лекарстве'
+	const t = input.t ?? defaultT
+	const baseTitle = t('notif.medication.title')
 	const profileName = input.profileName?.trim()
 	const title =
 		input.includeProfileName && profileName
@@ -38,7 +49,10 @@ export function buildReminderContent(input: {
 			: null)
 
 	const body = scheduleHm
-		? `${input.medicationName} — запланированный приём в ${scheduleHm}`
+		? t('notif.medication.body', {
+				name: input.medicationName,
+				time: scheduleHm,
+			})
 		: input.dosageText?.trim()
 			? `${input.medicationName} — ${input.dosageText.trim()}`
 			: input.medicationName
@@ -50,11 +64,15 @@ export function buildReminderContent(input: {
 export function buildMeasurementReminderContent(input?: {
 	profileName?: string | null
 	includeProfileName?: boolean
+	t?: TranslateFn
 }): { title: string; body: string } {
+	const t = input?.t ?? defaultT
+	const baseTitle = t('notif.measurement.title')
+	const body = t('notif.measurement.body')
 	const profileName = input?.profileName?.trim()
 	const title =
 		input?.includeProfileName && profileName
-			? `${profileName} — ${MEASUREMENT_REMINDER_TITLE.toLowerCase()}`
-			: MEASUREMENT_REMINDER_TITLE
-	return { title, body: MEASUREMENT_REMINDER_BODY }
+			? `${profileName} — ${baseTitle.toLowerCase()}`
+			: baseTitle
+	return { title, body }
 }

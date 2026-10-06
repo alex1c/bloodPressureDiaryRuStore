@@ -9,13 +9,16 @@ import {
 } from 'react-native'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AdBanner } from '@/ads/ad-banner'
-import { formatRussianLongDate } from '@/domain/dates/local-day'
+import {
+	ScreenWithBottomBanner,
+	scrollBottomInsetForBanner,
+} from '@/ads/screen-with-bottom-banner'
 import { formatScheduleHm } from '@/domain/medications/schedule'
 import { SETTINGS_ROUTE } from '@/config/routes'
 import { useAdPolicy } from '@/hooks/use-ad-policy'
 import { useDiary } from '@/hooks/use-diary'
 import { useMedications } from '@/hooks/use-medications'
+import { formatLongDate, useI18n } from '@/i18n'
 import { colors, spacing, typography } from '@/theme'
 import { ProfileSelector } from '@/features/profiles/profile-selector'
 import {
@@ -26,10 +29,12 @@ import { PrimaryButton } from './components/form-controls'
 
 /**
  * Main diary screen — opens on today's measurements with a clear CTA.
+ * Banner is pinned below the scroll area (ForestMusic ads playbook).
  */
 export function DiaryScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const { t, locale } = useI18n()
 	const { ready, error, todayMeasurements, refreshToday, refreshAll } =
 		useDiary()
 	const { canShowAds } = useAdPolicy()
@@ -44,7 +49,7 @@ export function DiaryScreen() {
 	)
 
 	const latest = todayMeasurements[0] ?? null
-	const todayLabel = formatRussianLongDate(new Date())
+	const todayLabel = formatLongDate(new Date(), locale)
 	const hasAnyMedication = medications.length > 0
 
 	function handleAdd() {
@@ -74,26 +79,32 @@ export function DiaryScreen() {
 					},
 				]}
 			>
-				<Text style={styles.errorTitle}>Не удалось открыть дневник</Text>
+				<Text style={styles.errorTitle}>{t('diary.openFailedTitle')}</Text>
 				<Text style={styles.errorBody}>{error}</Text>
 			</View>
 		)
 	}
 
 	return (
-		<View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
+		<ScreenWithBottomBanner
+			placement="diaryBanner"
+			visible={canShowAds}
+			style={{ paddingTop: insets.top + spacing.md }}
+		>
 			<ScrollView
 				contentContainerStyle={{
-					paddingBottom: insets.bottom + spacing.xl,
+					paddingBottom: scrollBottomInsetForBanner({
+						bannerVisible: canShowAds,
+					}),
 				}}
 				keyboardShouldPersistTaps="handled"
 			>
 				<View style={styles.header}>
 					<View style={styles.headerTop}>
-						<Text style={styles.appTitle}>Давление</Text>
+						<Text style={styles.appTitle}>{t('diary.title')}</Text>
 						<Pressable
 							accessibilityRole="button"
-							accessibilityLabel="Настройки"
+							accessibilityLabel={t('diary.settingsA11y')}
 							// Expo Router maps settings/index.tsx to `/settings` (not `/settings/index`).
 							onPress={() => router.push(SETTINGS_ROUTE)}
 							style={({ pressed }) => [
@@ -101,26 +112,33 @@ export function DiaryScreen() {
 								pressed && styles.settingsLinkPressed,
 							]}
 						>
-							<Text style={styles.settingsLinkText}>Ещё</Text>
+							<Text style={styles.settingsLinkText}>{t('common.more')}</Text>
 						</Pressable>
 					</View>
 					<ProfileSelector />
-					<Text style={styles.dateLine}>Сегодня, {todayLabel}</Text>
+					<Text style={styles.dateLine}>
+						{t('diary.todayPrefix', { date: todayLabel })}
+					</Text>
 				</View>
 
 				{hasAnyMedication && todaySummary.total > 0 ? (
 					<Pressable
 						accessibilityRole="button"
-						accessibilityLabel="Лекарства сегодня"
+						accessibilityLabel={t('diary.medSummaryA11y')}
 						onPress={() => router.push('/(tabs)/medications')}
 						style={({ pressed }) => [
 							styles.medSummary,
 							pressed && styles.medSummaryPressed,
 						]}
 					>
-						<Text style={styles.medSummaryTitle}>Лекарства сегодня</Text>
+						<Text style={styles.medSummaryTitle}>
+							{t('diary.medSummaryTitle')}
+						</Text>
 						<Text style={styles.medSummaryCount}>
-							{todaySummary.taken} из {todaySummary.total} отмечено
+							{t('diary.medSummaryCount', {
+								taken: todaySummary.taken,
+								total: todaySummary.total,
+							})}
 						</Text>
 						{todaySummary.nextPending ? (
 							<Text style={styles.medSummaryNext}>
@@ -131,7 +149,9 @@ export function DiaryScreen() {
 								— {todaySummary.nextPending.medicationName}
 							</Text>
 						) : (
-							<Text style={styles.medSummaryNext}>Все отмечено</Text>
+							<Text style={styles.medSummaryNext}>
+								{t('diary.medSummaryAllDone')}
+							</Text>
 						)}
 					</Pressable>
 				) : null}
@@ -144,11 +164,13 @@ export function DiaryScreen() {
 						/>
 						<View style={styles.ctaPad}>
 							<PrimaryButton
-								label="Добавить измерение"
+								label={t('diary.addMeasurement')}
 								onPress={handleAdd}
 							/>
 						</View>
-						<Text style={styles.sectionTitle}>Сегодня</Text>
+						<Text style={styles.sectionTitle}>
+							{t('diary.sectionToday')}
+						</Text>
 						{todayMeasurements.map((item) => (
 							<MeasurementRow
 								key={item.id}
@@ -159,28 +181,23 @@ export function DiaryScreen() {
 					</>
 				) : (
 					<View style={styles.empty}>
-						<Text style={styles.sectionTitle}>Сегодня</Text>
-						<Text style={styles.emptyTitle}>Измерений пока нет</Text>
-						<Text style={styles.emptyBody}>
-							Добавьте первое измерение давления.
+						<Text style={styles.sectionTitle}>
+							{t('diary.sectionToday')}
 						</Text>
+						<Text style={styles.emptyTitle}>{t('diary.emptyTitle')}</Text>
+						<Text style={styles.emptyBody}>{t('diary.emptyBody')}</Text>
 						<PrimaryButton
-							label="Добавить измерение"
+							label={t('diary.addMeasurement')}
 							onPress={handleAdd}
 						/>
 					</View>
 				)}
-				<AdBanner placement="diaryBanner" visible={canShowAds} />
 			</ScrollView>
-		</View>
+		</ScreenWithBottomBanner>
 	)
 }
 
 const styles = StyleSheet.create({
-	root: {
-		flex: 1,
-		backgroundColor: colors.background,
-	},
 	centered: {
 		flex: 1,
 		alignItems: 'center',
