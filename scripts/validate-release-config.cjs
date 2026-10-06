@@ -238,6 +238,37 @@ if (!pluginExists) {
 }
 ok('worklets packaging plugin present')
 
+if (!appConfigSrc.includes('allowBackup: false')) {
+	fail('android.allowBackup must be false (health data Auto Backup exclusion)')
+}
+if (!appConfigSrc.includes('./plugins/with-disable-auto-backup')) {
+	fail('with-disable-auto-backup plugin missing from app.config.ts')
+}
+if (!exists('plugins/with-disable-auto-backup.js')) {
+	fail('plugins/with-disable-auto-backup.js not found')
+}
+ok('Android Auto Backup disabled for health diary data')
+
+for (const privacyLocale of [
+	'docs/privacy.html',
+	'docs/privacy/en.html',
+	'docs/privacy/es.html',
+	'docs/privacy/de.html',
+]) {
+	if (!exists(privacyLocale)) {
+		fail(`privacy page missing: ${privacyLocale}`)
+	}
+}
+ok('privacy pages present (RU/EN/ES/DE)')
+
+if (!exists('docs/google-play/DATA_SAFETY.md')) {
+	fail('docs/google-play/DATA_SAFETY.md missing')
+}
+if (!exists('docs/google-play/PLAY_CONSOLE_CHECKLIST.md')) {
+	fail('docs/google-play/PLAY_CONSOLE_CHECKLIST.md missing')
+}
+ok('Google Play compliance docs present')
+
 if (!appConfigSrc.includes('blockedPermissions')) {
 	fail('blockedPermissions missing from production android config')
 }

@@ -323,3 +323,33 @@ Decisions:
 8. **Privacy** — backup never auto-uploaded; no analytics/logging of backup contents.
 9. **schemaVersion in backup** — diagnostic only; data imports into current app schema.
 
+## 2026-10-06 — Phase 3 Google Play compliance + Auto Backup off
+
+Status: Accepted
+
+Context: Preparing the same package for Google Play. Default Android
+`allowBackup=true` could place the health SQLite diary into Google Auto Backup
+without an explicit user action, creating Data Safety ambiguity while the app
+already ships user-controlled JSON backup/export.
+
+Decision:
+
+1. **`android.allowBackup = false`** in Expo config +
+   `plugins/with-disable-auto-backup.js` extraction/full-backup exclusion XML.
+2. Does **not** wipe local diary data; RuStore users keep on-device SQLite and
+   JSON export/restore.
+3. Privacy policy updated RU/EN/ES/DE under `docs/privacy.html` (+ locale pages);
+   canonical Play/RuStore URL remains
+   `https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html` (Pages
+   redeploy is a manual operator step).
+4. Compliance evidence pack lives in `docs/google-play/` (Data Safety, SDKs,
+   Health declaration, permissions, Console checklist, ASO, listings).
+5. Version stays **1.0.2 / versionCode 3** — no Play RC AAB in this phase.
+6. Yandex Mobile Ads IDs/policy and AppMetrica forbidden-keys invariant unchanged.
+7. Target audience recommendation: adults only (18+); do not enroll Families
+   while using Yandex Ads without a Families-certified path.
+
+Consequences: Production prebuild must pick up allowBackup=false; Data Safety
+must not claim Auto Backup of health data; operator must redeploy GitHub Pages
+privacy HTML before relying on the public URL for Play Console.
+

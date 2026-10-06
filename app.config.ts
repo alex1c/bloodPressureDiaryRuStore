@@ -20,6 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
 	const plugins: NonNullable<ExpoConfig['plugins']> = [
 		'./plugins/with-worklets-packaging',
+		// Exclude SQLite/prefs from Auto Backup / OEM D2D (see DECISIONS.md).
+		'./plugins/with-disable-auto-backup',
 		'expo-router',
 		'expo-splash-screen',
 		[
@@ -57,6 +59,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		android: {
 			package: 'com.calculatorplatform.bpdiary',
 			versionCode: 3,
+			// Health SQLite must not enter Google Auto Backup by default.
+			// User-controlled JSON export/share remains the supported path.
+			allowBackup: false,
 			adaptiveIcon: {
 				backgroundColor: '#E8F0F5',
 				foregroundImage: './assets/android-icon-foreground.png',

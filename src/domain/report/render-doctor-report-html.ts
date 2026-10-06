@@ -367,10 +367,14 @@ export function buildStorePdfFooterHtml(input: {
 export function buildRustorePdfFooterHtml(): string {
 	const store = getActiveStoreConfig()
 	const t = createTranslator('ru')
+	const downloadKey =
+		store.storeId === 'googleplay'
+			? 'report.pdf.download.googleplay'
+			: 'report.pdf.download.rustore'
 	return buildStorePdfFooterHtml({
 		appUrl: store.pdfAppUrl,
 		footerLine: t('report.pdf.footerLine'),
-		downloadLabel: t('report.pdf.download.rustore'),
+		downloadLabel: t(downloadKey),
 	})
 }
 

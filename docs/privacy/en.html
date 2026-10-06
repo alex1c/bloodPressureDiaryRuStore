@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Privacy Policy — Blood Pressure Diary</title>
+	<style>
+		:root { color-scheme: light; --text:#1a202c; --muted:#4a5568; --accent:#2b6cb0; --bg:#f7fafc; --card:#fff; }
+		body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.6; color:var(--text); background:var(--bg); }
+		main { max-width:720px; margin:0 auto; padding:24px 20px 48px; }
+		h1,h2 { line-height:1.25; } h1 { font-size:1.75rem; margin-bottom:0.25rem; }
+		.meta { color:var(--muted); margin-bottom:1rem; }
+		.langs { display:flex; flex-wrap:wrap; gap:8px 14px; margin-bottom:1.5rem; font-size:0.95rem; }
+		.langs a { color:var(--accent); } .langs strong { color:var(--text); }
+		section { background:var(--card); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+		a { color:var(--accent); } ul { padding-left:1.25rem; }
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Privacy Policy</h1>
+		<p class="meta">
+			App “Blood Pressure Diary” / «Дневник давления» (com.calculatorplatform.bpdiary)<br />
+			Effective date: 6 October 2026
+		</p>
+		<p class="langs" aria-label="Language">
+			<a href="../privacy.html">RU</a>
+			<strong>EN</strong>
+			<a href="es.html">ES</a>
+			<a href="de.html">DE</a>
+		</p>
+
+		<section>
+			<h2>1. Overview</h2>
+			<p>
+				Blood Pressure Diary is a mobile app for keeping a personal diary of
+				blood pressure, pulse, and related health metrics that you enter yourself.
+				It is not a medical device, does not diagnose conditions, and does not
+				replace consulting a doctor.
+			</p>
+		</section>
+
+		<section>
+			<h2>2. Data you enter</h2>
+			<p>You may store locally on the device:</p>
+			<ul>
+				<li>blood pressure (systolic and diastolic);</li>
+				<li>pulse;</li>
+				<li>notes and tags;</li>
+				<li>health metrics (weight, glucose, SpO₂, temperature);</li>
+				<li>medications, schedules, and intake check-offs;</li>
+				<li>family profile names;</li>
+				<li>language and reminder settings;</li>
+				<li>backup files you create manually.</li>
+			</ul>
+		</section>
+
+		<section>
+			<h2>3. Where data is stored</h2>
+			<p>
+				Primary health diary data is stored <strong>locally on your device</strong>
+				in an SQLite database inside the app.
+			</p>
+			<p>
+				There is no developer cloud account, no developer backend sync, and no
+				central user health database operated by the developer.
+			</p>
+		</section>
+
+		<section>
+			<h2>4. Android Auto Backup</h2>
+			<p>
+				Android Auto Backup for this app’s data is <strong>disabled</strong>.
+				Measurement databases and related settings are not intended for automatic
+				upload to Google cloud backup.
+			</p>
+			<p>
+				The supported transfer path is a user-initiated JSON backup from Settings,
+				shared via the Android Share Sheet or restored via the system document picker.
+			</p>
+		</section>
+
+		<section>
+			<h2>5. Profiles</h2>
+			<p>
+				Family profile names stay on your device and only separate records inside the app.
+			</p>
+		</section>
+
+		<section>
+			<h2>6. JSON backup</h2>
+			<p>
+				Backups are created only when you explicitly export them. The app does not
+				upload backup files to a developer server.
+			</p>
+		</section>
+
+		<section>
+			<h2>7. Doctor PDF report</h2>
+			<p>
+				PDFs are generated on-device. Sharing happens only when you use the system
+				Share Sheet.
+			</p>
+		</section>
+
+		<section>
+			<h2>8. Notifications</h2>
+			<p>
+				The app uses local notifications for measurement and medication reminders.
+				There is no developer remote push service.
+			</p>
+		</section>
+
+		<section>
+			<h2>9. Deleting your data</h2>
+			<p>Inside the app you can delete:</p>
+			<ul>
+				<li>individual blood-pressure readings;</li>
+				<li>health metric entries;</li>
+				<li>medications and intake records;</li>
+				<li>reminders;</li>
+				<li>family profiles (except the last remaining profile).</li>
+			</ul>
+			<p>
+				There are no user accounts and no developer-hosted health database.
+				Deleting local records (or uninstalling the app) removes diary data from
+				the app storage. Technical data already sent by analytics or ads SDKs is
+				handled under those vendors’ policies.
+			</p>
+		</section>
+
+		<section>
+			<h2>10. AppMetrica analytics</h2>
+			<p>
+				Technical usage analytics use
+				<a href="https://appmetrica.yandex.ru/" rel="noopener noreferrer" target="_blank">Yandex AppMetrica</a>.
+			</p>
+			<p><strong>We do not send health values in analytics events:</strong></p>
+			<ul>
+				<li>blood pressure or pulse numbers;</li>
+				<li>weight, glucose, SpO₂, or temperature values;</li>
+				<li>medication names or dosages;</li>
+				<li>notes or profile names.</li>
+			</ul>
+			<p>
+				Events describe feature usage only (for example, that a reading was created).
+				The SDK may process technical device identifiers per AppMetrica’s policy.
+			</p>
+		</section>
+
+		<section>
+			<h2>11. Advertising and Advertising ID</h2>
+			<p>
+				The app uses
+				<a href="https://yandex.ru/dev/mobile-ads/" rel="noopener noreferrer" target="_blank">Yandex Mobile Ads</a>.
+				The SDK may process technical device information and the Advertising ID to
+				serve and measure ads, subject to Yandex policies and device settings.
+			</p>
+		</section>
+
+		<section>
+			<h2>12. Internet access</h2>
+			<p>Internet access is used for ads and AppMetrica events. The diary core works offline.</p>
+		</section>
+
+		<section>
+			<h2>13. Contact</h2>
+			<p>
+				Privacy and support:
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+			</p>
+		</section>
+	</main>
+</body>
+</html>
