@@ -31,10 +31,16 @@ export { ANDROID_CHANNEL_ID, androidChannelDisplayName }
 let handlerConfigured = false
 
 /**
- * Last locale used for channel metadata. Scheduling falls back to this so
- * we keep one channel id while refreshing the OS display name on locale change.
+ * Last locale successfully synced to channel metadata in THIS JS runtime.
+ * Starts unset — never treat a hard-coded `ru` as persisted application state.
+ * Cold start must call ensureAndroidChannelForLocale after reading settings.
  */
-let lastChannelLocale: AppLocale = 'ru'
+let lastChannelLocale: AppLocale | null = null
+
+/** Test-only: simulates a fresh JS runtime with no prior channel sync. */
+export function resetAndroidChannelLocaleForTests(): void {
+	lastChannelLocale = null
+}
 
 /** Configure foreground presentation once per JS runtime. */
 export function configureNotificationHandler(): void {
@@ -71,8 +77,14 @@ export async function ensureAndroidChannelForLocale(
 	})
 }
 
-/** Ensures Android notification channel exists (uses last known locale). */
+/**
+ * Ensures the Android channel exists using the locale last synced in this
+ * runtime. If startup has not synced yet, skips inventing a RU default.
+ */
 export async function ensureAndroidChannel(): Promise<void> {
+	if (lastChannelLocale == null) {
+		return
+	}
 	await ensureAndroidChannelForLocale(lastChannelLocale)
 }
 
@@ -256,7 +268,9 @@ export async function openSystemNotificationSettings(): Promise<void> {
 		return
 	}
 	try {
-		await ensureAndroidChannelForLocale(lastChannelLocale)
+		if (lastChannelLocale != null) {
+			await ensureAndroidChannelForLocale(lastChannelLocale)
+		}
 	} catch {
 		/* ignore */
 	}

@@ -60,8 +60,18 @@ export function I18nProvider({ repos, children }: I18nProviderProps) {
 				return
 			}
 			const pref = normalizeLocalePreference(settings.locale)
+			const resolved = resolveLocaleFromPreference(pref)
 			setPreference(pref)
-			setLocale(resolveLocaleFromPreference(pref))
+			setLocale(resolved)
+			// Cold start: update OS channel name for the persisted locale.
+			// Do not reschedule notifications merely to refresh channel metadata.
+			const { ensureAndroidChannelForLocale } = await import(
+				'@/services/medication-notifications'
+			)
+			if (cancelled) {
+				return
+			}
+			await ensureAndroidChannelForLocale(resolved)
 		})()
 		return () => {
 			cancelled = true

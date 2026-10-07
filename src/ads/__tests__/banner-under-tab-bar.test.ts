@@ -15,6 +15,21 @@ function readRel(rel: string): string {
 	return readFileSync(join(root, rel), 'utf8')
 }
 
+/**
+ * Extracts the JSX return of TabBarWithBanner so import lines cannot
+ * accidentally satisfy BottomTabBar-before-banner ordering.
+ */
+function extractTabBarWithBannerJsx(src: string): string {
+	const fnStart = src.indexOf('function TabBarWithBanner')
+	expect(fnStart).toBeGreaterThanOrEqual(0)
+	const afterFn = src.slice(fnStart)
+	const returnMatch = afterFn.match(
+		/return\s*\(\s*([\s\S]*?)\s*\)\s*\n\s*\}/,
+	)
+	expect(returnMatch).not.toBeNull()
+	return returnMatch![1]!
+}
+
 describe('banner under tab bar layout contract', () => {
 	it('maps tab routes to production placement keys', () => {
 		expect(resolveTabBannerPlacement('/(tabs)')).toBe('diaryBanner')
@@ -43,13 +58,44 @@ describe('banner under tab bar layout contract', () => {
 		expect(BANNER_SLOT_HEIGHT).toBe(60)
 	})
 
-	it('composes TabBar then TabsBottomBanner with zero tab bottom inset', () => {
+	it('TabBarWithBanner JSX mounts BottomTabBar above TabsBottomBanner', () => {
 		const tabs = readRel('app/(tabs)/_layout.tsx')
-		expect(tabs).toContain('function TabBarWithBanner')
-		expect(tabs.indexOf('BottomTabBar')).toBeLessThan(
-			tabs.indexOf('<TabsBottomBanner'),
+		const jsx = extractTabBarWithBannerJsx(tabs)
+
+		const tabBarOpen = jsx.indexOf('<BottomTabBar')
+		const bannerOpen = jsx.indexOf('<TabsBottomBanner')
+		expect(tabBarOpen).toBeGreaterThanOrEqual(0)
+		expect(bannerOpen).toBeGreaterThanOrEqual(0)
+		// Real hierarchy: tab bar first, then banner under it.
+		expect(tabBarOpen).toBeLessThan(bannerOpen)
+		expect(jsx).toContain('bottom: 0')
+		// Must fail if banner is restored above the tab bar in this component.
+		expect(bannerOpen).toBeGreaterThan(tabBarOpen)
+		expect(jsx.indexOf('<AdBanner')).toBe(-1)
+	})
+
+	it('rejects banner-above-tab-bar JSX inside TabBarWithBanner', () => {
+		const inverted = `
+			function TabBarWithBanner(props) {
+				return (
+					<View>
+						<TabsBottomBanner />
+						<BottomTabBar {...props} />
+					</View>
+				)
+			}
+		`
+		const jsx = extractTabBarWithBannerJsx(inverted)
+		expect(jsx.indexOf('<TabsBottomBanner')).toBeLessThan(
+			jsx.indexOf('<BottomTabBar'),
 		)
-		expect(tabs).toContain('insets={{ ...props.insets, bottom: 0 }}')
+		// Production file must NOT match the inverted order.
+		const production = extractTabBarWithBannerJsx(
+			readRel('app/(tabs)/_layout.tsx'),
+		)
+		expect(production.indexOf('<BottomTabBar')).toBeLessThan(
+			production.indexOf('<TabsBottomBanner'),
+		)
 	})
 
 	it('applies system safe area under the banner slot only', () => {

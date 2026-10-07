@@ -9,6 +9,7 @@ import {
 	cancelManagedPlatformNotifications,
 	cancelPlatformNotification,
 	cancelPlatformNotificationIds,
+	ensureAndroidChannelForLocale,
 	getNotificationPermissionState,
 	scheduleReminderNotification,
 } from '@/services/medication-notifications'
@@ -167,6 +168,8 @@ async function reconcileAllProfileNotificationsUnlocked(input: {
 		normalizeLocalePreference(settings.locale),
 	)
 	const t = createTranslator(locale)
+	// Keep channel display name aligned with persisted locale (cold-start race safe).
+	await ensureAndroidChannelForLocale(locale)
 
 	const allReminders: Reminder[] = (
 		await Promise.all(profiles.map((p) => repos.reminders.listByProfile(p.id)))
