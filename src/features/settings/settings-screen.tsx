@@ -48,7 +48,13 @@ export function SettingsScreen() {
 	const router = useRouter()
 	const { ready, error, repos, reloadAfterRestore } = useDiary()
 	const { refreshMedications } = useMedications()
-	const { t, locale, preference, setLocalePreference } = useI18n()
+	const {
+		t,
+		locale,
+		preference,
+		setLocalePreference,
+		reloadLocaleFromSettings,
+	} = useI18n()
 
 	const [exporting, setExporting] = useState(false)
 	const [picking, setPicking] = useState(false)
@@ -190,6 +196,8 @@ export function SettingsScreen() {
 				extraPlatformIdsToCancel: oldPlatformIds,
 			})
 			await reloadAfterRestore()
+			// Apply restored locale immediately (repos identity does not change).
+			await reloadLocaleFromSettings()
 			await refreshMedications()
 			setPendingRestoreRaw(null)
 			setSuccessMessage(t('settings.restoreSuccess'))

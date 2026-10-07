@@ -53,6 +53,10 @@ jest.mock('@/services/medication-notifications', () => {
 		}),
 		configureNotificationHandler: jest.fn(),
 		ensureAndroidChannel: jest.fn(async () => {}),
+		ensureAndroidChannelForLocale: jest.fn(async () => {}),
+		androidChannelDisplayName: (locale: string) =>
+			locale === 'en' ? 'Reminders' : 'Напоминания',
+		ANDROID_CHANNEL_ID: 'app-reminders',
 		getNotificationPermissionState: jest.fn(async () => 'granted'),
 		requestNotificationPermission: jest.fn(async () => 'granted'),
 		scheduleDailyReminderNotification: schedule,

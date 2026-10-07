@@ -149,13 +149,14 @@ describe('PDF locale × store', () => {
 })
 
 describe('banner layout helper', () => {
-	it('adds banner slot height only when visible', () => {
+	it('does not double-reserve banner height under tab-bar layout', () => {
+		// Banner sits below the tab bar; scroll content must not add 60dp again.
 		expect(
 			scrollBottomInsetForBanner({ bannerVisible: false, extra: 10 }),
 		).toBe(10)
 		expect(
 			scrollBottomInsetForBanner({ bannerVisible: true, extra: 10 }),
-		).toBe(70)
+		).toBe(10)
 	})
 })
 

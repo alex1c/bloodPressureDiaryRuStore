@@ -1,4 +1,4 @@
-import type { Medication, Profile, Reminder } from '@/domain/types'
+import type { Medication, Reminder } from '@/domain/types'
 import {
 	DAILY_WEEKDAYS,
 	formatScheduleHm,
@@ -17,6 +17,9 @@ import {
 	normalizeLocalePreference,
 	resolveLocaleFromPreference,
 } from '@/i18n'
+import { buildTitleForStoredReminder } from '@/services/reminder-title'
+
+export { buildTitleForStoredReminder } from '@/services/reminder-title'
 
 /**
  * Syncs Reminder rows for one medication to match its schedule + remind flag.
@@ -158,6 +161,13 @@ async function reconcileAllProfileNotificationsUnlocked(input: {
 	const includeProfileName = profiles.length > 1
 	const profileById = new Map(profiles.map((p) => [p.id, p]))
 
+	// Always rebuild titles with the active settings locale — never defaultT=ru.
+	const settings = await repos.settings.get()
+	const locale = resolveLocaleFromPreference(
+		normalizeLocalePreference(settings.locale),
+	)
+	const t = createTranslator(locale)
+
 	const allReminders: Reminder[] = (
 		await Promise.all(profiles.map((p) => repos.reminders.listByProfile(p.id)))
 	)
@@ -171,6 +181,7 @@ async function reconcileAllProfileNotificationsUnlocked(input: {
 			reminder,
 			profile,
 			includeProfileName,
+			t,
 		)
 		await repos.reminders.update(reminder.id, {
 			platformNotificationId: null,
@@ -234,36 +245,4 @@ export async function disableMedicationReminders(input: {
 			platformNotificationId: null,
 		})
 	}
-}
-
-function buildTitleForStoredReminder(
-	reminder: Reminder,
-	profile: Profile | undefined,
-	includeProfileName: boolean,
-): string | null {
-	// Measurement reminders keep a fixed title; only prefix for multi-profile.
-	if (reminder.medicationId == null) {
-		if (!includeProfileName || !profile) {
-			return null
-		}
-		const base = reminder.title.includes(' — ')
-			? reminder.title.split(' — ').slice(-1)[0]!
-			: reminder.title
-		return `${profile.name} — ${base}`
-	}
-
-	if (!includeProfileName || !profile) {
-		return null
-	}
-	const bodyParts = (reminder.body ?? '').split(' — ')
-	const medicationName = bodyParts[0] ?? ''
-	return buildReminderContent({
-		medicationName,
-		scheduleHm: formatScheduleHm({
-			hour: reminder.hour,
-			minute: reminder.minute,
-		}),
-		profileName: profile.name,
-		includeProfileName: true,
-	}).title
 }

@@ -25,6 +25,11 @@ type I18nContextValue = {
 	locale: AppLocale
 	t: (key: MessageKey, params?: TranslateParams) => string
 	setLocalePreference: (next: LocalePreference) => Promise<void>
+	/**
+	 * Re-reads locale preference from settings and applies it immediately.
+	 * Used after backup restore (repos object identity does not change).
+	 */
+	reloadLocaleFromSettings: () => Promise<void>
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null)
@@ -82,6 +87,10 @@ export function I18nProvider({ repos, children }: I18nProviderProps) {
 				const { reconcileAllProfileNotifications } = await import(
 					'@/services/reconcile-medication-reminders'
 				)
+				const { ensureAndroidChannelForLocale } = await import(
+					'@/services/medication-notifications'
+				)
+				await ensureAndroidChannelForLocale(resolved)
 				await refreshReminderCopyForLocale({ repos, locale: resolved })
 				await reconcileAllProfileNotifications({ repos })
 			}
@@ -90,6 +99,29 @@ export function I18nProvider({ repos, children }: I18nProviderProps) {
 		[repos],
 	)
 
+	const reloadLocaleFromSettings = useCallback(async () => {
+		if (!repos) {
+			return
+		}
+		const settings = await repos.settings.get()
+		const pref = normalizeLocalePreference(settings.locale)
+		const resolved = resolveLocaleFromPreference(pref)
+		setPreference(pref)
+		setLocale(resolved)
+		const { ensureAndroidChannelForLocale } = await import(
+			'@/services/medication-notifications'
+		)
+		const { refreshReminderCopyForLocale } = await import(
+			'@/services/reminder-locale'
+		)
+		const { reconcileAllProfileNotifications } = await import(
+			'@/services/reconcile-medication-reminders'
+		)
+		await ensureAndroidChannelForLocale(resolved)
+		await refreshReminderCopyForLocale({ repos, locale: resolved })
+		await reconcileAllProfileNotifications({ repos })
+	}, [repos])
+
 	const t = useCallback(
 		(key: MessageKey, params?: TranslateParams) =>
 			translate(locale, key, params),
@@ -97,8 +129,14 @@ export function I18nProvider({ repos, children }: I18nProviderProps) {
 	)
 
 	const value = useMemo(
-		() => ({ preference, locale, t, setLocalePreference }),
-		[preference, locale, t, setLocalePreference],
+		() => ({
+			preference,
+			locale,
+			t,
+			setLocalePreference,
+			reloadLocaleFromSettings,
+		}),
+		[preference, locale, t, setLocalePreference, reloadLocaleFromSettings],
 	)
 
 	return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
@@ -128,5 +166,6 @@ export function useOptionalI18n(): I18nContextValue {
 		locale,
 		t: (key, params) => translate(locale, key, params),
 		setLocalePreference: async () => {},
+		reloadLocaleFromSettings: async () => {},
 	}
 }

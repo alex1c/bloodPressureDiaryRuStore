@@ -1,21 +1,20 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { BannerPlacement } from '@/config/ads'
-import { colors, spacing } from '@/theme'
-import { AdBanner } from './ad-banner'
+import { colors } from '@/theme'
 
 export { BANNER_SLOT_HEIGHT, scrollBottomInsetForBanner } from './banner-layout'
 
 type ScreenWithBottomBannerProps = {
 	/** Main scrollable / flex content. */
 	children: React.ReactNode
-	placement: BannerPlacement
-	/** When false, banner slot collapses (no empty spacer). */
-	visible?: boolean
 	/**
-	 * Extra bottom inset when the screen already sits above a tab bar
-	 * (typically 0 — tab navigator owns the home-indicator inset).
+	 * Placement is resolved by the tabs-level banner under the tab bar.
+	 * Kept on the API so call sites stay stable; not rendered here.
 	 */
+	placement: BannerPlacement
+	/** Reserved for call-site clarity; tabs layout owns visibility. */
+	visible?: boolean
+	/** Unused: system safe area is applied under the tabs banner. */
 	includeSafeAreaBottom?: boolean
 	style?: StyleProp<ViewStyle>
 	contentStyle?: StyleProp<ViewStyle>
@@ -23,43 +22,26 @@ type ScreenWithBottomBannerProps = {
 }
 
 /**
- * Pins the ad banner to the bottom of the usable screen area.
+ * Content column for monetized tab screens.
  *
- * Layout contract (ForestMusic ads playbook):
- *   CONTENT → BANNER → optional safe-area padding → tab bar / system nav
+ * Banner geometry lives under the app tab bar (`TabsBottomBanner`):
+ *   CONTENT → APP TAB BAR → BANNER → ANDROID SYSTEM SAFE AREA
  *
- * Banner does not float mid-scroll; scroll content gets padding for the slot.
+ * This wrapper no longer mounts an in-screen banner slot (avoids double ads
+ * and obsolete mid-column spacers).
  */
 export function ScreenWithBottomBanner({
 	children,
-	placement,
-	visible = true,
-	includeSafeAreaBottom = false,
+	placement: _placement,
+	visible: _visible = true,
+	includeSafeAreaBottom: _includeSafeAreaBottom = false,
 	style,
 	contentStyle,
-	bannerStyle,
+	bannerStyle: _bannerStyle,
 }: ScreenWithBottomBannerProps) {
-	const insets = useSafeAreaInsets()
-	const showBanner = visible
-	const bottomPad = includeSafeAreaBottom
-		? Math.max(insets.bottom, spacing.sm)
-		: spacing.sm
-
 	return (
 		<View style={[styles.root, style]}>
 			<View style={[styles.content, contentStyle]}>{children}</View>
-			{showBanner ? (
-				<View
-					style={[
-						styles.bannerSlot,
-						{ paddingBottom: bottomPad },
-						bannerStyle,
-					]}
-					testID="bottom-banner-slot"
-				>
-					<AdBanner placement={placement} visible />
-				</View>
-			) : null}
 		</View>
 	)
 }
@@ -72,14 +54,5 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		minHeight: 0,
-	},
-	bannerSlot: {
-		width: '100%',
-		borderTopWidth: StyleSheet.hairlineWidth,
-		borderTopColor: colors.border,
-		backgroundColor: colors.background,
-		paddingTop: spacing.xs,
-		/** Keep banner visually attached to the bottom edge of the content column. */
-		justifyContent: 'flex-end',
 	},
 })

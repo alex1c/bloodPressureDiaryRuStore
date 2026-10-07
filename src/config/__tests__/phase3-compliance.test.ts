@@ -167,12 +167,13 @@ describe('Phase 3 privacy & store compliance', () => {
 		expect(yandexAdsProduction.interstitial).toBe('R-M-20056373-4')
 		expect(yandexAdsProduction.medicationsBanner).toBe('R-M-20056373-5')
 		expect(BANNER_SLOT_HEIGHT).toBe(60)
+		// Tab-bar owns the banner slot — scroll inset must NOT re-add 60dp.
 		expect(
 			scrollBottomInsetForBanner({
 				bannerVisible: true,
 				safeAreaBottom: 0,
 			}),
-		).toBeGreaterThan(BANNER_SLOT_HEIGHT)
+		).toBeLessThan(BANNER_SLOT_HEIGHT)
 	})
 
 	it('keeps ScreenWithBottomBanner on monetized tabs', () => {
@@ -186,5 +187,17 @@ describe('Phase 3 privacy & store compliance', () => {
 			expect(src).toContain('ScreenWithBottomBanner')
 			expect(src).toContain('scrollBottomInsetForBanner')
 		}
+	})
+
+	it('pins Yandex banner under the app tab bar', () => {
+		const tabs = readRepo('src/app/(tabs)/_layout.tsx')
+		expect(tabs).toContain('TabsBottomBanner')
+		expect(tabs).toContain('TabBarWithBanner')
+		expect(tabs).toContain('bottom: 0')
+		const banner = readRepo('src/ads/tabs-bottom-banner.tsx')
+		expect(banner).toContain('CONTENT → APP TAB BAR → BANNER')
+		expect(banner).toContain('AdBanner')
+		const screen = readRepo('src/ads/screen-with-bottom-banner.tsx')
+		expect(screen).not.toContain('<AdBanner')
 	})
 })

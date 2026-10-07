@@ -7,6 +7,11 @@ import {
 	MEASUREMENT_REMINDER_BODY,
 	MEASUREMENT_REMINDER_TITLE,
 } from '@/domain/reminders/reminder-content'
+import type { AppLocale } from '@/i18n/locale'
+import {
+	ANDROID_CHANNEL_ID,
+	androidChannelDisplayName,
+} from '@/services/android-channel-name'
 import {
 	isEveryDayWeekdays,
 	jsWeekdayToExpoWeekday,
@@ -21,9 +26,15 @@ export {
 	MEASUREMENT_REMINDER_TITLE,
 }
 
-const ANDROID_CHANNEL_ID = 'app-reminders'
+export { ANDROID_CHANNEL_ID, androidChannelDisplayName }
 
 let handlerConfigured = false
+
+/**
+ * Last locale used for channel metadata. Scheduling falls back to this so
+ * we keep one channel id while refreshing the OS display name on locale change.
+ */
+let lastChannelLocale: AppLocale = 'ru'
 
 /** Configure foreground presentation once per JS runtime. */
 export function configureNotificationHandler(): void {
@@ -41,17 +52,28 @@ export function configureNotificationHandler(): void {
 	handlerConfigured = true
 }
 
-/** Ensures Android notification channel exists (idempotent). */
-export async function ensureAndroidChannel(): Promise<void> {
+/**
+ * Creates/updates the single reminders channel with a locale-aware name.
+ * Re-calling with the same id updates metadata without spawning new channels.
+ */
+export async function ensureAndroidChannelForLocale(
+	locale: AppLocale,
+): Promise<void> {
+	lastChannelLocale = locale
 	if (Platform.OS !== 'android') {
 		return
 	}
 	await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-		name: 'Напоминания',
+		name: androidChannelDisplayName(locale),
 		importance: Notifications.AndroidImportance.DEFAULT,
 		vibrationPattern: [0, 250, 250, 250],
 		lightColor: '#2B6CB0',
 	})
+}
+
+/** Ensures Android notification channel exists (uses last known locale). */
+export async function ensureAndroidChannel(): Promise<void> {
+	await ensureAndroidChannelForLocale(lastChannelLocale)
 }
 
 export type NotificationPermissionState =
@@ -234,10 +256,7 @@ export async function openSystemNotificationSettings(): Promise<void> {
 		return
 	}
 	try {
-		await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-			name: 'Напоминания',
-			importance: Notifications.AndroidImportance.DEFAULT,
-		})
+		await ensureAndroidChannelForLocale(lastChannelLocale)
 	} catch {
 		/* ignore */
 	}

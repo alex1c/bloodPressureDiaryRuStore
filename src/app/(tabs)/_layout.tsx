@@ -1,8 +1,14 @@
 import { Tabs, useRouter } from 'expo-router'
 import { useEffect } from 'react'
+import { View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
+import {
+	BottomTabBar,
+	type BottomTabBarProps,
+} from 'expo-router/build/react-navigation/bottom-tabs'
 import { markOpenedFromMedicationNotification } from '@/ads'
+import { TabsBottomBanner } from '@/ads/tabs-bottom-banner'
 import { useDiary } from '@/hooks/use-diary'
 import { useI18n } from '@/i18n'
 import { colors, typography } from '@/theme'
@@ -45,6 +51,20 @@ function openFromNotificationData(
 	})()
 }
 
+/**
+ * App tab bar above the Yandex banner; banner owns Android bottom safe area.
+ * Content → tab bar → banner → system nav/gesture area.
+ */
+function TabBarWithBanner(props: BottomTabBarProps) {
+	return (
+		<View>
+			{/* Zero bottom inset: TabsBottomBanner applies system safe area. */}
+			<BottomTabBar {...props} insets={{ ...props.insets, bottom: 0 }} />
+			<TabsBottomBanner />
+		</View>
+	)
+}
+
 /** Bottom tabs: Diary | Graphs | Medications | Health. */
 export default function TabsLayout() {
 	const router = useRouter()
@@ -80,6 +100,7 @@ export default function TabsLayout() {
 
 	return (
 		<Tabs
+			tabBar={(props) => <TabBarWithBanner {...props} />}
 			screenOptions={{
 				headerShown: false,
 				tabBarActiveTintColor: colors.primary,
