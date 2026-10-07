@@ -1,5 +1,4 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
-import { resolveStoreId } from './src/config/store'
 
 /**
  * Expo app config — Continuous Native Generation entry.
@@ -10,10 +9,37 @@ import { resolveStoreId } from './src/config/store'
  *   npm run prebuild:android:production
  *
  * Package ID is fixed in docs/DECISIONS.md: com.calculatorplatform.bpdiary
+ *
+ * NOTE: Do not import TypeScript modules from `src/` here. Expo compiles
+ * app.config.ts to a temporary CJS file that can only `require` plain JS.
+ * Keep store resolution inlined (mirrors `src/config/store.ts`).
  */
+type StoreId = 'rustore' | 'googleplay'
+
+function resolveStoreIdForConfig(
+	raw: string | undefined,
+	options: { requireExplicit: boolean; developmentDefault: StoreId },
+): StoreId {
+	const trimmed = raw?.trim().toLowerCase()
+	if (trimmed === 'rustore' || trimmed === 'googleplay') {
+		return trimmed
+	}
+	if (options.requireExplicit) {
+		throw new Error(
+			`APP_STORE must be "rustore" or "googleplay" for production (got: ${JSON.stringify(raw ?? '')})`,
+		)
+	}
+	if (trimmed === undefined || trimmed === '') {
+		return options.developmentDefault
+	}
+	throw new Error(
+		`Invalid APP_STORE value: ${JSON.stringify(raw)}. Expected "rustore" or "googleplay".`,
+	)
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
 	const isProduction = process.env.APP_VARIANT === 'production'
-	const storeId = resolveStoreId(process.env.APP_STORE, {
+	const storeId = resolveStoreIdForConfig(process.env.APP_STORE, {
 		requireExplicit: isProduction,
 		developmentDefault: 'rustore',
 	})
@@ -44,7 +70,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		...config,
 		name: 'Дневник давления',
 		slug: 'bp-diary',
-		version: '1.0.2',
+		version: '1.1.0',
 		orientation: 'portrait',
 		icon: './assets/icon.png',
 		userInterfaceStyle: 'light',
@@ -58,7 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		},
 		android: {
 			package: 'com.calculatorplatform.bpdiary',
-			versionCode: 3,
+			versionCode: 4,
 			// Health SQLite must not enter Google Auto Backup by default.
 			// User-controlled JSON export/share remains the supported path.
 			allowBackup: false,
@@ -85,7 +111,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		extra: {
 			appVariant: isProduction ? 'production' : 'development',
 			storeId,
-			foundationVersion: '1.0.2',
+			foundationVersion: '1.1.0',
 		},
 	}
 }

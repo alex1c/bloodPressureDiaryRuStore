@@ -193,15 +193,15 @@ if (!appConfigJs.includes(`androidPackage: '${PACKAGE_ID}'`)) {
 }
 ok(`package ID = ${PACKAGE_ID}`)
 
-if (!appConfigJs.includes("versionName: '1.0.2'")) {
+if (!appConfigJs.includes("versionName: '1.1.0'")) {
 	fail('versionName mismatch')
 }
-ok('version = 1.0.2')
+ok('version = 1.1.0')
 
-if (!appConfigJs.includes('versionCode: 3')) {
+if (!appConfigJs.includes('versionCode: 4')) {
 	fail('versionCode mismatch')
 }
-ok('versionCode = 3')
+ok('versionCode = 4')
 
 if (!appConfigSrc.includes('storeId')) {
 	fail('app.config.ts must embed storeId in extra')
