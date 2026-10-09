@@ -6,8 +6,8 @@ import { releaseConfig } from '@/config/release'
 describe('app identity', () => {
 	it('locks production package id chosen in DECISIONS.md', () => {
 		expect(appConfig.androidPackage).toBe('com.calculatorplatform.bpdiary')
-		expect(appConfig.versionName).toBe('1.1.0')
-		expect(appConfig.versionCode).toBe(4)
+		expect(appConfig.versionName).toBe('1.1.1')
+		expect(appConfig.versionCode).toBe(5)
 		expect(appConfig.displayName).toBe('Дневник давления')
 	})
 })

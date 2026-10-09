@@ -5,6 +5,11 @@ import * as SplashScreen from 'expo-splash-screen'
 import { DiaryProvider, useDiary } from '@/hooks/use-diary'
 import { MedicationsProvider } from '@/hooks/use-medications'
 import { I18nProvider } from '@/i18n'
+import {
+	OptionalSdkBootstrap,
+	PrivacyConsentModal,
+	PrivacyConsentProvider,
+} from '@/privacy'
 import { colors } from '@/theme'
 
 // Keep native splash until React tree is ready (fixes DevLauncher ClassNotFound).
@@ -28,60 +33,64 @@ export default function RootLayout() {
 	}, [])
 
 	return (
-		<DiaryProvider>
-			<I18nBridge>
-				<MedicationsProvider>
-					<StatusBar style="dark" />
-					<Stack
-						screenOptions={{
-							contentStyle: { backgroundColor: colors.background },
-							headerShown: false,
-						}}
-					>
-						<Stack.Screen name="(tabs)" />
-						<Stack.Screen
-							name="measurement/new"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="measurement/[id]"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="medication/new"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="medication/[id]"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="health/[kind]/index"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="health/[kind]/new"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="health/entry/[id]"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="report/index"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="settings/index"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-						<Stack.Screen
-							name="settings/reminders"
-							options={{ headerShown: true, presentation: 'card' }}
-						/>
-					</Stack>
-				</MedicationsProvider>
-			</I18nBridge>
-		</DiaryProvider>
+		<PrivacyConsentProvider>
+			<DiaryProvider>
+				<I18nBridge>
+					<MedicationsProvider>
+						<OptionalSdkBootstrap />
+						<PrivacyConsentModal />
+						<StatusBar style="dark" />
+						<Stack
+							screenOptions={{
+								contentStyle: { backgroundColor: colors.background },
+								headerShown: false,
+							}}
+						>
+							<Stack.Screen name="(tabs)" />
+							<Stack.Screen
+								name="measurement/new"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="measurement/[id]"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="medication/new"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="medication/[id]"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="health/[kind]/index"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="health/[kind]/new"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="health/entry/[id]"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="report/index"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="settings/index"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+							<Stack.Screen
+								name="settings/reminders"
+								options={{ headerShown: true, presentation: 'card' }}
+							/>
+						</Stack>
+					</MedicationsProvider>
+				</I18nBridge>
+			</DiaryProvider>
+		</PrivacyConsentProvider>
 	)
 }

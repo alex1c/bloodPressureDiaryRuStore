@@ -178,7 +178,24 @@ export const en: MessageCatalog = {
 	'settings.picking': 'Choosing file…',
 	'settings.about': 'About',
 	'settings.privacy': 'Privacy policy',
+	'settings.privacyChoices': 'Ads and analytics',
 	'settings.contact': 'Contact developer',
+	'privacy.consentTitle': 'Ads and analytics',
+	'privacy.consentBody':
+		'Optional Yandex Mobile Ads (advertising) and AppMetrica (technical usage analytics) may use device identifiers, Advertising ID, IP address, and related technical data. Your blood-pressure, pulse, and medication diary stays on this device and is not sent to these services. You can decline or change this later in Settings — core diary features remain available.',
+	'privacy.consentAdsNote':
+		'If you allow ads, they may be personalized. This SDK does not provide a separate guaranteed “non-personalized ads only” switch, so ads stay off when you turn advertising off.',
+	'privacy.sessionConfirmNote':
+		'Confirm your choices for this session. Switches may show previous preferences, but ads and analytics stay off until you tap Save.',
+	'privacy.purposeAnalytics': 'Technical analytics (AppMetrica)',
+	'privacy.purposeAds': 'Advertising (Yandex Mobile Ads)',
+	'privacy.openPolicy': 'Open privacy policy',
+	'privacy.consentSave': 'Save choices',
+	'privacy.consentAccept': 'Allow ads and analytics',
+	'privacy.consentDecline': 'Continue without ads and analytics',
+	'privacy.persistError':
+		'Could not save your choice on this device. Tap Retry — do not assume it was stored.',
+	'privacy.persistRetry': 'Retry save',
 	'settings.language': 'Language',
 	'settings.language.system': 'System',
 	'settings.language.ru': 'Русский',

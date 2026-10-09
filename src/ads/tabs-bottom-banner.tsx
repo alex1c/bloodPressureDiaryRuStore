@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { usePathname } from 'expo-router'
-import { colors, spacing } from '@/theme'
 import { useAdPolicy } from '@/hooks/use-ad-policy'
+import { usePrivacyConsentOptional } from '@/privacy'
+import { colors, spacing } from '@/theme'
 import { AdBanner } from './ad-banner'
 import { resolveTabBannerPlacement } from './banner-layout'
 
@@ -24,8 +25,10 @@ export function TabsBottomBanner({ forceHidden = false }: TabsBottomBannerProps)
 	const pathname = usePathname()
 	const placement = resolveTabBannerPlacement(pathname)
 	const { canShowAds } = useAdPolicy()
+	const consent = usePrivacyConsentOptional()
 	const showBanner =
 		!forceHidden &&
+		consent.adsAllowed &&
 		(placement === 'medicationsBanner' || canShowAds)
 	const bottomPad = Math.max(insets.bottom, spacing.xs)
 

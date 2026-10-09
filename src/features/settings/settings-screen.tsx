@@ -38,6 +38,7 @@ import {
 	shareBackupFile,
 } from '@/services/backup-file'
 import { reconcileAllProfileNotifications } from '@/services/reconcile-medication-reminders'
+import { PrivacyConsentModal } from '@/privacy'
 import { colors, spacing, touchTargetMin, typography } from '@/theme'
 
 /**
@@ -64,6 +65,7 @@ export function SettingsScreen() {
 	const [pendingRestoreRaw, setPendingRestoreRaw] = useState<unknown | null>(
 		null,
 	)
+	const [privacyChoicesOpen, setPrivacyChoicesOpen] = useState(false)
 
 	const preview =
 		pendingRestoreRaw !== null
@@ -430,6 +432,27 @@ export function SettingsScreen() {
 				>
 					<Text style={styles.linkRowText}>{t('settings.privacy')}</Text>
 				</Pressable>
+
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel={t('settings.privacyChoices')}
+					onPress={() => setPrivacyChoicesOpen(true)}
+					style={({ pressed }) => [
+						styles.linkRow,
+						pressed && styles.pressed,
+					]}
+				>
+					<Text style={styles.linkRowText}>
+						{t('settings.privacyChoices')}
+					</Text>
+				</Pressable>
+
+				{privacyChoicesOpen ? (
+					<PrivacyConsentModal
+						forceVisible
+						onClose={() => setPrivacyChoicesOpen(false)}
+					/>
+				) : null}
 
 				<Pressable
 					accessibilityRole="button"

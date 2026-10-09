@@ -14,14 +14,17 @@
 		.langs a { color:var(--accent); } .langs strong { color:var(--text); }
 		section { background:var(--card); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
 		a { color:var(--accent); } ul { padding-left:1.25rem; }
+		.note { color:var(--muted); font-size:0.95rem; }
 	</style>
 </head>
 <body>
 	<main>
 		<h1>Privacy Policy</h1>
 		<p class="meta">
-			App “Blood Pressure Diary” / «Дневник давления» (com.calculatorplatform.bpdiary)<br />
-			Effective date: 6 October 2026
+			App “Blood Pressure Diary” / «Дневник давления»<br />
+			Package: <code>com.calculatorplatform.bpdiary</code><br />
+			Effective date: 9 October 2026<br />
+			Applies to the Google Play and RuStore releases of this app.
 		</p>
 		<p class="langs" aria-label="Language">
 			<a href="../privacy.html">RU</a>
@@ -31,143 +34,278 @@
 		</p>
 
 		<section>
-			<h2>1. Overview</h2>
+			<h2>1. Developer and contact</h2>
 			<p>
-				Blood Pressure Diary is a mobile app for keeping a personal diary of
-				blood pressure, pulse, and related health metrics that you enter yourself.
-				It is not a medical device, does not diagnose conditions, and does not
-				replace consulting a doctor.
+				This app is developed and published by an individual developer
+				reachable at
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+				(privacy and support).
+			</p>
+			<p class="note">
+				This policy describes how the app and its optional third-party SDKs
+				handle information. It is not legal advice and does not create
+				guarantees beyond what is stated here.
 			</p>
 		</section>
 
 		<section>
-			<h2>2. Data you enter</h2>
-			<p>You may store locally on the device:</p>
+			<h2>2. Purpose of the app</h2>
+			<p>
+				Blood Pressure Diary helps you keep a personal diary of blood pressure,
+				pulse, medications, and related health metrics that you enter yourself.
+				It is a consumer diary tool. It is <strong>not</strong> a medical device,
+				does not diagnose conditions, and does not replace professional medical advice.
+			</p>
+		</section>
+
+		<section>
+			<h2>3. Health records you keep locally</h2>
+			<p>You may store on your device, among other things:</p>
 			<ul>
-				<li>blood pressure (systolic and diastolic);</li>
-				<li>pulse;</li>
-				<li>notes and tags;</li>
-				<li>health metrics (weight, glucose, SpO₂, temperature);</li>
+				<li>blood pressure (systolic / diastolic) and pulse;</li>
+				<li>notes and tags for measurements;</li>
+				<li>additional metrics (for example weight, glucose, SpO₂, temperature);</li>
 				<li>medications, schedules, and intake check-offs;</li>
-				<li>family profile names;</li>
-				<li>language and reminder settings;</li>
-				<li>backup files you create manually.</li>
+				<li>family profile display names;</li>
+				<li>language and local reminder settings.</li>
 			</ul>
-		</section>
-
-		<section>
-			<h2>3. Where data is stored</h2>
 			<p>
-				Primary health diary data is stored <strong>locally on your device</strong>
-				in an SQLite database inside the app.
-			</p>
-			<p>
-				There is no developer cloud account, no developer backend sync, and no
-				central user health database operated by the developer.
+				These diary values are entered by you and are intended for on-device use.
 			</p>
 		</section>
 
 		<section>
-			<h2>4. Android Auto Backup</h2>
+			<h2>4. No account and no developer cloud diary</h2>
 			<p>
-				Android Auto Backup for this app’s data is <strong>disabled</strong>.
-				Measurement databases and related settings are not intended for automatic
+				The app does not require a user account. There is no developer-operated
+				cloud sync server for your health diary and no central database of user
+				measurements maintained by the developer.
+			</p>
+		</section>
+
+		<section>
+			<h2>5. Local SQLite storage and user exports</h2>
+			<p>
+				Primary diary data is stored in a local SQLite database inside the app
+				sandbox on your device. Android Auto Backup for this app’s data is
+				<strong>disabled</strong>, so the diary is not intended for automatic
 				upload to Google cloud backup.
 			</p>
 			<p>
-				The supported transfer path is a user-initiated JSON backup from Settings,
-				shared via the Android Share Sheet or restored via the system document picker.
+				You may create a JSON backup or a PDF doctor report on the device.
+				Those files leave the device only if you explicitly share them through
+				the Android Share Sheet or similar system UI. The developer does not
+				receive those files automatically. You remain responsible for any
+				destination you choose.
 			</p>
 		</section>
 
 		<section>
-			<h2>5. Profiles</h2>
+			<h2>6. Yandex Mobile Ads</h2>
 			<p>
-				Family profile names stay on your device and only separate records inside the app.
+				If you allow advertising, the app uses
+				<a href="https://yandex.ru/dev/mobile-ads/" rel="noopener noreferrer" target="_blank">Yandex Mobile Ads</a>
+				to show banners and occasional interstitial ads. Ad units for RuStore and
+				Google Play are configured separately. Google AdMob is not included in
+				this release.
 			</p>
-		</section>
-
-		<section>
-			<h2>6. JSON backup</h2>
 			<p>
-				Backups are created only when you explicitly export them. The app does not
-				upload backup files to a developer server.
+				According to Yandex Mobile Ads documentation for Google Play Data Safety,
+				the SDK may process device or other identifiers (including Advertising ID
+				when permission allows) for advertising and marketing purposes, and
+				encrypts listed data in transit over HTTPS/TLS. Default vendor guidance
+				does not treat health diary content as collected by the Ads SDK.
+				See Yandex’s current Data Safety guide for Mobile Ads.
 			</p>
-		</section>
-
-		<section>
-			<h2>7. Doctor PDF report</h2>
 			<p>
-				PDFs are generated on-device. Sharing happens only when you use the system
-				Share Sheet.
+				Ads are not shown over critical measurement entry flows or system
+				permission dialogs. This integration does not provide a separate
+				guaranteed “non-personalized ads only” mode: turning advertising off
+				blocks ad requests.
 			</p>
 		</section>
 
 		<section>
-			<h2>8. Notifications</h2>
+			<h2>7. AppMetrica (analytics)</h2>
 			<p>
-				The app uses local notifications for measurement and medication reminders.
-				There is no developer remote push service.
+				If you allow technical analytics, the app uses
+				<a href="https://appmetrica.yandex.ru/" rel="noopener noreferrer" target="_blank">Yandex AppMetrica</a>
+				to measure app usage. First-party code sends only allowlisted technical
+				events (for example opening Graphs or changing locale codes). It does
+				<strong>not</strong> send blood pressure or pulse values, medication names,
+				doses, intake status, health metric values, notes, tags, or profile names.
+			</p>
+			<p>
+				AppMetrica’s own Google Play Data Safety guidance indicates that, in its
+				default configuration, the SDK may process crash-related and diagnostic /
+				performance information and device or other IDs (when permitted), and
+				encrypts listed data in transit. Location tracking is disabled in this
+				app’s configuration. Exact categories depend on the shipped SDK build and
+				vendor documentation.
 			</p>
 		</section>
 
 		<section>
-			<h2>9. Deleting your data</h2>
-			<p>Inside the app you can delete:</p>
+			<h2>8. Advertising ID and device information</h2>
+			<p>
+				When optional SDKs are allowed, they may process technical device
+				information and the Google Advertising ID (GAID), subject to Android
+				settings (including ads personalization / reset ID). The app’s TypeScript
+				code does not read the Advertising ID directly; the Ads SDK declares the
+				<code>AD_ID</code> permission as documented by Yandex for SDK 4.5.0+.
+			</p>
+		</section>
+
+		<section>
+			<h2>9. Legal bases (where applicable)</h2>
+			<p>
+				Depending on your region, processing may rely on:
+			</p>
 			<ul>
-				<li>individual blood-pressure readings;</li>
-				<li>health metric entries;</li>
-				<li>medications and intake records;</li>
-				<li>reminders;</li>
-				<li>family profiles (except the last remaining profile).</li>
+				<li><strong>Consent</strong> — for optional advertising and/or analytics SDKs;</li>
+				<li><strong>Legitimate interests or contractual necessity</strong> — for
+					providing the local diary features you request on the device
+					(as applicable under local law);</li>
+				<li>other bases required by applicable law.</li>
 			</ul>
-			<p>
-				There are no user accounts and no developer-hosted health database.
-				Deleting local records (or uninstalling the app) removes diary data from
-				the app storage. Technical data already sent by analytics or ads SDKs is
-				handled under those vendors’ policies.
+			<p class="note">
+				This section is informational. It does not assert that every legal regime
+				worldwide is fully satisfied by this document alone.
 			</p>
 		</section>
 
 		<section>
-			<h2>10. AppMetrica analytics</h2>
+			<h2>10. Consent, refusal, and withdrawal</h2>
 			<p>
-				Technical usage analytics use
-				<a href="https://appmetrica.yandex.ru/" rel="noopener noreferrer" target="_blank">Yandex AppMetrica</a>.
+				On launch (and again from Settings), you can allow or refuse
+				<strong>Technical analytics (AppMetrica)</strong> and
+				<strong>Advertising (Yandex Mobile Ads)</strong> independently.
+				Core diary features remain available if you refuse.
 			</p>
-			<p><strong>We do not send health values in analytics events:</strong></p>
-			<ul>
-				<li>blood pressure or pulse numbers;</li>
-				<li>weight, glucose, SpO₂, or temperature values;</li>
-				<li>medication names or dosages;</li>
-				<li>notes or profile names.</li>
-			</ul>
 			<p>
-				Events describe feature usage only (for example, that a reading was created).
-				The SDK may process technical device identifiers per AppMetrica’s policy.
+				Choices for optional SDKs apply after you confirm them in the app for the
+				current session. You can change them later in Settings. Refusal and
+				withdrawal stop first-party enabling of the corresponding SDK paths;
+				already-transmitted technical data held by Yandex continues under
+				Yandex’s policies.
+			</p>
+			<p>
+				For Yandex Mobile Ads, the app passes your advertising purpose decision
+				via the SDK <code>setUserConsent</code> API as described in Yandex GDPR
+				documentation, and does not call ads initialization until advertising is
+				allowed. For AppMetrica, activation and event sending are gated behind
+				analytics permission in app code.
+			</p>
+			<p class="note">
+				This in-app dialog is a first-party purpose gate for Yandex SDKs. It is
+				<strong>not</strong> a Google-certified CMP / IAB TCF consent tool.
+				Google’s certified-CMP requirements for Google advertising demand apply
+				when Google AdMob / Google demand is used; this release does not ship AdMob.
 			</p>
 		</section>
 
 		<section>
-			<h2>11. Advertising and Advertising ID</h2>
+			<h2>11. International transfers</h2>
 			<p>
-				The app uses
-				<a href="https://yandex.ru/dev/mobile-ads/" rel="noopener noreferrer" target="_blank">Yandex Mobile Ads</a>.
-				The SDK may process technical device information and the Advertising ID to
-				serve and measure ads, subject to Yandex policies and device settings.
+				The app is distributed internationally (including via Google Play closed
+				testing). If you enable optional Yandex SDKs, related technical data may
+				be processed by Yandex according to Yandex’s terms and privacy notices,
+				which may involve processing outside your country of residence.
+			</p>
+			<p class="note">
+				This policy does not invent specific hosting countries, SCCs, or EU
+				representative details. See Yandex’s published terms for AppMetrica and
+				Mobile Ads.
 			</p>
 		</section>
 
 		<section>
-			<h2>12. Internet access</h2>
-			<p>Internet access is used for ads and AppMetrica events. The diary core works offline.</p>
+			<h2>12. Retention</h2>
+			<p>
+				<strong>Local diary data</strong> remains on your device until you delete
+				records or uninstall the app.
+			</p>
+			<p>
+				<strong>Technical data processed by Yandex SDKs</strong> (if enabled) is
+				retained according to Yandex’s policies and product settings. The
+				developer does not operate a separate server-side retention schedule for
+				that data and cannot truthfully state a single fixed retention period for
+				all Yandex systems.
+			</p>
 		</section>
 
 		<section>
-			<h2>13. Contact</h2>
+			<h2>13. Your rights and how to contact us</h2>
+			<p>
+				Depending on applicable law (for example GDPR / UK GDPR where they apply),
+				you may have rights to access, rectify, erase, restrict, or object to
+				certain processing, and to lodge a complaint with a supervisory authority.
+			</p>
+			<p>
+				For the local diary, you can edit or delete records in the app.
+				For questions about this app’s privacy practices, email
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
+				Requests about data held solely by Yandex should also follow Yandex’s
+				published privacy channels where available.
+			</p>
+		</section>
+
+		<section>
+			<h2>14. Deletion and limits of developer control</h2>
+			<p>
+				You can delete individual measurements, health metrics, medications,
+				reminders, and profiles (subject to keeping at least one profile), or
+				uninstall the app to remove local storage.
+			</p>
+			<p>
+				The developer <strong>cannot guarantee deletion</strong> of technical data
+				already processed by Yandex Mobile Ads or AppMetrica. Those services
+				follow their own deletion and retention rules.
+			</p>
+		</section>
+
+		<section>
+			<h2>15. Security</h2>
+			<p>
+				Local diary data stays in the app sandbox. Optional SDK traffic uses the
+				encryption practices described by the respective vendors (for example
+				HTTPS/TLS for Mobile Ads Data Safety disclosures; AppMetrica documents
+				encryption in transit for listed data types). No security measure is
+				perfect; protect your device with a screen lock and share exports only
+				with trusted recipients.
+			</p>
+		</section>
+
+		<section>
+			<h2>16. Age</h2>
+			<p>
+				The app is intended for adults managing personal or family health diaries.
+				It is not directed at children and is not designed for Google Play’s
+				Families / Designed for Families programs. If you are under the digital
+				consent age in your country, use the app only with a parent or guardian
+				as required by local law.
+			</p>
+		</section>
+
+		<section>
+			<h2>17. Changes</h2>
+			<p>
+				We may update this policy when the app, SDKs, or legal requirements
+				change. The effective date at the top will be revised. Material changes
+				may also be highlighted in the app store listing or in-app notice when
+				practical.
+			</p>
+		</section>
+
+		<section>
+			<h2>18. Contact</h2>
 			<p>
 				Privacy and support:
 				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+			</p>
+			<p class="note">
+				Public policy URL (after publication):
+				<a href="https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html">https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html</a>
 			</p>
 		</section>
 	</main>

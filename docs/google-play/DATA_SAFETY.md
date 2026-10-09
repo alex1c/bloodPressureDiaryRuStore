@@ -1,72 +1,88 @@
-# Google Play Data Safety — evidence matrix
+# Google Play Data Safety — evidence matrix (1.1.1)
 
-**Package:** `com.calculatorplatform.bpdiary`  
-**Prepared:** 2026-10-06  
-**Principle:** declarations must match code + SDK vendor guidance. Where vendor detail is required: `VERIFY IN PLAY CONSOLE / VENDOR DOCS`.
+> **Final Console values (2026-10-09):** use
+> [GOOGLE_PLAY_DATA_SAFETY_FINAL.md](./GOOGLE_PLAY_DATA_SAFETY_FINAL.md).
+> This file remains historical evidence notes.
 
-## How to read this matrix
+**Package:** `com.calculatorplatform.bpdiary`
+**Prepared:** 2026-10-08 (revised after Codex audit #2); pointer updated 2026-10-09
 
-- **Collected** = app or embedded SDK obtains the data type on or from the device.
-- **Shared** = transmitted off-device to a third party (SDK backends). User Share Sheet exports are **user-initiated**, not developer “sharing” for Data Safety unless Google’s form treats them differently — treat JSON/PDF share as user-controlled export; do not claim developer cloud sync.
-- **Ephemeral / on-device only** health diary rows are still “collected” in Google’s sense if the app stores them.
+**Principle:** declare only what the app / shipped SDKs actually collect or share
+off-device. Do not mark unverified vendor categories as confirmed. Do not treat
+on-device SQLite as “collected” for Console “Data collected” when it never leaves
+the device under developer control.
 
-## Summary answers (proposed Console)
+## Definitions (Console)
 
-| Question | Proposed answer | Evidence |
-|----------|-----------------|----------|
-| Does the app collect or share required user data types? | **Yes** | Local health diary + AppMetrica + Yandex Ads |
-| Is all user data encrypted in transit? | **Yes** for SDK HTTPS traffic — **VERIFY** vendor docs; local SQLite is on-device | Vendor Data Safety guides |
-| Can users request deletion? | **Yes — local deletion in app**; no developer account backend | Settings/forms delete paths; uninstall |
-| Independent security review? | **No** (unless operator later obtains one) | — |
+- **Collected** = data transmitted off the device by the app or embedded SDK, or
+  processed in a way Google’s form treats as collection for the listed type.
+- **Shared** = transmitted to a third party (here: Yandex AppMetrica / Yandex
+  Mobile Ads backends), after the user allows the corresponding purpose.
+- **On-device only** (local diary rows) = **not** declared as collected/shared for
+  Data Safety when no developer/SDK off-device transfer occurs.
 
-## Category matrix
+## Proposed Console answers (owner checklist)
 
-| Data category | Collected | Shared | Purpose | Required/Optional | Evidence | Console action |
-|---------------|-----------|--------|---------|-------------------|----------|----------------|
-| Health info (BP, pulse, metrics, meds, notes, tags) | **Yes** (on-device) | **No** to developer/SDK analytics | App functionality (diary) | Required for core diary features the user chooses to enter | SQLite repos `src/storage/sqlite/`; domain types `src/domain/types.ts`; `FORBIDDEN_ANALYTICS_KEYS` | Declare Health info collected, **not shared**; purpose App functionality |
-| Personal info — name (profile display names) | **Yes** (on-device) | **No** | App functionality | Optional (user-chosen labels) | Profiles feature `src/features/profiles/` | Declare Name/other personal info if Console maps profile labels there; not shared |
-| App activity (feature events) | **Yes** | **Yes** (AppMetrica) | Analytics | Required for analytics SDK operation when app runs | `src/analytics/events.ts`, `appmetrica-service.ts` | Declare App activity collected + shared with analytics |
-| Device or other IDs | **Likely Yes via SDKs** | **Likely Yes** | Analytics; Advertising | Optional per vendor guidance when permission/settings allow | Yandex Ads AD_ID docs; AppMetrica Data Safety guide | Declare Device/other IDs; purposes Analytics + Advertising; **VERIFY** exact vendor rows |
-| Diagnostics | **Possibly via SDKs** | **Possibly** | Analytics / crash-like telemetry | Optional | AppMetrica vendor guide | **VERIFY IN VENDOR DOCS** before checking Diagnostics |
-| Advertising data / interactions | **Yes** (ad SDK) | **Yes** | Advertising or marketing | Optional (ads load when online; Medications banner always eligible; others gated) | `src/config/ads.ts`, `src/ads/` | Declare Advertising; Contains ads = Yes |
-| Approximate/precise location | **No in first-party code** | — | — | — | No location APIs in app source | Do not declare unless vendor default requires — **VERIFY** AppMetrica location tracking is off/default |
-| Photos / video / audio / contacts / calendar | **No** | — | — | — | No corresponding APIs | Do not declare |
-| Financial info / payment | **No** | — | — | — | No IAP | Do not declare |
+| Console question | Proposed answer | Rationale |
+|------------------|-----------------|-----------|
+| Does your app collect or share any of the required user data types? | **Yes** | Optional AppMetrica + Yandex Ads after consent may process device/app IDs, Advertising ID, IP, and technical diagnostics |
+| Is all user data encrypted in transit? | **Yes** for HTTPS SDK traffic — **VERIFY** current vendor docs for shipped SDK versions | Local SQLite is not “in transit” |
+| Do you provide a way for users to request that their data is deleted? | **In-app deletion / uninstall only** | **Do not** claim a developer-operated server-side deletion request workflow; there is no account backend |
+| Account deletion URL | **Not applicable** (no accounts) | VERIFY current Console wording |
+| Independent security review? | **No** | Unless obtained later |
 
-## First-party health data flow
+## Category matrix (external transfers only)
 
-| Item | Collected? | Stored locally? | Off-device by app? | Third party? | Encrypted in transit | Optional? | Purpose | Retention / deletion |
-|------|------------|-----------------|-------------------|--------------|----------------------|-----------|---------|----------------------|
-| Systolic / diastolic / pulse | Yes | SQLite | No (unless user exports) | No | N/A on-device; export via Share Sheet | User-entered | Diary | User delete per row / uninstall / JSON replace |
-| Notes / tags | Yes | SQLite | No (unless export) | No | Same | Optional fields | Diary | Same |
-| Medications / intakes | Yes | SQLite | No (unless export) | No | Same | Optional feature | Reminders/diary | Delete med / intakes |
-| Health metrics | Yes | SQLite | No (unless export) | No | Same | Optional | Diary | Delete metric rows |
-| Profiles | Yes | SQLite | No | No | Same | Optional multi-profile | Separation | Delete profile (not last) |
-| Reminders copy/schedule | Yes | SQLite + local notifications | No | No | N/A | Optional | Reminders | Delete reminder / disable |
+| Data category | Collected / Shared | Purpose | Evidence | Console notes |
+|---------------|--------------------|---------|----------|---------------|
+| Health info (BP, pulse, metrics, meds, notes, tags) | **No off-device** | App functionality (local) | SQLite; medical AppMetrica events blocked | **Do not** mark as collected solely because of local SQLite |
+| Personal info — profile display names | **No off-device** | Local UI only | Profiles feature | Not shared |
+| App activity (allowlisted technical events) | **Yes → AppMetrica** if analytics purpose granted | Analytics | `src/analytics/allowlist.ts` | Not “anonymous”; may tie to technical IDs |
+| Device or other IDs | **Likely Yes → SDKs** if purpose granted | Analytics / Advertising | AppMetrica + Yandex Ads | **VERIFY** vendor Data Safety guides for  AppMetrica 4.2 / Yandex Ads 8.3 |
+| Advertising ID (GAID) | **Likely Yes → Yandex Ads** if ads purpose granted | Advertising | Yandex Mobile Ads | Declare when ads enabled |
+| Approximate location | **Not sent by first-party code**; AppMetrica location tracking disabled | — | `locationTracking: false` | Approximate via IP at vendor backend = **VERIFY vendor**, do not claim precise location |
+| Diagnostics / crash-like telemetry | **Possibly via AppMetrica** if analytics granted | Analytics | No separate Crashlytics/Sentry in this app | Mark only after **VERIFY** vendor docs — do not promise crash reporting if not confirmed |
+| Photos / contacts / financial / payment | **No** | — | No APIs / no IAP | Do not declare |
 
-## SDK / technical flow
+## Important corrections
 
-| Item | Collected? | Stored locally? | Off-device? | Shared? | Evidence |
-|------|------------|-----------------|------------|---------|----------|
-| AppMetrica events | Yes (sanitized) | SDK caches possible | Yes | Yes → Yandex AppMetrica | `src/analytics/`; no BP values in params |
-| Yandex Mobile Ads | Yes (tech + AD_ID when available) | SDK | Yes | Yes → Yandex ads stack | `yandex-mobile-ads` dep; production block IDs in `src/config/ads.ts` |
-| Advertising ID | Via Ads SDK (not read in app TS) | OS/SDK | Yes | Yes for ads | Vendor AD_ID doc |
+1. **Local SQLite ≠ collected.** Health diary rows that never leave the device
+   through the developer or optional SDKs are not Data Safety “collected” health
+   data for off-device sharing.
+2. **Local delete ≠ server deletion request.** In-app delete/uninstall removes
+   local data only. Third-party retention follows Yandex policies.
+3. **Do not label analytics as fully anonymous** when technical identifiers / IP
+   may apply.
+4. **Unverified SDK categories stay VERIFY** until the owner confirms vendor
+   guides for the exact shipped versions.
+5. **Do not promise protections** (e.g. “no network before consent”) as proven
+   until physical Android QA confirms no early SDK traffic after
+   `AUTOMATIC_SDK_INITIALIZATION=false`.
 
-## User-controlled export
+## Consent (purposes)
 
-| Export | Off-device? | Shared with developer? | Notes |
-|--------|------------|------------------------|-------|
-| PDF doctor report | Only if user shares | No | Local `expo-print` + Share Sheet |
-| JSON backup | Only if user shares | No | Settings export |
-| Android Share Sheet targets | User chooses | No | Messenger/email/etc. are user’s choice |
+Independent in-app purposes:
+
+- Technical analytics (AppMetrica)
+- Advertising (Yandex Mobile Ads)
+
+Yandex Ads does not expose a guaranteed non-personalized-only mode in this
+integration; denying ads blocks all Yandex load/show. Google AdMob and other
+mediation partners are not shipped. See
+[INTERNATIONAL_CONSENT.md](./INTERNATIONAL_CONSENT.md).
+
+Native Yandex auto-init is disabled via
+`com.yandex.mobile.ads.AUTOMATIC_SDK_INITIALIZATION=false` (Expo plugin +
+AndroidManifest). Physical QA must still confirm no optional SDK network before
+consent.
 
 ## Android Auto Backup
 
-**Disabled** (`allowBackup=false` + extraction rules). See [AUTO_BACKUP.md](./AUTO_BACKUP.md). Do **not** describe health diary as backed up to Google Auto Backup.
+**Disabled.** See [AUTO_BACKUP.md](./AUTO_BACKUP.md).
 
-## Account deletion
+## User-controlled export
 
-No accounts / no developer backend. Proposed Console stance:
-
-- Provide in-app deletion instructions (delete records / uninstall).
-- Account deletion URL: **not applicable** (no account system) — **VERIFY** current Play Console wording for “no accounts” apps.
+| Export | Off-device? | Shared with developer? |
+|--------|------------|------------------------|
+| PDF doctor report | Only if user shares | No |
+| JSON backup | Only if user shares | No |

@@ -48,6 +48,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		'./plugins/with-worklets-packaging',
 		// Exclude SQLite/prefs from Auto Backup / OEM D2D (see DECISIONS.md).
 		'./plugins/with-disable-auto-backup',
+		// Disable Yandex Ads ContentProvider auto-init until JS consent gate.
+		'./plugins/with-yandex-ads-manual-init',
 		'expo-router',
 		'expo-splash-screen',
 		[
@@ -70,7 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		...config,
 		name: 'Дневник давления',
 		slug: 'bp-diary',
-		version: '1.1.0',
+		version: '1.1.1',
 		orientation: 'portrait',
 		icon: './assets/icon.png',
 		userInterfaceStyle: 'light',
@@ -84,7 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		},
 		android: {
 			package: 'com.calculatorplatform.bpdiary',
-			versionCode: 4,
+			versionCode: 5,
 			// Health SQLite must not enter Google Auto Backup by default.
 			// User-controlled JSON export/share remains the supported path.
 			allowBackup: false,
@@ -111,7 +113,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		extra: {
 			appVariant: isProduction ? 'production' : 'development',
 			storeId,
-			foundationVersion: '1.1.0',
+			foundationVersion: '1.1.1',
 		},
 	}
 }

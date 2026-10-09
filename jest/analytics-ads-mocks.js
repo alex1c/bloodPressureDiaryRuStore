@@ -4,12 +4,19 @@ jest.mock('@appmetrica/react-native-analytics', () => ({
 	default: {
 		activate: jest.fn(),
 		reportEvent: jest.fn(),
+		setLocationTracking: jest.fn(),
+		setDataSendingEnabled: jest.fn(),
+		setAdvIdentifiersTracking: jest.fn(),
+		reportAppOpen: jest.fn(),
 	},
 }))
 
 jest.mock('yandex-mobile-ads', () => ({
 	MobileAds: {
 		initialize: jest.fn(async () => undefined),
+		setUserConsent: jest.fn(),
+		setLocationConsent: jest.fn(),
+		setAgeRestrictedUser: jest.fn(),
 	},
 	BannerAdSize: {
 		stickySize: jest.fn(async () => ({
@@ -20,9 +27,44 @@ jest.mock('yandex-mobile-ads', () => ({
 	BannerView: 'BannerView',
 	InterstitialAdLoader: {
 		create: jest.fn(async () => ({
-			loadAd: jest.fn(async () => ({
-				show: jest.fn(async () => undefined),
-			})),
+			loadAd: jest.fn(async () => {
+				const ad = {
+					show: jest.fn(
+						() =>
+							new Promise(() => {
+								/* never resolves — matches RN SDK 8.3.0 showAd hang */
+							}),
+					),
+					onAdShown: undefined,
+					onAdFailedToShow: undefined,
+					onAdDismissed: undefined,
+				}
+				Object.defineProperty(ad, 'onAdShown', {
+					set(fn) {
+						ad._onAdShown = fn
+					},
+					get() {
+						return ad._onAdShown
+					},
+				})
+				Object.defineProperty(ad, 'onAdFailedToShow', {
+					set(fn) {
+						ad._onAdFailedToShow = fn
+					},
+					get() {
+						return ad._onAdFailedToShow
+					},
+				})
+				Object.defineProperty(ad, 'onAdDismissed', {
+					set(fn) {
+						ad._onAdDismissed = fn
+					},
+					get() {
+						return ad._onAdDismissed
+					},
+				})
+				return ad
+			}),
 		})),
 	},
 }))

@@ -120,27 +120,45 @@ describe('ad policy', () => {
 		)
 	})
 
-	it('maps banner placements to production ids in production runtime', () => {
-		expect(resolveBannerAdUnitId('diaryBanner', 'production')).toBe(
-			yandexAdsProduction.diaryBanner,
+	it('maps banner placements to RuStore production ids by default', () => {
+		expect(resolveBannerAdUnitId('diaryBanner', 'production', 'rustore')).toBe(
+			'R-M-20056373-1',
 		)
-		expect(resolveBannerAdUnitId('graphsBanner', 'production')).toBe(
-			yandexAdsProduction.graphsBanner,
+		expect(resolveBannerAdUnitId('graphsBanner', 'production', 'rustore')).toBe(
+			'R-M-20056373-2',
 		)
-		expect(resolveBannerAdUnitId('healthBanner', 'production')).toBe(
-			yandexAdsProduction.healthBanner,
+		expect(resolveBannerAdUnitId('healthBanner', 'production', 'rustore')).toBe(
+			'R-M-20056373-3',
 		)
-		expect(resolveBannerAdUnitId('medicationsBanner', 'production')).toBe(
-			yandexAdsProduction.medicationsBanner,
-		)
-		expect(resolveInterstitialAdUnitId('production')).toBe(
-			yandexAdsProduction.interstitial,
+		expect(
+			resolveBannerAdUnitId('medicationsBanner', 'production', 'rustore'),
+		).toBe('R-M-20056373-5')
+		expect(resolveInterstitialAdUnitId('production', 'rustore')).toBe(
+			'R-M-20056373-4',
 		)
 		expect(yandexAdsProduction.diaryBanner).toBe('R-M-20056373-1')
 		expect(yandexAdsProduction.graphsBanner).toBe('R-M-20056373-2')
 		expect(yandexAdsProduction.healthBanner).toBe('R-M-20056373-3')
 		expect(yandexAdsProduction.interstitial).toBe('R-M-20056373-4')
 		expect(yandexAdsProduction.medicationsBanner).toBe('R-M-20056373-5')
+	})
+
+	it('maps Google Play production ids without swapping interstitial/meds', () => {
+		expect(
+			resolveBannerAdUnitId('diaryBanner', 'production', 'googleplay'),
+		).toBe('R-M-20201011-1')
+		expect(
+			resolveBannerAdUnitId('graphsBanner', 'production', 'googleplay'),
+		).toBe('R-M-20201011-2')
+		expect(
+			resolveBannerAdUnitId('healthBanner', 'production', 'googleplay'),
+		).toBe('R-M-20201011-3')
+		expect(
+			resolveBannerAdUnitId('medicationsBanner', 'production', 'googleplay'),
+		).toBe('R-M-20201011-4')
+		expect(resolveInterstitialAdUnitId('production', 'googleplay')).toBe(
+			'R-M-20201011-5',
+		)
 	})
 
 	it('uses demo ids in development runtime', () => {
@@ -163,5 +181,56 @@ describe('ad session memory', () => {
 
 	it('starts with interstitial not shown in session', () => {
 		expect(getAdSessionMemoryState().interstitialShownThisSession).toBe(false)
+	})
+})
+
+describe('production ad unit resolvers require explicit storeId', () => {
+	it('throws when storeId is missing in production', () => {
+		expect(() =>
+			resolveBannerAdUnitId('diaryBanner', 'production'),
+		).toThrow(/explicit storeId/)
+		expect(() => resolveInterstitialAdUnitId('production')).toThrow(
+			/explicit storeId/,
+		)
+	})
+})
+
+describe('interstitial sensitive re-check', () => {
+	beforeEach(() => {
+		resetAdSessionMemoryForTests()
+		overrideAdSessionStateForTests({
+			meaningfulActionCount: 5,
+			interstitialShownThisSession: false,
+			lastInterstitialAt: null,
+		})
+	})
+
+	it('blocks when sensitive screen becomes true after prior eligibility', () => {
+		const base = {
+			hasCompletedFirstMeasurement: true,
+			interstitialReady: true,
+			hasBlockingModal: false,
+			hasKeyboardOrInputFlow: false,
+			onSensitiveScreen: false,
+		}
+		expect(evaluateInterstitialEligibility(base).eligible).toBe(true)
+		expect(
+			evaluateInterstitialEligibility({
+				...base,
+				onSensitiveScreen: true,
+			}).reason,
+		).toBe('sensitive_screen')
+		expect(
+			evaluateInterstitialEligibility({
+				...base,
+				hasBlockingModal: true,
+			}).reason,
+		).toBe('modal')
+		expect(
+			evaluateInterstitialEligibility({
+				...base,
+				hasKeyboardOrInputFlow: true,
+			}).reason,
+		).toBe('input_flow')
 	})
 })

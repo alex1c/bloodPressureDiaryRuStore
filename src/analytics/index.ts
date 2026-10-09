@@ -11,6 +11,9 @@ export { FORBIDDEN_ANALYTICS_KEYS } from './forbidden-keys'
 export {
 	createAppMetricaAnalyticsService,
 	resetAppMetricaInitializationForTests,
+	setAnalyticsAllowed,
+	getAnalyticsAllowedForTests,
+	isAppMetricaInitializedForTests,
 } from './appmetrica-service'
 
 /** @deprecated Use typed `analytics` helpers from `@/analytics/events`. */

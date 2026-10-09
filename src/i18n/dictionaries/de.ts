@@ -181,6 +181,23 @@ export const de: MessageCatalog = {
 	'settings.picking': 'Datei wählen…',
 	'settings.about': 'Über die App',
 	'settings.privacy': 'Datenschutzerklärung',
+	'settings.privacyChoices': 'Werbung und Analyse',
+	'privacy.consentTitle': 'Werbung und Analyse',
+	'privacy.consentBody':
+		'Optionale Yandex Mobile Ads (Werbung) und AppMetrica (technische Nutzungsanalyse) können Gerätekennungen, Advertising ID, IP-Adresse und verwandte technische Daten verwenden. Ihr Blutdruck-, Puls- und Medikamententagebuch bleibt auf dem Gerät und wird nicht an diese Dienste gesendet. Ablehnen oder später in den Einstellungen ändern ist möglich — die Kernfunktionen bleiben verfügbar.',
+	'privacy.consentAdsNote':
+		'Wenn Werbung erlaubt ist, kann sie personalisiert sein. Dieses SDK bietet keinen garantierten Schalter „nur nicht personalisiert“; bei deaktivierter Werbung bleiben Anzeigen vollständig aus.',
+	'privacy.sessionConfirmNote':
+		'Bestätigen Sie Ihre Auswahl für diese Sitzung. Schalter können frühere Einstellungen zeigen, aber Werbung und Analyse bleiben aus, bis Sie auf Speichern tippen.',
+	'privacy.purposeAnalytics': 'Technische Analyse (AppMetrica)',
+	'privacy.purposeAds': 'Werbung (Yandex Mobile Ads)',
+	'privacy.openPolicy': 'Datenschutzerklärung öffnen',
+	'privacy.consentSave': 'Auswahl speichern',
+	'privacy.consentAccept': 'Werbung und Analyse zulassen',
+	'privacy.consentDecline': 'Ohne Werbung und Analyse fortfahren',
+	'privacy.persistError':
+		'Auswahl konnte auf diesem Gerät nicht gespeichert werden. Tippen Sie auf Wiederholen — gehen Sie nicht von einer Speicherung aus.',
+	'privacy.persistRetry': 'Speichern wiederholen',
 	'settings.contact': 'Entwickler kontaktieren',
 	'settings.language': 'Sprache',
 	'settings.language.system': 'System',

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Datenschutzerklärung — Blutdruck-Tagebuch</title>
+	<title>Datenschutzerklärung — Blood Pressure Diary</title>
 	<style>
 		:root { color-scheme: light; --text:#1a202c; --muted:#4a5568; --accent:#2b6cb0; --bg:#f7fafc; --card:#fff; }
 		body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.6; color:var(--text); background:var(--bg); }
@@ -14,14 +14,17 @@
 		.langs a { color:var(--accent); } .langs strong { color:var(--text); }
 		section { background:var(--card); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
 		a { color:var(--accent); } ul { padding-left:1.25rem; }
+		.note { color:var(--muted); font-size:0.95rem; }
 	</style>
 </head>
 <body>
 	<main>
 		<h1>Datenschutzerklärung</h1>
 		<p class="meta">
-			App „Blutdruck-Tagebuch“ / «Дневник давления» (com.calculatorplatform.bpdiary)<br />
-			Gültig ab: 6. Oktober 2026
+			App „Blood Pressure Diary“ / «Дневник давления»<br />
+			Package: <code>com.calculatorplatform.bpdiary</code><br />
+			Gültig ab: 9. Oktober 2026<br />
+			Gilt für Google-Play- und RuStore-Versionen.
 		</p>
 		<p class="langs" aria-label="Sprache">
 			<a href="../privacy.html">RU</a>
@@ -29,115 +32,178 @@
 			<a href="es.html">ES</a>
 			<strong>DE</strong>
 		</p>
+		<p class="note">
+			Deutsche Fassung angeglichen an die internationale EN/RU-Politik.
+			Bei Abweichungen gelten EN/RU.
+		</p>
 
 		<section>
-			<h2>1. Allgemeines</h2>
+			<h2>1. Entwickler und Kontakt</h2>
 			<p>
-				Die App dient der persönlichen Aufzeichnung von Blutdruck, Puls und
-				weiteren Gesundheitswerten, die Sie selbst eingeben. Sie ist kein
-				Medizinprodukt, stellt keine Diagnosen und ersetzt keinen Arztbesuch.
+				Einzelentwickler.
+				Kontakt: <a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
 			</p>
 		</section>
 
 		<section>
-			<h2>2. Von Ihnen eingegebene Daten</h2>
+			<h2>2. Zweck der App</h2>
+			<p>
+				Persönliches Tagebuch für Blutdruck, Puls, Medikamente und verwandte
+				Kennzahlen. Kein Medizinprodukt und kein Ersatz für ärztlichen Rat.
+			</p>
+		</section>
+
+		<section>
+			<h2>3. Lokale Gesundheitsdaten</h2>
 			<ul>
-				<li>Blutdruck (systolisch und diastolisch);</li>
-				<li>Puls;</li>
+				<li>Blutdruck (systolisch / diastolisch) und Puls;</li>
 				<li>Notizen und Tags;</li>
-				<li>Gesundheitswerte (Gewicht, Glukose, SpO₂, Temperatur);</li>
-				<li>Medikamente, Zeitpläne und Einnahme-Markierungen;</li>
-				<li>Namen von Familienprofilen;</li>
-				<li>Sprache und Erinnerungen;</li>
-				<li>manuell erstellte Sicherungen.</li>
+				<li>weitere Kennzahlen (Gewicht, Glukose, SpO₂, Temperatur usw.);</li>
+				<li>Medikamente, Zeitpläne und Einnahmen;</li>
+				<li>Anzeigenamen von Familienprofilen;</li>
+				<li>Sprache und lokale Erinnerungen.</li>
 			</ul>
 		</section>
 
 		<section>
-			<h2>3. Speicherung</h2>
+			<h2>4. Kein Konto, keine Entwickler-Cloud</h2>
 			<p>
-				Die Tagebuchdaten werden <strong>lokal auf dem Gerät</strong> in einer
-				SQLite-Datenbank gespeichert. Es gibt keinen Entwickler-Cloud-Account
-				und keine zentrale Health-Datenbank des Entwicklers.
+				Kein Benutzerkonto. Kein vom Entwickler betriebener Sync-Server für
+				das Tagebuch.
 			</p>
 		</section>
 
 		<section>
-			<h2>4. Android Auto Backup</h2>
+			<h2>5. Lokale SQLite und Exporte</h2>
 			<p>
-				Android Auto Backup für App-Daten ist <strong>deaktiviert</strong>.
-				Unterstützt wird der manuelle JSON-Export in den Einstellungen.
+				Tagebuchdaten liegen in lokaler SQLite. Android Auto Backup ist
+				<strong>deaktiviert</strong>. PDF/JSON verlassen das Gerät nur bei
+				explizitem Teilen durch Sie.
 			</p>
 		</section>
 
 		<section>
-			<h2>5. Profile</h2>
-			<p>Profilnamen bleiben auf Ihrem Gerät.</p>
-		</section>
-
-		<section>
-			<h2>6. JSON-Sicherung</h2>
+			<h2>6. Yandex Mobile Ads</h2>
 			<p>
-				Sicherungen entstehen nur durch Ihre Aktion und werden nicht auf einen
-				Server des Entwicklers hochgeladen.
+				Bei erlaubter Werbung: Yandex Mobile Ads (Banner und Interstitials).
+				Kein Google AdMob. Laut Yandex-Data-Safety-Leitfaden kann das SDK
+				Geräte-/Advertising-IDs zu Werbezwecken verarbeiten; Tagebuchinhalte
+				werden nicht als vom Ads-SDK erhoben ausgewiesen. Kein garantierter
+				Modus „nur nicht personalisierte Werbung“: Ablehnung blockiert
+				Werbeanfragen.
 			</p>
 		</section>
 
 		<section>
-			<h2>7. PDF-Bericht</h2>
+			<h2>7. AppMetrica</h2>
 			<p>
-				PDFs werden auf dem Gerät erzeugt und nur über das System-Share-Sheet
-				weitergegeben.
+				Bei erlaubter technischer Analyse: Yandex AppMetrica. Die App sendet
+				nur freigegebene technische Events; keine Blutdruckwerte,
+				Medikamentennamen, Notizen oder Profilnamen. Standort-Tracking in
+				dieser Konfiguration aus. Siehe AppMetrica-Data-Safety-Dokumentation
+				(Crashes, Diagnosen, IDs usw.).
 			</p>
 		</section>
 
 		<section>
-			<h2>8. Benachrichtigungen</h2>
+			<h2>8. Werbe-ID und Gerätedaten</h2>
 			<p>
-				Es werden lokale Erinnerungen genutzt. Es gibt keinen Remote-Push des
-				Entwicklers.
+				Bei optionalen SDKs können technische Gerätedaten und die GAID
+				(gemäß Android-Einstellungen) verarbeitet werden. TypeScript-Code
+				liest die Advertising ID nicht direkt.
 			</p>
 		</section>
 
 		<section>
-			<h2>9. Löschen von Daten</h2>
+			<h2>9. Rechtsgrundlagen</h2>
+			<ul>
+				<li><strong>Einwilligung</strong> — optionale Werbung und/oder Analyse;</li>
+				<li><strong>berechtigte Interessen / Vertragserfüllung</strong> — lokales Tagebuch, soweit anwendbar;</li>
+				<li>weitere gesetzlich erforderliche Grundlagen.</li>
+			</ul>
+		</section>
+
+		<section>
+			<h2>10. Einwilligung, Ablehnung und Widerruf</h2>
 			<p>
-				Messungen, Gesundheitswerte, Medikamente, Erinnerungen und Profile
-				(außer dem letzten) können in der App gelöscht werden. Es gibt keine
-				Nutzerkonten.
+				Analyse und Werbung können unabhängig beim Start und in den
+				Einstellungen erlaubt oder abgelehnt werden. Tagebuchfunktionen bleiben
+				verfügbar. Yandex Ads erhält die Entscheidung über
+				<code>setUserConsent</code>; AppMetrica wird nur bei erlaubter Analyse
+				aktiviert. Kein Google-zertifiziertes CMP / IAB TCF; AdMob ist nicht
+				enthalten.
 			</p>
 		</section>
 
 		<section>
-			<h2>10. AppMetrica-Analyse</h2>
+			<h2>11. Internationale Übermittlungen</h2>
 			<p>
-				Technische Nutzungsanalyse über
-				<a href="https://appmetrica.yandex.ru/" rel="noopener noreferrer" target="_blank">Yandex AppMetrica</a>.
-				Keine Übermittlung von Blutdruck-, Puls-, Medikamenten-, Notiz- oder
-				Profilwerten.
+				Bei aktivierten Yandex-SDKs können technische Daten gemäß Yandex-
+				Bedingungen verarbeitet werden, ggf. außerhalb Ihres Wohnsitzlandes.
+				Es werden keine erfundenen Serverstandorte oder vertraglichen
+				Mechanismen behauptet.
 			</p>
 		</section>
 
 		<section>
-			<h2>11. Werbung und Advertising ID</h2>
+			<h2>12. Speicherdauer</h2>
 			<p>
-				Es wird
-				<a href="https://yandex.ru/dev/mobile-ads/" rel="noopener noreferrer" target="_blank">Yandex Mobile Ads</a>
-				verwendet. Das SDK kann technische Geräteinformationen und die
-				Advertising ID gemäß Yandex-Richtlinien und Geräteeinstellungen
-				verarbeiten.
+				Lokales Tagebuch: bis Löschung oder Deinstallation. Yandex-SDK-Daten:
+				nach Yandex-Richtlinien. Der Entwickler legt keine einheitliche Frist
+				für alle Yandex-Systeme fest.
 			</p>
 		</section>
 
 		<section>
-			<h2>12. Internet</h2>
-			<p>Internetzugriff dient Werbung und AppMetrica. Das Tagebuch funktioniert auch offline.</p>
+			<h2>13. Rechte und Kontakt</h2>
+			<p>
+				Je nach anwendbarem Recht (z. B. DSGVO / UK GDPR) können Rechte auf
+				Auskunft, Berichtigung, Löschung usw. bestehen.
+				Kontakt: <a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
+			</p>
 		</section>
 
 		<section>
-			<h2>13. Kontakt</h2>
+			<h2>14. Löschung und Grenzen der Kontrolle</h2>
 			<p>
-				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+				Lokale Einträge können gelöscht oder die App deinstalliert werden.
+				Der Entwickler <strong>kann keine Löschung</strong> technischer Daten
+				garantieren, die bereits von Yandex verarbeitet wurden.
+			</p>
+		</section>
+
+		<section>
+			<h2>15. Sicherheit</h2>
+			<p>
+				Lokale Daten in der App-Sandbox. SDK-Verkehr gemäß dokumentierter
+				Verschlüsselung der Anbieter (z. B. HTTPS/TLS). Gerät sperren und
+				Exporte nur an vertrauenswürdige Empfänger teilen.
+			</p>
+		</section>
+
+		<section>
+			<h2>16. Alter</h2>
+			<p>
+				Für Erwachsene. Nicht für Kinder und nicht für Google-Play-Families-
+				Programme ausgelegt. Unter dem digitalen Einwilligungsalter nur mit
+				Erziehungsberechtigten gemäß lokalem Recht nutzen.
+			</p>
+		</section>
+
+		<section>
+			<h2>17. Änderungen</h2>
+			<p>
+				Diese Erklärung kann aktualisiert werden; das Gültigkeitsdatum wird
+				angepasst.
+			</p>
+		</section>
+
+		<section>
+			<h2>18. Kontakt</h2>
+			<p>
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a><br />
+				Öffentliche URL (nach Veröffentlichung):
+				<a href="https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html">https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html</a>
 			</p>
 		</section>
 	</main>

@@ -202,6 +202,8 @@ export function DoctorReportScreen() {
 	}
 
 	const canGenerate = Boolean(preview?.hasAnyData) && !generating && !previewLoading
+	// Keep share/create above the system navigation / gesture inset on tall phones.
+	const actionFooterPad = Math.max(insets.bottom, spacing.md) + spacing.md
 
 	return (
 		<>
@@ -215,11 +217,13 @@ export function DoctorReportScreen() {
 					headerShadowVisible: false,
 				}}
 			/>
+			<View style={styles.root}>
 			<ScrollView
-				style={styles.root}
+				style={styles.scroll}
 				contentContainerStyle={{
 					paddingHorizontal: spacing.lg,
-					paddingBottom: insets.bottom + spacing.xl,
+					// Extra room so the last preview lines clear the sticky action footer.
+					paddingBottom: spacing.xl + (pdf ? 120 : 72),
 					paddingTop: spacing.md,
 				}}
 				keyboardShouldPersistTaps="handled"
@@ -388,35 +392,44 @@ export function DoctorReportScreen() {
 				{actionError ? (
 					<Text style={styles.errorText}>{actionError}</Text>
 				) : null}
-
-				<View style={styles.actions}>
-					<PrimaryButton
-						label={
-							generating ? t('report.creating') : t('report.createPdf')
-						}
-						onPress={() => {
-							void handleGenerate()
-						}}
-						disabled={!canGenerate}
-					/>
-					{pdf ? (
-						<View style={styles.sharePad}>
-							<Text style={styles.pdfReady}>
-								{t('report.pdfReady', { name: pdf.fileName })}
-							</Text>
-							<PrimaryButton
-								label={
-									sharing ? t('report.sharing') : t('report.share')
-								}
-								onPress={() => {
-									void handleShare()
-								}}
-								disabled={sharing}
-							/>
-						</View>
-					) : null}
-				</View>
 			</ScrollView>
+
+			{/* Sticky footer: Create/Share stay above Android nav / gesture bar. */}
+			<View
+				style={[
+					styles.actionFooter,
+					{ paddingBottom: actionFooterPad },
+				]}
+			>
+				{pdf ? (
+					<Text style={styles.pdfReady} accessibilityLiveRegion="polite">
+						{t('report.pdfReady', { name: pdf.fileName })}
+					</Text>
+				) : null}
+				<PrimaryButton
+					label={
+						generating ? t('report.creating') : t('report.createPdf')
+					}
+					onPress={() => {
+						void handleGenerate()
+					}}
+					disabled={!canGenerate}
+				/>
+				{pdf ? (
+					<View style={styles.sharePad}>
+						<PrimaryButton
+							label={
+								sharing ? t('report.sharing') : t('report.share')
+							}
+							onPress={() => {
+								void handleShare()
+							}}
+							disabled={sharing}
+						/>
+					</View>
+				) : null}
+			</View>
+			</View>
 		</>
 	)
 }
@@ -424,6 +437,16 @@ export function DoctorReportScreen() {
 const styles = StyleSheet.create({
 	root: {
 		flex: 1,
+		backgroundColor: colors.background,
+	},
+	scroll: {
+		flex: 1,
+	},
+	actionFooter: {
+		paddingHorizontal: spacing.lg,
+		paddingTop: spacing.md,
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderTopColor: colors.border,
 		backgroundColor: colors.background,
 	},
 	centered: {
@@ -538,11 +561,8 @@ const styles = StyleSheet.create({
 		color: colors.textMuted,
 		marginTop: spacing.xs,
 	},
-	actions: {
-		marginTop: spacing.lg,
-	},
 	sharePad: {
-		marginTop: spacing.md,
+		marginTop: spacing.sm,
 	},
 	pdfReady: {
 		fontSize: typography.secondary,

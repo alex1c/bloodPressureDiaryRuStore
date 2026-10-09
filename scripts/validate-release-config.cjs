@@ -157,7 +157,7 @@ if (
 }
 ok(`AppMetrica key present (${apiKey.slice(0, 8)}…)`)
 
-const adIds = {
+const rustoreAdIds = {
 	diaryBanner: 'R-M-20056373-1',
 	graphsBanner: 'R-M-20056373-2',
 	healthBanner: 'R-M-20056373-3',
@@ -165,43 +165,93 @@ const adIds = {
 	medicationsBanner: 'R-M-20056373-5',
 }
 
-for (const [name, expected] of Object.entries(adIds)) {
+const googlePlayAdIds = {
+	diaryBanner: 'R-M-20201011-1',
+	graphsBanner: 'R-M-20201011-2',
+	healthBanner: 'R-M-20201011-3',
+	medicationsBanner: 'R-M-20201011-4',
+	interstitial: 'R-M-20201011-5',
+}
+
+for (const [name, expected] of Object.entries(rustoreAdIds)) {
 	if (!adsSrc.includes(`${name}: '${expected}'`)) {
-		fail(`Yandex ad id missing or changed: ${name}`)
+		fail(`RuStore Yandex ad id missing or changed: ${name}`)
 	}
 }
-ok('All 5 Yandex production block IDs present')
+ok('All 5 RuStore Yandex production block IDs present')
 
-const unique = new Set(Object.values(adIds))
-if (unique.size !== 5) {
-	fail('Yandex block IDs must be distinct')
+for (const [name, expected] of Object.entries(googlePlayAdIds)) {
+	if (!adsSrc.includes(`${name}: '${expected}'`)) {
+		fail(`Google Play Yandex ad id missing or changed: ${name}`)
+	}
 }
-ok('Yandex block IDs distinct')
+ok('All 5 Google Play Yandex production block IDs present')
 
-const productionBlock =
-	adsSrc.match(/export const yandexAdsProduction = \{[\s\S]*?\n\}/)?.[0] ?? ''
+if (new Set(Object.values(rustoreAdIds)).size !== 5) {
+	fail('RuStore Yandex block IDs must be distinct')
+}
+if (new Set(Object.values(googlePlayAdIds)).size !== 5) {
+	fail('Google Play Yandex block IDs must be distinct')
+}
+ok('Yandex block IDs distinct per store')
+
+// Guard against swapping interstitial/meds across stores.
 if (
-	productionBlock.includes('demo-banner-yandex') ||
-	productionBlock.includes('demo-interstitial-yandex')
+	!adsSrc.includes("interstitial: 'R-M-20056373-4'") ||
+	!adsSrc.includes("medicationsBanner: 'R-M-20056373-5'")
 ) {
-	fail('Production config must not use Yandex demo IDs')
+	fail('RuStore interstitial must stay №4 and medications №5')
 }
-ok('Production config not using Yandex demo IDs in production map')
+if (
+	!adsSrc.includes("medicationsBanner: 'R-M-20201011-4'") ||
+	!adsSrc.includes("interstitial: 'R-M-20201011-5'")
+) {
+	fail('Google Play medications must stay №4 and interstitial №5')
+}
+ok('Interstitial/medications block numbers correct per store')
+
+if (
+	adsSrc.includes("yandexAdsRustoreProduction") === false ||
+	adsSrc.includes("yandexAdsGooglePlayProduction") === false
+) {
+	fail('Store-specific production ad maps must exist')
+}
+ok('Store-specific Yandex production maps present')
+
+const rustoreBlock =
+	adsSrc.match(
+		/export const yandexAdsRustoreProduction = \{[\s\S]*?\n\} as const/,
+	)?.[0] ?? ''
+const googlePlayBlock =
+	adsSrc.match(
+		/export const yandexAdsGooglePlayProduction = \{[\s\S]*?\n\} as const/,
+	)?.[0] ?? ''
+if (
+	!rustoreBlock ||
+	!googlePlayBlock ||
+	rustoreBlock.includes('demo-banner-yandex') ||
+	rustoreBlock.includes('demo-interstitial-yandex') ||
+	googlePlayBlock.includes('demo-banner-yandex') ||
+	googlePlayBlock.includes('demo-interstitial-yandex')
+) {
+	fail('Production store maps must not use Yandex demo IDs')
+}
+ok('Production config not using Yandex demo IDs in production maps')
 
 if (!appConfigJs.includes(`androidPackage: '${PACKAGE_ID}'`)) {
 	fail('package ID mismatch in src/config/app-config.ts')
 }
 ok(`package ID = ${PACKAGE_ID}`)
 
-if (!appConfigJs.includes("versionName: '1.1.0'")) {
+if (!appConfigJs.includes("versionName: '1.1.1'")) {
 	fail('versionName mismatch')
 }
-ok('version = 1.1.0')
+ok('version = 1.1.1')
 
-if (!appConfigJs.includes('versionCode: 4')) {
+if (!appConfigJs.includes('versionCode: 5')) {
 	fail('versionCode mismatch')
 }
-ok('versionCode = 4')
+ok('versionCode = 5')
 
 if (!appConfigSrc.includes('storeId')) {
 	fail('app.config.ts must embed storeId in extra')
@@ -263,6 +313,9 @@ ok('privacy pages present (RU/EN/ES/DE)')
 
 if (!exists('docs/google-play/DATA_SAFETY.md')) {
 	fail('docs/google-play/DATA_SAFETY.md missing')
+}
+if (!exists('docs/google-play/INTERNATIONAL_CONSENT.md')) {
+	fail('docs/google-play/INTERNATIONAL_CONSENT.md missing')
 }
 if (!exists('docs/google-play/PLAY_CONSOLE_CHECKLIST.md')) {
 	fail('docs/google-play/PLAY_CONSOLE_CHECKLIST.md missing')

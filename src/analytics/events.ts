@@ -1,11 +1,9 @@
-import type { HealthMetricKind } from '@/domain/types'
 import type { StatsPeriodDays } from '@/domain/statistics/measurement-stats'
 import { getAnalyticsBackend } from './backend'
+import { filterAllowedAnalyticsEvent } from './allowlist'
 import type { SafeAnalyticsParams } from './sanitize'
 
 export type GraphAnalyticsPeriod = '7' | '30' | '90' | 'all'
-
-export type HealthMetricAnalyticsType = HealthMetricKind
 
 function toGraphPeriod(period: StatsPeriodDays): GraphAnalyticsPeriod {
 	if (period === 'all') {
@@ -15,10 +13,23 @@ function toGraphPeriod(period: StatsPeriodDays): GraphAnalyticsPeriod {
 }
 
 function report(event: string, params?: SafeAnalyticsParams): void {
-	getAnalyticsBackend().report(event, params)
+	const filtered = filterAllowedAnalyticsEvent(event, params)
+	if (!filtered) {
+		if (__DEV__) {
+			console.warn('[analytics] dropped non-allowlisted event', event, params)
+		}
+		return
+	}
+	getAnalyticsBackend().report(filtered.event, filtered.params)
 }
 
-/** Central analytics API — UI must use these typed helpers, not raw SDK calls. */
+/**
+ * Central analytics API.
+ *
+ * Privacy contract (Codex P1): never report events triggered by creating,
+ * updating, or deleting medical diary data (measurements, health metrics,
+ * medications, intakes). Doctor PDF/share events carry no medical params.
+ */
 export const analytics = {
 	trackAppOpen() {
 		report('app_open')
@@ -28,22 +39,19 @@ export const analytics = {
 		report('app_session_started')
 	},
 
-	trackMeasurementCreated(input: { hasTags: boolean; hasNote: boolean }) {
-		report('measurement_created', {
-			has_tags: input.hasTags,
-			has_note: input.hasNote,
-		})
+	/** @deprecated Medical mutation — intentionally not reported. */
+	trackMeasurementCreated(_input?: { hasTags?: boolean; hasNote?: boolean }) {
+		/* medical mutation — blocked */
 	},
 
-	trackMeasurementUpdated(input: { hasTags: boolean; hasNote: boolean }) {
-		report('measurement_updated', {
-			has_tags: input.hasTags,
-			has_note: input.hasNote,
-		})
+	/** @deprecated Medical mutation — intentionally not reported. */
+	trackMeasurementUpdated(_input?: { hasTags?: boolean; hasNote?: boolean }) {
+		/* medical mutation — blocked */
 	},
 
+	/** @deprecated Medical mutation — intentionally not reported. */
 	trackMeasurementDeleted() {
-		report('measurement_deleted')
+		/* medical mutation — blocked */
 	},
 
 	trackGraphsOpened() {
@@ -54,24 +62,29 @@ export const analytics = {
 		report('graph_period_changed', { period: toGraphPeriod(period) })
 	},
 
+	/** @deprecated Medical mutation — intentionally not reported. */
 	trackMedicationCreated() {
-		report('medication_created')
+		/* medical mutation — blocked */
 	},
 
+	/** @deprecated Medical mutation — intentionally not reported. */
 	trackMedicationUpdated() {
-		report('medication_updated')
+		/* medical mutation — blocked */
 	},
 
+	/** @deprecated Medical mutation — intentionally not reported. */
 	trackMedicationDeactivated() {
-		report('medication_deactivated')
+		/* medical mutation — blocked */
 	},
 
+	/** @deprecated Medical intake fact — intentionally not reported. */
 	trackMedicationIntakeMarked() {
-		report('medication_intake_marked')
+		/* medical intake — blocked */
 	},
 
+	/** @deprecated Medical intake fact — intentionally not reported. */
 	trackMedicationIntakeUndone() {
-		report('medication_intake_undone')
+		/* medical intake — blocked */
 	},
 
 	trackReminderEnabled() {
@@ -82,8 +95,9 @@ export const analytics = {
 		report('reminder_permission_denied')
 	},
 
-	trackHealthMetricCreated(metricType: HealthMetricAnalyticsType) {
-		report('health_metric_created', { metric_type: metricType })
+	/** @deprecated Medical mutation — intentionally not reported. */
+	trackHealthMetricCreated(_metricType?: string) {
+		/* medical mutation — blocked */
 	},
 
 	trackProfileCreated() {
@@ -98,24 +112,20 @@ export const analytics = {
 		report('doctor_report_opened')
 	},
 
-	trackDoctorReportPdfCreated(input: {
-		reportPeriod: string
-		hasMeasurements: boolean
+	/** Feature usage only — no period ranges or measurement flags. */
+	trackDoctorReportPdfCreated(_input?: {
+		reportPeriod?: string
+		hasMeasurements?: boolean
 	}) {
-		report('doctor_report_pdf_created', {
-			report_period: input.reportPeriod,
-			has_measurements: input.hasMeasurements,
-		})
+		report('doctor_report_pdf_created')
 	},
 
-	trackDoctorReportShared(input: {
-		reportPeriod: string
-		hasMeasurements: boolean
+	/** Feature usage only — no period ranges or measurement flags. */
+	trackDoctorReportShared(_input?: {
+		reportPeriod?: string
+		hasMeasurements?: boolean
 	}) {
-		report('doctor_report_shared', {
-			report_period: input.reportPeriod,
-			has_measurements: input.hasMeasurements,
-		})
+		report('doctor_report_shared')
 	},
 
 	trackBackupCreated() {
@@ -134,7 +144,6 @@ export const analytics = {
 		report('backup_restore_failed')
 	},
 
-	/** Language preference changed — locale codes only, never health content. */
 	trackLocaleChanged(input: { locale: string; preference: string }) {
 		report('locale_changed', {
 			locale: input.locale,

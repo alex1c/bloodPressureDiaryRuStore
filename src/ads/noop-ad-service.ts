@@ -1,9 +1,11 @@
 import type { BannerPlacement } from '@/config/ads'
 import type { InterstitialEligibilityInput } from './ad-policy'
 import { evaluateInterstitialEligibility } from './ad-policy'
+import type { InterstitialShowGuard } from './yandex-ad-service'
 
 /** No-op ad service used in tests and before production wiring. */
 export function createNoopAdService() {
+	let allowed = true
 	return {
 		async initialize() {
 			/* noop */
@@ -12,7 +14,7 @@ export function createNoopAdService() {
 			/* noop */
 		},
 		canShowAds(context: { hasCompletedFirstMeasurement: boolean }) {
-			return context.hasCompletedFirstMeasurement === true
+			return allowed && context.hasCompletedFirstMeasurement === true
 		},
 		getBannerAdUnitId(_placement: BannerPlacement) {
 			return 'demo-banner-yandex'
@@ -28,13 +30,17 @@ export function createNoopAdService() {
 				interstitialReady: false,
 			})
 		},
-		maybeShowGraphsInterstitial(_input: {
-			hasCompletedFirstMeasurement: boolean
-		}) {
+		maybeShowGraphsInterstitial(_input: InterstitialShowGuard) {
 			/* noop */
 		},
-		async tryShowInterstitial() {
+		async tryShowInterstitial(_guard: InterstitialShowGuard) {
 			/* noop */
+		},
+		setAdsAllowed(next: boolean) {
+			allowed = next
+		},
+		isAdsAllowed() {
+			return allowed
 		},
 	}
 }

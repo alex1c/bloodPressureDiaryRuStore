@@ -180,6 +180,23 @@ export const es: MessageCatalog = {
 	'settings.picking': 'Eligiendo archivo…',
 	'settings.about': 'Acerca de',
 	'settings.privacy': 'Política de privacidad',
+	'settings.privacyChoices': 'Anuncios y analítica',
+	'privacy.consentTitle': 'Anuncios y analítica',
+	'privacy.consentBody':
+		'Yandex Mobile Ads (publicidad) y AppMetrica (analítica técnica) opcionales pueden usar identificadores del dispositivo, Advertising ID, IP y datos técnicos relacionados. Su diario de presión, pulso y medicamentos permanece en el dispositivo y no se envía a estos servicios. Puede rechazar o cambiar la elección en Ajustes: las funciones principales siguen disponibles.',
+	'privacy.consentAdsNote':
+		'Si permite anuncios, pueden ser personalizados. Este SDK no ofrece un interruptor garantizado de “solo no personalizados”, así que los anuncios se bloquean por completo al desactivar la publicidad.',
+	'privacy.sessionConfirmNote':
+		'Confirme sus opciones para esta sesión. Los interruptores pueden mostrar preferencias anteriores, pero anuncios y analítica permanecen desactivados hasta que pulse Guardar.',
+	'privacy.purposeAnalytics': 'Analítica técnica (AppMetrica)',
+	'privacy.purposeAds': 'Publicidad (Yandex Mobile Ads)',
+	'privacy.openPolicy': 'Abrir política de privacidad',
+	'privacy.consentSave': 'Guardar opciones',
+	'privacy.consentAccept': 'Permitir anuncios y analítica',
+	'privacy.consentDecline': 'Continuar sin anuncios ni analítica',
+	'privacy.persistError':
+		'No se pudo guardar su elección en este dispositivo. Toque Reintentar — no asuma que se guardó.',
+	'privacy.persistRetry': 'Reintentar guardado',
 	'settings.contact': 'Contactar al desarrollador',
 	'settings.language': 'Idioma',
 	'settings.language.system': 'Sistema',

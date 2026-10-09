@@ -104,13 +104,26 @@ export function recordGraphsPeriodChange(): number {
 	return memory.graphsPeriodChangesThisSession
 }
 
+/**
+ * Records a shown interstitial for ForestMusic limits.
+ * Memory is updated first (fail-closed for session max-1). Persist errors are
+ * swallowed after the in-memory mark so a disk failure cannot allow another
+ * show this session.
+ */
 export async function markInterstitialShown(now = new Date()): Promise<void> {
 	memory.interstitialShownThisSession = true
 	memory.lastInterstitialAt = now.toISOString()
-	await writePersistedAdSessionState({
-		sessionCount: memory.sessionCount,
-		lastInterstitialAt: memory.lastInterstitialAt,
-	})
+	try {
+		await writePersistedAdSessionState({
+			sessionCount: memory.sessionCount,
+			lastInterstitialAt: memory.lastInterstitialAt,
+		})
+	} catch (error) {
+		if (__DEV__) {
+			console.warn('[ads] cooldown persist failed', error)
+		}
+		// Keep in-memory mark — do not clear on persist failure.
+	}
 }
 
 export type InterstitialEligibilityInput = {

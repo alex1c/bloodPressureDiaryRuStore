@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	Pressable,
@@ -7,7 +7,7 @@ import {
 	Text,
 	View,
 } from 'react-native'
-import { useFocusEffect, useRouter, type Href } from 'expo-router'
+import { useFocusEffect, usePathname, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
 	ScreenWithBottomBanner,
@@ -18,6 +18,11 @@ import {
 	recordGraphsFocus,
 	recordGraphsPeriodChange,
 } from '@/ads'
+import {
+	getLiveInterstitialUiState,
+	reportNavigationPathname,
+	setGraphsScreenFocused,
+} from '@/ads/ui-safety-gate'
 import { analytics } from '@/analytics'
 import {
 	buildChartSeries,
@@ -51,17 +56,27 @@ const CHART_MAX_POINTS = 120
 export function GraphsScreen() {
 	const insets = useSafeAreaInsets()
 	const router = useRouter()
+	const pathname = usePathname()
 	const { t } = useI18n()
 	const { ready, error, profile, profileMeasurements, refreshAll } = useDiary()
 	const { canShowAds, hasCompletedFirstMeasurement } = useAdPolicy()
 	const [period, setPeriod] = useState<StatsPeriodDays>(7)
 
+	useEffect(() => {
+		reportNavigationPathname(pathname)
+	}, [pathname])
+
 	useFocusEffect(
 		useCallback(() => {
+			setGraphsScreenFocused(true)
+			reportNavigationPathname(pathname)
 			void refreshAll()
 			recordGraphsFocus()
 			analytics.trackGraphsOpened()
-		}, [refreshAll]),
+			return () => {
+				setGraphsScreenFocused(false)
+			}
+		}, [refreshAll, pathname]),
 	)
 
 	function handlePeriodChange(next: StatsPeriodDays) {
@@ -71,8 +86,24 @@ export function GraphsScreen() {
 		setPeriod(next)
 		analytics.trackGraphPeriodChanged(next)
 		recordGraphsPeriodChange()
+		reportNavigationPathname(pathname)
+		const ui = getLiveInterstitialUiState(pathname)
 		getAdService().maybeShowGraphsInterstitial({
 			hasCompletedFirstMeasurement,
+			hasBlockingModal: ui.hasBlockingModal,
+			hasKeyboardOrInputFlow: ui.hasKeyboardOrInputFlow,
+			onSensitiveScreen: ui.onSensitiveScreen,
+			uiStateConfirmed: ui.uiStateConfirmed,
+			// Fresh probe before native show — ignore the earlier snapshot alone.
+			refreshUiState: () => {
+				const live = getLiveInterstitialUiState()
+				return {
+					uiStateConfirmed: live.uiStateConfirmed,
+					hasBlockingModal: live.hasBlockingModal,
+					hasKeyboardOrInputFlow: live.hasKeyboardOrInputFlow,
+					onSensitiveScreen: live.onSensitiveScreen,
+				}
+			},
 		})
 	}
 

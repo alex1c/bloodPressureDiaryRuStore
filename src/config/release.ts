@@ -12,7 +12,7 @@ export const releaseIdentity = {
 	iconMasterAsset: 'assets/icon_gpt.png',
 	standardIconAsset: 'assets/icon.png',
 	storeIconPath: 'release-artifacts/icon-512.png',
-	effectivePrivacyDate: '2026-10-06',
+	effectivePrivacyDate: '2026-10-08',
 } as const
 
 /**

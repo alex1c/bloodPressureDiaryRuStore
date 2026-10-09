@@ -1,6 +1,9 @@
 /**
  * Runtime accessor for the active store configuration.
  * Build-time APP_STORE is embedded into Expo `extra.storeId`.
+ *
+ * Release / production runtimes MUST have an explicit storeId — never fall
+ * back to RuStore when `__DEV__ === false` or APP_VARIANT=production.
  */
 
 import Constants from 'expo-constants'
@@ -26,14 +29,29 @@ function readEmbeddedStoreId(): string | undefined {
 	return extra?.storeId
 }
 
-function isProductionVariant(): boolean {
+function readEmbeddedAppVariant(): string | undefined {
 	const extra = Constants.expoConfig?.extra as
-		| { appVariant?: string }
+		| { storeId?: string; appVariant?: string }
 		| undefined
-	if (extra?.appVariant === 'production') {
+	return extra?.appVariant
+}
+
+/**
+ * True when the JS runtime must fail closed without an explicit APP_STORE.
+ * Covers production prebuild AND any release bundle where `__DEV__ === false`,
+ * even if `extra.appVariant` was omitted.
+ */
+export function requiresExplicitStoreId(
+	appVariant: string | undefined = readEmbeddedAppVariant(),
+	isDev: boolean = typeof __DEV__ === 'boolean' ? __DEV__ : true,
+): boolean {
+	if (appVariant === 'production') {
 		return true
 	}
 	if (typeof process !== 'undefined' && process.env.APP_VARIANT === 'production') {
+		return true
+	}
+	if (isDev === false) {
 		return true
 	}
 	return false
@@ -48,7 +66,7 @@ export function getActiveStoreId(): StoreId {
 	const env =
 		typeof process !== 'undefined' ? process.env.APP_STORE : undefined
 	return resolveStoreId(embedded ?? env, {
-		requireExplicit: isProductionVariant(),
+		requireExplicit: requiresExplicitStoreId(),
 		developmentDefault: 'rustore',
 	})
 }
@@ -62,7 +80,7 @@ export function getActiveStoreConfig(): StoreConfig {
 	const env =
 		typeof process !== 'undefined' ? process.env.APP_STORE : undefined
 	return resolveStoreConfig(embedded ?? env, {
-		requireExplicit: isProductionVariant(),
+		requireExplicit: requiresExplicitStoreId(),
 		developmentDefault: 'rustore',
 	})
 }

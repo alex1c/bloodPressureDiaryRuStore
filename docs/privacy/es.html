@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>Política de privacidad — Diario de presión arterial</title>
+	<title>Política de privacidad — Blood Pressure Diary</title>
 	<style>
 		:root { color-scheme: light; --text:#1a202c; --muted:#4a5568; --accent:#2b6cb0; --bg:#f7fafc; --card:#fff; }
 		body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.6; color:var(--text); background:var(--bg); }
@@ -14,14 +14,17 @@
 		.langs a { color:var(--accent); } .langs strong { color:var(--text); }
 		section { background:var(--card); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
 		a { color:var(--accent); } ul { padding-left:1.25rem; }
+		.note { color:var(--muted); font-size:0.95rem; }
 	</style>
 </head>
 <body>
 	<main>
 		<h1>Política de privacidad</h1>
 		<p class="meta">
-			Aplicación «Diario de presión arterial» / «Дневник давления» (com.calculatorplatform.bpdiary)<br />
-			Fecha de entrada en vigor: 6 de octubre de 2026
+			App “Blood Pressure Diary” / «Дневник давления»<br />
+			Package: <code>com.calculatorplatform.bpdiary</code><br />
+			Fecha de vigencia: 9 de octubre de 2026<br />
+			Aplicable a Google Play y RuStore.
 		</p>
 		<p class="langs" aria-label="Idioma">
 			<a href="../privacy.html">RU</a>
@@ -29,117 +32,175 @@
 			<strong>ES</strong>
 			<a href="de.html">DE</a>
 		</p>
+		<p class="note">
+			Versión en español alineada con la política internacional EN/RU.
+			En caso de duda, prevalecen las versiones EN/RU.
+		</p>
 
 		<section>
-			<h2>1. Información general</h2>
+			<h2>1. Desarrollador y contacto</h2>
 			<p>
-				Esta aplicación es un diario personal para registrar la presión arterial,
-				el pulso y otras métricas de salud que usted introduce. No es un
-				dispositivo médico, no diagnostica y no sustituye la consulta médica.
+				Desarrollador individual.
+				Contacto: <a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
 			</p>
 		</section>
 
 		<section>
-			<h2>2. Datos que usted introduce</h2>
+			<h2>2. Finalidad de la app</h2>
+			<p>
+				Diario personal de presión arterial, pulso, medicación y métricas
+				relacionadas. No es un dispositivo médico ni sustituye consejo médico.
+			</p>
+		</section>
+
+		<section>
+			<h2>3. Registros sanitarios locales</h2>
 			<ul>
-				<li>presión arterial (sistólica y diastólica);</li>
-				<li>pulso;</li>
+				<li>presión (sistólica / diastólica) y pulso;</li>
 				<li>notas y etiquetas;</li>
-				<li>métricas de salud (peso, glucosa, SpO₂, temperatura);</li>
-				<li>medicamentos, horarios y tomas registradas;</li>
+				<li>métricas adicionales (peso, glucosa, SpO₂, temperatura, etc.);</li>
+				<li>medicamentos, horarios y tomas;</li>
 				<li>nombres de perfiles familiares;</li>
-				<li>idioma y recordatorios;</li>
-				<li>copias de seguridad creadas manualmente.</li>
+				<li>idioma y recordatorios locales.</li>
 			</ul>
 		</section>
 
 		<section>
-			<h2>3. Dónde se almacenan</h2>
+			<h2>4. Sin cuenta ni nube del desarrollador</h2>
 			<p>
-				Los datos principales del diario se guardan <strong>localmente en el
-				dispositivo</strong> en una base SQLite. No hay sincronización con un
-				servidor del desarrollador ni cuentas de usuario en la nube del
-				desarrollador.
+				No se requiere cuenta. No hay servidor de sincronización del diario
+				operado por el desarrollador.
 			</p>
 		</section>
 
 		<section>
-			<h2>4. Android Auto Backup</h2>
+			<h2>5. SQLite local y exportaciones</h2>
 			<p>
-				La copia de seguridad automática de Android (Auto Backup) está
-				<strong>desactivada</strong> para los datos de esta aplicación. El
-				método admitido es una exportación JSON manual desde Ajustes.
+				Los datos del diario se guardan en SQLite local. Android Auto Backup
+				está <strong>desactivado</strong>. PDF/JSON solo salen del dispositivo
+				si usted los comparte explícitamente.
 			</p>
 		</section>
 
 		<section>
-			<h2>5. Perfiles</h2>
-			<p>Los nombres de perfil permanecen en su dispositivo.</p>
-		</section>
-
-		<section>
-			<h2>6. Copia JSON</h2>
+			<h2>6. Yandex Mobile Ads</h2>
 			<p>
-				Las copias se crean solo por acción explícita del usuario y no se
-				suben a un servidor del desarrollador.
+				Si permite publicidad, se usa Yandex Mobile Ads (banners e intersticiales).
+				No se incluye Google AdMob. Según la guía Data Safety de Yandex, el SDK
+				puede tratar identificadores de dispositivo / Advertising ID con fines
+				publicitarios; el contenido del diario no se declara como recogido por
+				el Ads SDK. Sin modo garantizado “solo anuncios no personalizados”:
+				rechazar publicidad bloquea las peticiones de anuncios.
 			</p>
 		</section>
 
 		<section>
-			<h2>7. Informe PDF</h2>
+			<h2>7. AppMetrica</h2>
 			<p>
-				El PDF se genera en el dispositivo y solo se comparte si usted usa la
-				hoja de compartir del sistema.
+				Si permite analítica técnica, se usa Yandex AppMetrica. El código de la
+				app solo envía eventos técnicos permitidos; no envía valores de presión,
+				medicación, notas ni nombres de perfil. Seguimiento de ubicación
+				desactivado en esta configuración. Véase la documentación Data Safety
+				de AppMetrica (crashes, diagnóstico, IDs, etc.).
 			</p>
 		</section>
 
 		<section>
-			<h2>8. Notificaciones</h2>
+			<h2>8. ID de publicidad y dispositivo</h2>
 			<p>
-				Se usan notificaciones locales de recordatorio. No hay push remoto del
-				desarrollador.
+				Con SDK opcionales habilitados pueden tratarse datos técnicos del
+				dispositivo y el GAID (según ajustes de Android). El código TypeScript
+				no lee el Advertising ID directamente.
 			</p>
 		</section>
 
 		<section>
-			<h2>9. Eliminación de datos</h2>
+			<h2>9. Bases jurídicas</h2>
+			<ul>
+				<li><strong>Consentimiento</strong> — publicidad y/o analítica opcionales;</li>
+				<li><strong>intereses legítimos / necesidad contractual</strong> — diario local, cuando proceda;</li>
+				<li>otras bases exigidas por la ley aplicable.</li>
+			</ul>
+		</section>
+
+		<section>
+			<h2>10. Consentimiento, negativa y retirada</h2>
 			<p>
-				Puede eliminar mediciones, métricas, medicamentos, recordatorios y
-				perfiles (excepto el último) dentro de la aplicación. No hay cuentas ni
-				base de salud alojada por el desarrollador.
+				Puede permitir o rechazar analítica y publicidad de forma independiente
+				al iniciar y en Ajustes. Las funciones del diario siguen disponibles.
+				Se usa <code>setUserConsent</code> de Yandex Ads; AppMetrica solo se
+				activa si permite analítica. Este diálogo no es un CMP certificado por
+				Google / IAB TCF; AdMob no está incluido.
 			</p>
 		</section>
 
 		<section>
-			<h2>10. Analítica AppMetrica</h2>
+			<h2>11. Transferencias internacionales</h2>
 			<p>
-				Se usa
-				<a href="https://appmetrica.yandex.ru/" rel="noopener noreferrer" target="_blank">Yandex AppMetrica</a>
-				para analítica técnica. No se envían valores de presión, pulso,
-				medicamentos, notas ni nombres de perfil.
+				Si habilita SDK de Yandex, los datos técnicos pueden tratarse conforme
+				a las condiciones de Yandex, posiblemente fuera de su país. No se
+				inventan países de alojamiento ni mecanismos contractuales concretos.
 			</p>
 		</section>
 
 		<section>
-			<h2>11. Publicidad e Advertising ID</h2>
+			<h2>12. Conservación</h2>
 			<p>
-				Se usa
-				<a href="https://yandex.ru/dev/mobile-ads/" rel="noopener noreferrer" target="_blank">Yandex Mobile Ads</a>.
-				El SDK puede tratar información técnica del dispositivo y el
-				Advertising ID según las políticas de Yandex y la configuración del
-				dispositivo.
+				Diario local: hasta que lo borre o desinstale la app. Datos de SDK
+				Yandex: según políticas de Yandex. El desarrollador no fija un plazo
+				único para sistemas de Yandex.
 			</p>
 		</section>
 
 		<section>
-			<h2>12. Internet</h2>
-			<p>Internet se usa para anuncios y eventos de AppMetrica. El diario funciona sin conexión permanente.</p>
+			<h2>13. Derechos y contacto</h2>
+			<p>
+				Según la ley aplicable (p. ej. RGPD / UK GDPR), puede ejercer derechos
+				de acceso, rectificación, supresión, etc.
+				Contacto: <a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
+			</p>
 		</section>
 
 		<section>
-			<h2>13. Contacto</h2>
+			<h2>14. Supresión y límites del desarrollador</h2>
 			<p>
-				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+				Puede borrar registros locales o desinstalar. El desarrollador
+				<strong>no puede garantizar</strong> la eliminación de datos técnicos
+				ya tratados por Yandex.
+			</p>
+		</section>
+
+		<section>
+			<h2>15. Seguridad</h2>
+			<p>
+				Datos locales en sandbox. Tráfico de SDK según cifrado documentado por
+				los proveedores (p. ej. HTTPS/TLS). Proteja el dispositivo y comparta
+				exportaciones solo con destinatarios de confianza.
+			</p>
+		</section>
+
+		<section>
+			<h2>16. Edad</h2>
+			<p>
+				Dirigida a adultos. No está pensada para niños ni programas Families
+				de Google Play. Si es menor de la edad de consentimiento digital,
+				use la app con un tutor según la ley local.
+			</p>
+		</section>
+
+		<section>
+			<h2>17. Cambios</h2>
+			<p>
+				Podemos actualizar esta política; se revisará la fecha de vigencia.
+			</p>
+		</section>
+
+		<section>
+			<h2>18. Contacto</h2>
+			<p>
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a><br />
+				URL pública (tras publicación):
+				<a href="https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html">https://alex1c.github.io/bloodPressureDiaryRuStore/privacy.html</a>
 			</p>
 		</section>
 	</main>

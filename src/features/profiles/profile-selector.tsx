@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { beginBlockingModal, endBlockingModal } from '@/ads/ui-safety-gate'
 import {
 	Alert,
 	Modal,
@@ -44,6 +45,16 @@ export function ProfileSelector({ compact = true }: ProfileSelectorProps) {
 	const [editor, setEditor] = useState<EditorMode>({ type: 'idle' })
 	const [addDraft, setAddDraft] = useState('')
 	const [busy, setBusy] = useState(false)
+
+	useEffect(() => {
+		if (!open) {
+			return
+		}
+		beginBlockingModal()
+		return () => {
+			endBlockingModal()
+		}
+	}, [open])
 
 	const close = useCallback(() => {
 		if (busy) {

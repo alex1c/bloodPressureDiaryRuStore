@@ -18,7 +18,13 @@ import {
 	BANNER_SLOT_HEIGHT,
 	scrollBottomInsetForBanner,
 } from '@/ads/banner-layout'
-import { yandexAdsProduction } from '@/config/ads'
+import {
+	yandexAdsGooglePlayProduction,
+	yandexAdsProduction,
+	yandexAdsRustoreProduction,
+	resolveBannerAdUnitId,
+	resolveInterstitialAdUnitId,
+} from '@/config/ads'
 
 const ROOT = path.resolve(__dirname, '../../..')
 
@@ -63,7 +69,7 @@ describe('Phase 3 privacy & store compliance', () => {
 		expect(releaseConfig.privacyPolicyUrl).toContain(
 			'bloodPressureDiaryRuStore/privacy.html',
 		)
-		expect(releaseIdentity.effectivePrivacyDate).toBe('2026-10-06')
+		expect(releaseIdentity.effectivePrivacyDate).toBe('2026-10-08')
 	})
 
 	it('ships localized privacy HTML pages', () => {
@@ -77,8 +83,38 @@ describe('Phase 3 privacy & store compliance', () => {
 			expect(html.toLowerCase()).toMatch(/appmetrica/)
 			expect(html.toLowerCase()).toMatch(/yandex|рекламн|publicidad|werbung/)
 			expect(html.toLowerCase()).toMatch(/auto backup|автоматическ|desactivad|deaktiviert/)
+			// International gate disclosure — must not claim Google-certified CMP.
+			expect(html.toLowerCase()).toMatch(
+				/first-party|sdk gate|cmp|tcf|сертифицированн|certificad/,
+			)
 			expect(html).toContain('rustore-alex1c@yandex.ru')
 		}
+	})
+
+	it('documents international CMP owner checkpoint', () => {
+		const doc = readRepo('docs/google-play/INTERNATIONAL_CONSENT.md')
+		expect(doc).toMatch(/OWNER CHECKPOINT/)
+		expect(doc).toMatch(/Google-certified/)
+		expect(doc).toMatch(/AdMob/)
+		expect(doc).toMatch(/Do Not Sell/)
+	})
+
+	it('disables Yandex automatic SDK initialization via Expo plugin', () => {
+		const plugin = readRepo('plugins/with-yandex-ads-manual-init.js')
+		expect(plugin).toContain('AUTOMATIC_SDK_INITIALIZATION')
+		expect(plugin).toContain('APPMETRICA_EASY_INTEGRATION_ENABLED')
+		expect(readRepo('app.config.ts')).toContain(
+			'./plugins/with-yandex-ads-manual-init',
+		)
+		expect(readRepo('android/app/src/main/AndroidManifest.xml')).toContain(
+			'com.yandex.mobile.ads.AUTOMATIC_SDK_INITIALIZATION',
+		)
+	})
+
+	it('does not declare local SQLite health as collected in Data Safety', () => {
+		const doc = readRepo('docs/google-play/DATA_SAFETY.md')
+		expect(doc).toMatch(/Local SQLite ≠ collected|not declare as collected solely/i)
+		expect(doc).toMatch(/In-app deletion \/ uninstall only|server-side deletion/i)
 	})
 
 	it('disables Android Auto Backup in Expo config', () => {
@@ -160,12 +196,26 @@ describe('Phase 3 privacy & store compliance', () => {
 		}
 	})
 
-	it('preserves production Yandex ad IDs and sticky banner helper', () => {
+	it('preserves RuStore and Google Play production Yandex ad IDs', () => {
+		expect(yandexAdsRustoreProduction).toEqual(yandexAdsProduction)
 		expect(yandexAdsProduction.diaryBanner).toBe('R-M-20056373-1')
 		expect(yandexAdsProduction.graphsBanner).toBe('R-M-20056373-2')
 		expect(yandexAdsProduction.healthBanner).toBe('R-M-20056373-3')
 		expect(yandexAdsProduction.interstitial).toBe('R-M-20056373-4')
 		expect(yandexAdsProduction.medicationsBanner).toBe('R-M-20056373-5')
+		expect(yandexAdsGooglePlayProduction.diaryBanner).toBe('R-M-20201011-1')
+		expect(yandexAdsGooglePlayProduction.graphsBanner).toBe('R-M-20201011-2')
+		expect(yandexAdsGooglePlayProduction.healthBanner).toBe('R-M-20201011-3')
+		expect(yandexAdsGooglePlayProduction.medicationsBanner).toBe(
+			'R-M-20201011-4',
+		)
+		expect(yandexAdsGooglePlayProduction.interstitial).toBe('R-M-20201011-5')
+		expect(
+			resolveBannerAdUnitId('medicationsBanner', 'production', 'googleplay'),
+		).toBe('R-M-20201011-4')
+		expect(resolveInterstitialAdUnitId('production', 'googleplay')).toBe(
+			'R-M-20201011-5',
+		)
 		expect(BANNER_SLOT_HEIGHT).toBe(60)
 		// Tab-bar owns the banner slot — scroll inset must NOT re-add 60dp.
 		expect(

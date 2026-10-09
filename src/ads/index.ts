@@ -1,5 +1,8 @@
 import { createNoopAdService } from './noop-ad-service'
-import { createYandexAdService } from './yandex-ad-service'
+import {
+	createYandexAdService,
+	type InterstitialShowGuard,
+} from './yandex-ad-service'
 import type { BannerPlacement } from '@/config/ads'
 import type { InterstitialEligibilityInput } from './ad-policy'
 
@@ -12,12 +15,12 @@ export interface AdService {
 	evaluateInterstitial(
 		input: Omit<InterstitialEligibilityInput, 'interstitialReady'>,
 	): ReturnType<ReturnType<typeof createYandexAdService>['evaluateInterstitial']>
-	maybeShowGraphsInterstitial(input: {
-		hasCompletedFirstMeasurement: boolean
-		hasBlockingModal?: boolean
-		hasKeyboardOrInputFlow?: boolean
-	}): void
-	tryShowInterstitial(): Promise<void>
+	maybeShowGraphsInterstitial(input: InterstitialShowGuard): void
+	/** Guard is mandatory for production ad service. */
+	tryShowInterstitial(guard: InterstitialShowGuard): Promise<void>
+	/** Live consent revoke — optional on noop. */
+	setAdsAllowed?(allowed: boolean): void
+	isAdsAllowed?(): boolean
 }
 
 let adService: AdService = createNoopAdService()
@@ -52,3 +55,10 @@ export {
 	clearPersistedAdSessionStateForTests,
 	readPersistedAdSessionState,
 } from './ad-session-persistence'
+export {
+	createYandexAdService,
+	resetYandexAdServiceForTests,
+	getAdsAllowedForTests,
+	getConsentEpochForTests,
+} from './yandex-ad-service'
+export type { InterstitialShowGuard } from './yandex-ad-service'
