@@ -2,20 +2,20 @@
 
 **Product:** Blood Pressure Diary / «Дневник давления» (`com.calculatorplatform.bpdiary`)
 **Candidate:** Google Play 1.1.1, versionCode 5
-**Report date:** 2026-10-09
-**Git:** HEAD `11cc298` on `master` (dirty working tree preserved; no reset/checkout)
+**Report date:** 2026-10-09 (corrections sync same day)
+**Git baseline for corrections:** `5dff7e2` (then docs commit on `master`)
 **Resolved SDKs:** `yandex-mobile-ads@8.3.0`, `@appmetrica/react-native-analytics@4.2.0`
 
 ---
 
 ## Final status
 
-### **READY WITH SPECIFIC BLOCKERS**
+### **PRIVACY DOCS READY** (owner publish / Console / AAB next)
 
-Document set and consent architecture are ready for international closed testing **after** the owner publishes the privacy HTML and fills Play Console Data Safety from the final matrix. Residual legal/vendor items are listed under BLOCKING / UNVERIFIED — they do not require rewriting the in-app consent system for this Yandex-only stack.
+Document set is internally consistent for Console after ChatGPT correction pass (deletion-request scope, Approximate location vendor-aligned answer, outdated release gates removed). Owner must still publish GitHub Pages and fill Console — those are operational steps, not doc contradictions.
 
-Not **PRIVACY READY** (absolute): public URL not published from this task; Console not submitted; pre-consent network not packet-proven.
-Not **BLOCKED**: no proven code defect forcing a consent rewrite or CMP before closed testing with disclosed Yandex SDKs.
+Already completed earlier (not re-run for this docs-only correction): OPPO functional QA, Codex audit, ~267 Jest, 64 privacy-related Jest.
+Honest residual kept: pre-consent SDK network not packet-proven — **not** reopened as a mandatory QA gate.
 
 ---
 
@@ -30,7 +30,15 @@ Not **BLOCKED**: no proven code defect forcing a consent rewrite or CMP before c
 | International checklist | `docs/google-play/INTERNATIONAL_PRIVACY_CHECKLIST.md` |
 | This report | `docs/google-play/PRIVACY_RELEASE_REPORT.md` |
 
-**Not done by design:** GitHub Pages publish, Play Console submit, AAB build, git push.
+**Not done by design in the privacy package:** GitHub Pages publish, Play Console submit, AAB build (owner next).
+
+### Corrections applied after independent ChatGPT review (2026-10-09)
+
+| Topic | Outcome |
+|-------|---------|
+| Data deletion Console answer | **Yes** via email request to `rustore-alex1c@yandex.ru` (Google-allowed mechanism). Local SQLite delete alone is **not** the basis. No claim of developer wipe of Yandex |
+| Approximate location | **No** (vendor-aligned). Google IP note recorded as residual; concrete Yandex support question provided |
+| Release gates | Removed obsolete “Codex PASS + physical QA again before publish” requirement; prior QA/audit marked completed |
 
 ---
 
@@ -60,21 +68,20 @@ Not **BLOCKED**: no proven code defect forcing a consent rewrite or CMP before c
 | Item | Why |
 |------|-----|
 | Zero optional-SDK network before consent on device | Code + metadata intend gate; packet capture / MITM not required and not performed in this task |
-| IP-only geolocation as Google “Approximate location” | Vendor tables say Approximate location No without location consent/tracking; IP edge cases left VERIFY WITH VENDOR |
+| Whether Yandex IP processing requires Approximate location despite vendor tables saying No | Residual vs Google’s general IP note; Console stays **No** until Yandex says otherwise |
 | Native AppMetrica Android SDK build under RN 4.2.0 vs docs labeled for 5.0.0+ | Location still explicitly disabled in our config |
 | Ads ↔ AppMetrica sync toggles in Yandex cabinets | Not visible in repo |
 | Live GitHub Pages content matches new HTML | Publish not performed |
-| Exact six Console checkboxes already selected by owner | Align to `GOOGLE_PLAY_DATA_SAFETY_FINAL.md` |
 
 ---
 
-## BLOCKING (owner only — 5)
+## BLOCKING (owner only — operational)
 
 1. Publish privacy HTML to the public HTTPS URL used in Play Console and in-app.
-2. Fill Data Safety in Console using `GOOGLE_PLAY_DATA_SAFETY_FINAL.md`.
-3. Decide to proceed with EEA/UK testers under the first-party Yandex consent gate + policy (or pause EEA invites pending counsel).
-4. Confirm Approximate location = No (or resolve IP question with Yandex if challenged).
-5. Ensure AppMetrica organizational terms / DPA accepted in the vendor cabinet.
+2. Fill Data Safety in Console using `GOOGLE_PLAY_DATA_SAFETY_FINAL.md` (deletion **Yes** via email; Approximate location **No**).
+3. Answer deletion-request emails at `rustore-alex1c@yandex.ru`.
+4. Decide to proceed with EEA/UK testers under the first-party Yandex consent gate + policy (or pause pending counsel).
+5. Ensure AppMetrica organizational terms / DPA accepted; optionally ask Yandex the IP → Approximate location support question.
 
 ---
 
@@ -82,6 +89,7 @@ Not **BLOCKED**: no proven code defect forcing a consent rewrite or CMP before c
 
 | Item |
 |------|
+| Packet-level pre-consent network proof (honest residual, not a re-QA gate) |
 | Adding Google-certified CMP (only if AdMob/Google demand is introduced later) |
 | US Do Not Sell/Share messaging |
 | In-app AppMetrica server deletion API |
@@ -143,7 +151,7 @@ Not **BLOCKED**: no proven code defect forcing a consent rewrite or CMP before c
 
 ## Changes summary
 
-- Rewrote international Privacy Policy RU/EN with 18 sections; updated ES/DE to match without deleting them.
-- Added Console-ready Data Safety final matrix, international checklist, and this report.
-- No package/version/ad-ID/signature changes.
-- No consent system rewrite; no CMP added; no AAB; no publish; no push.
+- International Privacy Policy RU/EN (18 sections) + ES/DE; Data Safety FINAL matrix; checklist; this report.
+- Correction pass: deletion-request Yes via email (not SQLite alone); Approximate location No vendor-aligned + Yandex question; obsolete Codex/OPPO re-QA gates removed.
+- Targeted privacy HTML edits for deletion-request and location wording.
+- No package/version/ad-ID/signature/executable-code changes in the correction pass.

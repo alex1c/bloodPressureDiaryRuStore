@@ -27,8 +27,8 @@ the device under developer control.
 |------------------|-----------------|-----------|
 | Does your app collect or share any of the required user data types? | **Yes** | Optional AppMetrica + Yandex Ads after consent may process device/app IDs, Advertising ID, IP, and technical diagnostics |
 | Is all user data encrypted in transit? | **Yes** for HTTPS SDK traffic — **VERIFY** current vendor docs for shipped SDK versions | Local SQLite is not “in transit” |
-| Do you provide a way for users to request that their data is deleted? | **In-app deletion / uninstall only** | **Do not** claim a developer-operated server-side deletion request workflow; there is no account backend |
-| Account deletion URL | **Not applicable** (no accounts) | VERIFY current Console wording |
+| Do you provide a way for users to request that their data is deleted? | **Yes** — email `rustore-alex1c@yandex.ru` (Google-allowed request path). Local SQLite delete/uninstall is separate and does **not** alone justify Yes for collected SDK data | See [GOOGLE_PLAY_DATA_SAFETY_FINAL.md](./GOOGLE_PLAY_DATA_SAFETY_FINAL.md). Do **not** claim developer wipe of Yandex backends |
+| Account deletion URL | **Not applicable** (no accounts) | Separate from deletion-request mechanism |
 | Independent security review? | **No** | Unless obtained later |
 
 ## Category matrix (external transfers only)
@@ -40,7 +40,7 @@ the device under developer control.
 | App activity (allowlisted technical events) | **Yes → AppMetrica** if analytics purpose granted | Analytics | `src/analytics/allowlist.ts` | Not “anonymous”; may tie to technical IDs |
 | Device or other IDs | **Likely Yes → SDKs** if purpose granted | Analytics / Advertising | AppMetrica + Yandex Ads | **VERIFY** vendor Data Safety guides for  AppMetrica 4.2 / Yandex Ads 8.3 |
 | Advertising ID (GAID) | **Likely Yes → Yandex Ads** if ads purpose granted | Advertising | Yandex Mobile Ads | Declare when ads enabled |
-| Approximate location | **Not sent by first-party code**; AppMetrica location tracking disabled | — | `locationTracking: false` | Approximate via IP at vendor backend = **VERIFY vendor**, do not claim precise location |
+| Approximate location | **No** (vendor-aligned) | — | `locationTracking: false`; no Ads `locationConsent` | Follow FINAL matrix; IP residual = Yandex support question, not assumed Yes |
 | Diagnostics / crash-like telemetry | **Possibly via AppMetrica** if analytics granted | Analytics | No separate Crashlytics/Sentry in this app | Mark only after **VERIFY** vendor docs — do not promise crash reporting if not confirmed |
 | Photos / contacts / financial / payment | **No** | — | No APIs / no IAP | Do not declare |
 
@@ -49,15 +49,17 @@ the device under developer control.
 1. **Local SQLite ≠ collected.** Health diary rows that never leave the device
    through the developer or optional SDKs are not Data Safety “collected” health
    data for off-device sharing.
-2. **Local delete ≠ server deletion request.** In-app delete/uninstall removes
-   local data only. Third-party retention follows Yandex policies.
+2. **Local delete ≠ deletion request for collected SDK data.** In-app
+   delete/uninstall removes local data only. Console **Yes** for deletion
+   requests rests on email to `rustore-alex1c@yandex.ru`, not on SQLite alone.
+   Third-party retention follows Yandex policies; developer cannot wipe Yandex.
 3. **Do not label analytics as fully anonymous** when technical identifiers / IP
    may apply.
 4. **Unverified SDK categories stay VERIFY** until the owner confirms vendor
    guides for the exact shipped versions.
-5. **Do not promise protections** (e.g. “no network before consent”) as proven
-   until physical Android QA confirms no early SDK traffic after
-   `AUTOMATIC_SDK_INITIALIZATION=false`.
+5. **Pre-consent SDK network** remains code/manifest intent, not packet-proven.
+   Functional OPPO QA and prior audits already completed; do not re-open as a
+   mandatory QA gate for docs-only updates.
 
 ## Consent (purposes)
 

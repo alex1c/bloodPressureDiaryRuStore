@@ -140,8 +140,10 @@
 				default configuration, the SDK may process crash-related and diagnostic /
 				performance information and device or other IDs (when permitted), and
 				encrypts listed data in transit. Location tracking is disabled in this
-				app’s configuration. Exact categories depend on the shipped SDK build and
-				vendor documentation.
+				app’s configuration (no GPS / coarse-location purpose path for AppMetrica).
+				SDK network traffic may still involve ordinary IP addressing; the app does
+				not enable vendor “location tracking” or Ads location-consent APIs.
+				Exact categories depend on the shipped SDK build and vendor documentation.
 			</p>
 		</section>
 
@@ -243,10 +245,12 @@
 			</p>
 			<p>
 				For the local diary, you can edit or delete records in the app.
-				For questions about this app’s privacy practices, email
-				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
-				Requests about data held solely by Yandex should also follow Yandex’s
-				published privacy channels where available.
+				To request deletion of technical data that optional SDKs may have
+				processed after you allowed them, email
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>
+				(privacy requests). We will respond and, where needed, point you to
+				Yandex’s published privacy channels. Local diary deletion in the app is
+				separate from any third-party SDK records.
 			</p>
 		</section>
 
@@ -258,9 +262,12 @@
 				uninstall the app to remove local storage.
 			</p>
 			<p>
-				The developer <strong>cannot guarantee deletion</strong> of technical data
-				already processed by Yandex Mobile Ads or AppMetrica. Those services
-				follow their own deletion and retention rules.
+				Email deletion requests for collected technical data are accepted at
+				<a href="mailto:rustore-alex1c@yandex.ru">rustore-alex1c@yandex.ru</a>.
+				The developer <strong>cannot independently erase</strong> technical data
+				already held by Yandex Mobile Ads or AppMetrica and does not operate a
+				server that stores your health diary. Those services follow their own
+				deletion and retention rules.
 			</p>
 		</section>
 
